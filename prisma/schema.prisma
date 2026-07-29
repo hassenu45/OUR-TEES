@@ -1,0 +1,94 @@
+// Our Tees Database Schema
+// PostgreSQL-compatible design, using SQLite for development
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ── Settings ──
+// Single-row table for site configuration (key-value pairs)
+model SiteSettings {
+  id              Int    @id @default(1)
+  siteName        String @default("OUR TEES")
+  currency        String @default("SAR")
+  currencySymbol  String @default("ر.س")
+  adminPassword   String @default("admin123")
+  googleClientId  String @default("")
+  sizes           String @default("S,M,L,XL,XXL") // comma-separated
+  types           String @default("قطن كلاسيك,فينتاج,بريميوم,oversized")
+  heroBadge       String @default("NEW DROP")
+  heroDrop        String @default("DROP 01 — SPRING 2026")
+  heroTitle       String @default("WEAR YOUR ATTITUDE.")
+  heroSubtitle    String @default("Premium tees for those who refuse to blend in.")
+  aboutTitle      String @default("BUILT DIFFERENT.")
+  aboutText       String @default("Started in a garage with one screen printer.")
+  aiName          String @default("Tez")
+  aiWelcome       String @default("أهلاً بك! أنا Tez، المساعد الذكي.")
+  aiPrompt        String @default("أنت Tez، مساعد الذكاء الاصطناعي الخاص بمتجر Our Tees.")
+  aiApiKey        String @default("")
+  updatedAt       DateTime @updatedAt
+}
+
+// ── Products ──
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  price       Float    @default(0)
+  image       String   @default("")   // primary/first image URL
+  images      String   @default("[]") // JSON array of image URLs
+  types       String   @default("[]") // JSON array of type strings
+  sizes       String   @default("[]") // JSON array of size strings
+  badge       String   @default("")
+  soldOut     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ── Orders ──
+model Order {
+  id            String   @id @default(cuid())
+  productId     String
+  productName   String   @default("")
+  productPrice  Float    @default(0)
+  type          String   @default("")
+  size          String
+  customerName  String
+  phone         String
+  address       String   @default("")
+  notes         String   @default("")
+  status        String   @default("new") // new | completed | cancelled
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ── Cart Items (Server-Persisted) ──
+model CartItem {
+  id        String   @id @default(cuid())
+  sessionId String   // guest session identifier
+  productId String
+  productName String @default("")
+  price     Float
+  size      String
+  type      String   @default("")
+  image     String   @default("")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── Sessions / User Tracking ──
+model UserSession {
+  id        String   @id
+  email     String   @default("")
+  name      String   @default("")
+  picture   String   @default("")
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
