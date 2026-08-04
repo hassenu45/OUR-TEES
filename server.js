@@ -1,4 +1,5 @@
 const express = require('express');
+require('dotenv').config();
 const session = require('express-session');
 const multer = require('multer');
 const path = require('path');
@@ -29,10 +30,28 @@ const orderSchema = z.object({
   productId: z.string().min(1).max(50),
   type: z.string().max(50).optional().default(''),
   size: z.string().min(1).max(20),
-  customerName: z.string().min(1).max(100).transform(s => s.trim()),
-  phone: z.string().min(1).max(30).transform(s => s.trim()),
-  address: z.string().max(200).optional().default('').transform(s => s.trim()),
-  notes: z.string().max(500).optional().default('').transform(s => s.trim()),
+  customerName: z
+    .string()
+    .min(1)
+    .max(100)
+    .transform((s) => s.trim()),
+  phone: z
+    .string()
+    .min(1)
+    .max(30)
+    .transform((s) => s.trim()),
+  address: z
+    .string()
+    .max(200)
+    .optional()
+    .default('')
+    .transform((s) => s.trim()),
+  notes: z
+    .string()
+    .max(500)
+    .optional()
+    .default('')
+    .transform((s) => s.trim()),
 });
 
 const settingsSchema = z.object({
@@ -53,13 +72,15 @@ const settingsSchema = z.object({
   aiWelcome: z.string().max(500).optional(),
   aiPrompt: z.string().max(2000).optional(),
   aiApiKey: z.string().max(2000).optional(),
-  designTokens: z.object({
-    primary: z.string().optional(),
-    accent: z.string().optional(),
-    background: z.string().optional(),
-    fontHeading: z.string().optional(),
-    fontBody: z.string().optional(),
-  }).optional(),
+  designTokens: z
+    .object({
+      primary: z.string().optional(),
+      accent: z.string().optional(),
+      background: z.string().optional(),
+      fontHeading: z.string().optional(),
+      fontBody: z.string().optional(),
+    })
+    .optional(),
 });
 
 // ── Rate Limiter ──
@@ -70,7 +91,7 @@ function rateLimit(maxRequests, windowMs) {
     const now = Date.now();
     const windowStart = now - windowMs;
     if (!requestCounts.has(ip)) requestCounts.set(ip, []);
-    const timestamps = requestCounts.get(ip).filter(ts => ts > windowStart);
+    const timestamps = requestCounts.get(ip).filter((ts) => ts > windowStart);
     if (timestamps.length >= maxRequests) {
       return res.status(429).json({ error: 'طلبات كثيرة جداً، يرجى المحاولة بعد قليل' });
     }
@@ -99,27 +120,61 @@ const upload = multer({
 
 // ── Middleware ──
 app.use(express.json({ limit: '1mb' }));
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'our-tees-secure-secret-key-prod',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 },
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'azma-secure-secret-key-prod',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { httpOnly: true, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 },
+  })
+);
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   next();
 });
 
+// صفحة الهبوط (index.html) عامة للجميع — المتجر وغيره خلف تسجيل الدخول
+const PROTECTED_PAGES = new Set(['/store.html', '/orders.html', '/designer.html', '/designer_debug.html', '/21.html']);
+app.use((req, res, next) => {
+  // صفحة الإعدادات (admin.html / hub.html) متاحة فقط عبر تطبيق الديستوب — غير موجودة على الويب إطلاقاً
+  if (req.path === '/admin.html' || req.path === '/hub.html') {
+    return res.status(404).send('Not Found');
+  }
+  const p = req.path;
+  if (PROTECTED_PAGES.has(p) && !req.session.authenticated) {
+    return res.redirect('/login.html');
+  }
+  next();
+});
+
+app.get('/', (req, res) => {
+  return res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // ── Static Files ──
-const ALLOWED_STATIC_EXT = new Set(['.html', '.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.woff', '.woff2']);
+const ALLOWED_STATIC_EXT = new Set([
+  '.html',
+  '.css',
+  '.js',
+  '.json',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.svg',
+  '.ico',
+  '.woff',
+  '.woff2',
+  '.obj',
+  '.mtl',
+]);
 app.use((req, res, next) => {
   const ext = path.extname(req.path).toLowerCase();
   if (ext && !ALLOWED_STATIC_EXT.has(ext)) return next();
   express.static(__dirname, { fallthrough: true })(req, res, next);
 });
 app.use('/uploads', express.static(UPLOADS_DIR));
-
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'store.html')));
 
 function requireAuth(req, res, next) {
   if (req.session.authenticated) return next();
@@ -129,11 +184,19 @@ function requireAuth(req, res, next) {
 // ── Auth ──
 app.post('/api/login', rateLimit(10, 60000), async (req, res) => {
   try {
-    const settings = await db.getSettings();
-    if (req.body.password && req.body.password === settings.adminPassword) {
+    const fixedPassword = process.env.ADMIN_PASSWORD || '';
+    let valid = false;
+    if (req.body.password) {
+      valid = fixedPassword ? req.body.password === fixedPassword : false;
+      if (!valid) {
+        const settings = await db.getSettings();
+        valid = req.body.password === settings.adminPassword;
+      }
+    }
+    if (valid) {
       req.session.authenticated = true;
       req.session.isAdmin = true;
-      req.session.userEmail = 'admin@ourtees.local';
+      req.session.userEmail = 'admin@azma.local';
       req.session.userName = 'Admin';
       return res.json({ success: true });
     }
@@ -154,6 +217,7 @@ app.get('/api/auth/check', (req, res) => {
     email: req.session.userEmail || null,
     isAdmin: !!req.session.isAdmin,
     name: req.session.userName || null,
+    picture: req.session.userPicture || null,
   });
 });
 
@@ -162,7 +226,7 @@ app.post('/api/auth/google', rateLimit(10, 60000), async (req, res) => {
   if (!idToken) return res.status(400).json({ error: 'رمز Google مفقود' });
   try {
     const settings = await db.getSettings();
-    const googleClientId = settings.googleClientId || '936102724775-9megvda475titral1ujoote0vlka2sk1.apps.googleusercontent.com';
+    const googleClientId = settings.googleClientId || FALLBACK_GOOGLE_CLIENT_ID;
     const client = new OAuth2Client(googleClientId);
     const ticket = await client.verifyIdToken({ idToken, audience: googleClientId });
     const payload = ticket.getPayload();
@@ -178,12 +242,42 @@ app.post('/api/auth/google', rateLimit(10, 60000), async (req, res) => {
 });
 
 // ── Settings ──
+const FALLBACK_GOOGLE_CLIENT_ID = '936102274775-9megvda475t1tral1ujoote0lvika2sk1.apps.googleusercontent.com';
+
+// Google Sign-In عبر النافذة المنبثقة (OAuth code flow) — أكثر موثوقية من One Tap/FedCM
+app.post('/api/auth/google-code', rateLimit(10, 60000), async (req, res) => {
+  const { code } = req.body || {};
+  if (!code) return res.status(400).json({ error: 'رمز الدخول مفقود' });
+  try {
+    const settings = await db.getSettings();
+    const googleClientId = settings.googleClientId || FALLBACK_GOOGLE_CLIENT_ID;
+    const client = new OAuth2Client(googleClientId);
+    const { tokens } = await client.getToken({ code, redirect_uri: 'postmessage' });
+    client.setCredentials(tokens);
+    const ticket = await client.verifyIdToken({ idToken: tokens.id_token, audience: googleClientId });
+    const payload = ticket.getPayload();
+    req.session.authenticated = true;
+    req.session.isAdmin = true;
+    req.session.userEmail = payload.email;
+    req.session.userName = payload.name;
+    req.session.userPicture = payload.picture;
+    res.json({ success: true, email: payload.email, name: payload.name });
+  } catch (err) {
+    console.error('google-code error:', err.message);
+    res.status(401).json({ error: 'رمز الدخول غير صالح' });
+  }
+});
+
 app.get('/api/settings', async (_req, res) => {
   try {
     const settings = await db.getSettings();
     const { adminPassword, aiApiKey, ...publicSettings } = settings;
+    if (!publicSettings.googleClientId) {
+      publicSettings.googleClientId = FALLBACK_GOOGLE_CLIENT_ID;
+    }
     res.json(publicSettings);
   } catch (e) {
+    console.error('[settings error]', e);
     res.status(500).json({ error: 'خطأ في قراءة الإعدادات' });
   }
 });
@@ -253,13 +347,17 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
   try {
     const product = await db.getProduct(req.params.id);
     if (product) {
-      const allImgs = product.images && product.images.length ? product.images : (product.image ? [product.image] : []);
+      const allImgs = product.images && product.images.length ? product.images : product.image ? [product.image] : [];
       const resolvedUploadsDir = path.resolve(UPLOADS_DIR);
-      allImgs.forEach(imgPath => {
+      allImgs.forEach((imgPath) => {
         if (imgPath && typeof imgPath === 'string' && imgPath.startsWith('/uploads/')) {
           const fullPath = path.resolve(path.join(__dirname, imgPath));
           if (fullPath.startsWith(resolvedUploadsDir) && fs.existsSync(fullPath)) {
-            try { fs.unlinkSync(fullPath); } catch (e) {}
+            try {
+              fs.unlinkSync(fullPath);
+            } catch (e) {
+              // file may already be gone
+            }
           }
         }
       });
@@ -276,14 +374,18 @@ const uploadImagesAndCreateProduct = async (req) => {
   const settings = await db.getSettings();
   let uploadedImages = [];
   if (req.files && req.files.length) {
-    uploadedImages = req.files.map(f => `/uploads/${f.filename}`);
+    uploadedImages = req.files.map((f) => `/uploads/${f.filename}`);
   } else if (req.body.image) {
     uploadedImages = [req.body.image];
   }
   if (!uploadedImages.length) throw Object.assign(new Error('No image'), { code: 'NO_IMAGE' });
   const description = (req.body.description || '').trim();
   const name = (req.body.name || '').trim() || (description.length > 25 ? description.slice(0, 25) + '...' : 'OUR TEE');
-  const types = Array.isArray(req.body.types) ? req.body.types : (req.body.types ? req.body.types.split(',').map(s => s.trim()) : settings.types);
+  const types = Array.isArray(req.body.types)
+    ? req.body.types
+    : req.body.types
+      ? req.body.types.split(',').map((s) => s.trim())
+      : settings.types;
   return db.createProduct({
     name,
     description: description || 'تيشيرت عالي الجودة بتصميم استثنائي',
@@ -296,7 +398,7 @@ const uploadImagesAndCreateProduct = async (req) => {
   });
 };
 
-app.post('/api/products/with-image', requireAuth, upload.array('images', 10), async (req, res) => {
+app.post('/api/products/with-image', requireAuth, upload.array('images', 20), async (req, res) => {
   try {
     const product = await uploadImagesAndCreateProduct(req);
     res.json(product);
@@ -306,13 +408,23 @@ app.post('/api/products/with-image', requireAuth, upload.array('images', 10), as
   }
 });
 
-app.post('/api/products/with-images', requireAuth, upload.array('images', 10), async (req, res) => {
+app.post('/api/products/with-images', requireAuth, upload.array('images', 20), async (req, res) => {
   try {
     const product = await uploadImagesAndCreateProduct(req);
     res.json(product);
   } catch (e) {
     if (e.code === 'NO_IMAGE') return res.status(400).json({ error: 'يرجى تحميل صورة واحدة على الأقل للمنتج' });
     res.status(500).json({ error: 'خطأ في إنشاء المنتج' });
+  }
+});
+
+// Upload images only — returns public URLs, product record stays in localStorage (UI is localStorage-authoritative)
+app.post('/api/uploads/images', requireAuth, upload.array('images', 20), (req, res) => {
+  try {
+    if (!req.files || !req.files.length) return res.status(400).json({ error: 'No images uploaded' });
+    res.json({ urls: req.files.map((f) => `/uploads/${f.filename}`) });
+  } catch (e) {
+    res.status(500).json({ error: 'خطأ في رفع الصور' });
   }
 });
 
@@ -335,66 +447,166 @@ app.post('/api/products/:id/image', requireAuth, upload.single('image'), async (
   }
 });
 
+// ── DeepSeek AI ──
+const {
+  deepSeekKey,
+  deepSeekBase,
+  deepSeekModel,
+  deepSeekChat,
+  runDiscoveryAgent,
+  formatDiscoveryReply,
+} = require('./ai.cjs');
+const { createRouter: createIntegrationsRouter, notifyOrder } = require('./integrations.cjs');
+
 // ── Chat ──
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const { message, history = [], user } = req.body;
     if (!message) return res.status(400).json({ error: 'الرسالة فارغة' });
 
     const settings = await db.getSettings();
     const aiName = settings.aiName || 'Tez';
-    const aiPrompt = settings.aiPrompt || 'أنت Tez، مساعد الذكاء الاصطناعي الخاص بمتجر Our Tees.';
-    const apiKey = process.env.GEMINI_API_KEY || settings.aiApiKey;
+    const aiPrompt = settings.aiPrompt || 'أنت Tez، مساعد الذكاء الاصطناعي الخاص بمتجر AZMA.';
+    const userName = user && user.name ? String(user.name).trim() : '';
+    const userAge = user && user.age ? String(user.age).trim() : '';
+    const userCtx = [];
+    if (userName)
+      userCtx.push(`المستخدم الذي يحدثك الآن اسمه "${userName}". نادِه باسمه الأول وتحدث معه بشكل شخصي وودود.`);
+    if (userAge) userCtx.push(`عمر المستخدم ${userAge} سنة. استخدم ذلك لمساعدته في اختيار المقاس المناسب للتيشيرت.`);
+    const userContext = userCtx.join(' ');
 
-    if (apiKey && apiKey.trim() !== '') {
+    if (deepSeekKey()) {
       try {
-        const contents = [
-          { role: 'user', parts: [{ text: `تعليمات النظام: ${aiPrompt}\nاسمك: ${aiName}` }] },
-          { role: 'model', parts: [{ text: `أهلاً بك! أنا ${aiName}، كيف يمكنني مساعدتك اليوم؟` }] },
-        ];
-        history.forEach(item => {
-          if (item.sender === 'user') contents.push({ role: 'user', parts: [{ text: item.text }] });
-          else if (item.sender === 'ai') contents.push({ role: 'model', parts: [{ text: item.text }] });
+        const messages = [];
+        history.forEach((item) => {
+          if (item.sender === 'user') messages.push({ role: 'user', content: String(item.text) });
+          else if (item.sender === 'ai') messages.push({ role: 'assistant', content: String(item.text) });
         });
-        contents.push({ role: 'user', parts: [{ text: message }] });
+        const firstUserName = userName && !messages.some((m) => m.role === 'user') ? `اسمي ${userName}. ` : '';
+        messages.push({ role: 'user', content: firstUserName + message });
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents }),
-        });
-        const data = await response.json();
-        if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-          return res.json({ reply: data.candidates[0].content.parts[0].text, name: aiName });
-        }
+        const structured = await runDiscoveryAgent(messages, { userName, userAge });
+        return res.json({ reply: formatDiscoveryReply(structured), structured, name: aiName });
       } catch (e) {
-        console.error('Gemini API call failed:', e.message);
+        if (e.code === 'NO_KEY') return res.status(400).json({ error: 'DEEPSEEK_API_KEY غير مضبوط في ملف .env' });
+        console.error('DeepSeek chat failed:', e.message);
       }
     }
 
     const products = await db.getProducts();
     const msg = message.toLowerCase();
+    const call = userName ? userName.split(' ')[0] : '';
+    const greet = call ? call + '، ' : '';
+    const age = userAge ? parseInt(userAge, 10) : NaN;
+    let sizeByAge = '';
+    if (!isNaN(age)) {
+      sizeByAge =
+        age < 18
+          ? 'مقاس S أو M يناسبك غالباً. '
+          : age <= 30
+            ? 'مقاس M أو L هو الأنسب لعمرك غالباً. '
+            : 'مقاس L أو XL يناسبك غالباً. ';
+    }
     let reply = '';
 
-    if (msg.includes('مرحبا') || msg.includes('هلا') || msg.includes('السلام') || msg.includes('أهلا') || msg.includes('hi') || msg.includes('hello')) {
-      reply = `أهلاً وسهلاً بك في متجر Our Tees! 👕 أنا ${aiName}، مساعدك الذكي. كيف أقدر أساعدك اليوم في اختيارات الملابس والمقاسات؟`;
-    } else if (msg.includes('سعر') || msg.includes('أسعار') || msg.includes('بكام') || msg.includes('كم') || msg.includes('تكلفة') || msg.includes('price')) {
-      reply = `أسعار التيشيرتات لدينا تبدأ من 150 ${settings.currencySymbol || 'ر.س'}. يمكنك الاطلاع على جميع المنتجات والأسعار المتاحة في الصفحة الرئيسية للمتجر!`;
-    } else if (msg.includes('منتجات') || msg.includes('عرض') || msg.includes('تيشيرت') || msg.includes('تشكيلة') || msg.includes('drop')) {
+    if (
+      msg.includes('مرحبا') ||
+      msg.includes('هلا') ||
+      msg.includes('السلام') ||
+      msg.includes('أهلا') ||
+      msg.includes('hi') ||
+      msg.includes('hello')
+    ) {
+      reply = `أهلاً وسهلاً${call ? ' ' + call : ''}! 👕 أنا ${aiName}، مساعدك الذكي. كيف أقدر أساعدك اليوم في اختيارات الملابس والمقاسات؟`;
+    } else if (
+      msg.includes('سعر') ||
+      msg.includes('أسعار') ||
+      msg.includes('بكام') ||
+      msg.includes('كم') ||
+      msg.includes('تكلفة') ||
+      msg.includes('price')
+    ) {
+      const minPrice = products.length ? Math.min(...products.map((p) => parseFloat(p.price) || 0)) : 0;
+      reply = `أسعار التيشيرتات لدينا تبدأ من ${minPrice.toFixed(minPrice % 1 === 0 ? 0 : 2)} ${settings.currencySymbol || 'د.أ'}${call ? ' يا ' + call : ''}. يمكنك الاطلاع على جميع المنتجات والأسعار المتاحة في الصفحة الرئيسية للمتجر!`;
+    } else if (
+      msg.includes('منتجات') ||
+      msg.includes('عرض') ||
+      msg.includes('تيشيرت') ||
+      msg.includes('تشكيلة') ||
+      msg.includes('drop')
+    ) {
       reply = `لدينا حالياً ${products.length} منتجاً مميزاً بتصاميم عصرية خامة بريميوم! قم بالتمرير في المتجر لاستعراض كافة التصاميم وتفاصيل كل قطعة.`;
     } else if (msg.includes('مقاس') || msg.includes('مقاسات') || msg.includes('size')) {
-      reply = `المقاسات المتوفرة لدينا هي: (${(settings.sizes || ['S', 'M', 'L', 'XL']).join('، ')}). جميع تيشيرتاتنا تأتي بصلابة وجودة عالية ومقاسات مريحة وstandard.`;
+      reply = `${sizeByAge}المقاسات المتوفرة لدينا هي: (${(settings.sizes || ['S', 'M', 'L', 'XL']).join('، ')}). أخبرني بقصتك المفضلة (فيت عادي أو أوفر سايز) وسأرشدك لأفضل مقاس لك!`;
+    } else if (/^\d{1,2}$/.test(msg.trim()) && !isNaN(age)) {
+      reply = `تمام، عمرك ${age} سنة! بناءً على ذلك ${call ? call + '، ' : ''}${sizeByAge}لو تحب قصّة أوفر سايز أنصحك تزيد مقاس واحد. اختار لك الآن؟ 😊`;
     } else if (msg.includes('طلب') || msg.includes('شراء') || msg.includes('طريقة') || msg.includes('كيف أطلب')) {
-      reply = `للطلب، ببساطة اضغط على زر "ORDER NOW" تحت أي تيشيرت يعجبك، وأدخل بياناتك مثل الاسم والرقم وسنصلك في أسرع وقت! 🚀`;
+      reply = `للطلب${call ? ' يا ' + call : ''}، ببساطة اضغط على زر "ORDER NOW" تحت أي تيشيرت يعجبك، وأدخل بياناتك مثل الاسم والرقم وسنصلك في أسرع وقت! 🚀`;
     } else if (msg.includes('تواصل') || msg.includes('انستقرام') || msg.includes('إنستغرام') || msg.includes('دعم')) {
       reply = `يمكنك التواصل معنا عبر حسابنا على إنستغرام أو من خلال إرسال طلب مباشرة عبر المتجر. نحن في خدمتك دائماً! ✨`;
     } else {
-      reply = `أهلاً بك! بصفتي ${aiName}، يسعدني إجابة أي استفسار عن تشكيلة Our Tees، المقاسات، والطلبات. أرسل لي أي تساؤل وسأساعدك فوراً! ⭐`;
+      reply = `${greet}بصفتي ${aiName}، يسعدني إجابة أي استفسار عن تشكيلة AZMA، المقاسات، والطلبات. أرسل لي أي تساؤل وسأساعدك فوراً! ⭐`;
     }
     res.json({ reply, name: aiName });
   } catch (err) {
     console.error('Chat error:', err);
     res.status(500).json({ error: 'حدث خطأ أثناء معالجة المحادثة' });
+  }
+});
+
+// ── AI Endpoints ──
+app.use('/api/integrations', createIntegrationsRouter(requireAuth));
+
+app.get('/api/ai/status', (_req, res) => {
+  const key = deepSeekKey();
+  res.json({
+    provider: 'deepseek',
+    configured: !!(key && key.trim()),
+    model: deepSeekModel(),
+    baseUrl: deepSeekBase(),
+  });
+});
+
+app.post('/api/ai/generate-description', rateLimit(20, 60000), async (req, res) => {
+  try {
+    if (!deepSeekKey())
+      return res.status(400).json({ error: 'مفتاح DeepSeek غير مضبوط — أضفه في ملف .env (DEEPSEEK_API_KEY)' });
+    const { name, types, price } = req.body || {};
+    const system =
+      'أنت مساعد تسويق لمتجر تيشيرتات اسمه AZMA. تكتب وصفاً تسويقياً بالعربية بين جملتين وثلاث جمل لتيشيرت، بدون عناوين وبدون قوائم وبدون علامات خاصة. النبرة عصرية وحماسية وجذابة. لا تختلق مواصفات ولا تذكر السعر إن لم يُعطى.';
+    const segments = [];
+    if (name) segments.push('- الاسم: ' + name);
+    if (types) segments.push('- النوع/الخامة: ' + (Array.isArray(types) ? types.join('، ') : types));
+    if (price) segments.push('- السعر: ' + price);
+    const user = 'أنشئ وصفاً تسويقياً لتيشيرت:' + (segments.length ? '\n' + segments.join('\n') : '');
+    const reply = await deepSeekChat(system, [{ role: 'user', content: user }], { maxTokens: 250, temperature: 0.9 });
+    res.json({ description: reply });
+  } catch (e) {
+    console.error('generate-description error:', e.message);
+    res.status(500).json({ error: 'فشل توليد الوصف. تأكد من صحة مفتاح DeepSeek في ملف .env' });
+  }
+});
+
+app.post('/api/ai/order-reply', rateLimit(20, 60000), async (req, res) => {
+  try {
+    if (!deepSeekKey())
+      return res.status(400).json({ error: 'مفتاح DeepSeek غير مضبوط — أضفه في ملف .env (DEEPSEEK_API_KEY)' });
+    const { customerName, productName, size, notes, status } = req.body || {};
+    const system =
+      'أنت مساعد خدمة عملاء لمتجر تيشيرتات اسمه AZMA. تكتب رداً لطيفاً ومهنياً بالعربية للعميل على طلبه، قصير بين جملتين وأربع جمل كحد أقصى، ودود وبسيط.';
+    const statusLabel = status === 'completed' ? 'مكتمل' : status === 'cancelled' ? 'ملغي' : 'جديد';
+    const parts = [];
+    parts.push('عميل اسمه ' + (customerName || 'العميل'));
+    parts.push('طلب: ' + (productName || 'تيشيرت'));
+    parts.push('مقاس ' + (size || 'غير محدد'));
+    if (notes) parts.push('ملاحظات العميل: ' + notes);
+    parts.push('حالة الطلب حالياً: ' + statusLabel);
+    const user = parts.join('. ') + '. اكتب الرد الذي سيرسله المتجر لهذا العميل.';
+    const reply = await deepSeekChat(system, [{ role: 'user', content: user }], { maxTokens: 300, temperature: 0.8 });
+    res.json({ reply });
+  } catch (e) {
+    console.error('order-reply error:', e.message);
+    res.status(500).json({ error: 'فشل توليد الرد. تأكد من صحة مفتاح DeepSeek في ملف .env' });
   }
 });
 
@@ -427,6 +639,11 @@ app.post('/api/orders', rateLimit(15, 60000), async (req, res) => {
       notes: data.notes || '',
       status: 'new',
     });
+    notifyOrder(order)
+      .then((r) => {
+        if (!r.sent) console.log('WhatsApp order notify skipped:', r.reason);
+      })
+      .catch((e) => console.error('notifyOrder error:', e.message));
     res.json(order);
   } catch (e) {
     if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
@@ -454,8 +671,14 @@ app.delete('/api/orders/:id', requireAuth, async (req, res) => {
   }
 });
 
+// ── Telegram Bot ──
+// Single instance — the bot lives in telegram-bot.js and is started exactly
+// once here (never run telegram-bot.js separately while the server is up,
+// or Telegram will reject the second polling session with a 409 conflict).
+require('./telegram-bot.js');
+
 app.listen(PORT, () => {
-  console.log(`Our Tees running at http://localhost:${PORT}`);
+  console.log(`AZMA running at http://localhost:${PORT}`);
   console.log(`Store:  http://localhost:${PORT}/store.html`);
   console.log(`Admin:  http://localhost:${PORT}/login.html`);
 });
