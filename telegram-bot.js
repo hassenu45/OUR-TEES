@@ -113,21 +113,20 @@ bot.catch((err) => {
   console.error('Bot handler error:', err);
 });
 
+const RETRY_DELAY_MS = 15000;
+
 function startBot() {
-  return bot
+  // Self-scheduling retry: 409 = another polling instance holds the token (a
+  // draining Railway container, or the bot started elsewhere). Telegraf aborts
+  // on 409, so keep retrying until the other instance releases the token.
+  bot
     .launch()
     .then(() => {
       console.log('🤖 Telegram bot started');
-      return true;
     })
     .catch((e) => {
-      // 409 = another polling instance holds the token (old Railway container
-      // draining, or the same bot started elsewhere). Telegraf aborts on 409,
-      // so retry until the other instance releases the token.
       console.error('🤖 Telegram bot launch failed (retrying in 15s):', e.message);
-      return new Promise((resolve) => {
-        setTimeout(() => resolve(startBot()), 15000);
-      });
+      setTimeout(startBot, RETRY_DELAY_MS);
     });
 }
 
