@@ -119,15 +119,11 @@ function startBot() {
   // Self-scheduling retry: 409 = another polling instance holds the token (a
   // draining Railway container, or the bot started elsewhere). Telegraf aborts
   // on 409, so keep retrying until the other instance releases the token.
-  bot
-    .launch()
-    .then(() => {
-      console.log('🤖 Telegram bot started');
-    })
-    .catch((e) => {
-      console.error('🤖 Telegram bot launch failed (retrying in 15s):', e.message);
-      setTimeout(startBot, RETRY_DELAY_MS);
-    });
+  console.log('🤖 Telegram bot connecting...');
+  bot.launch().catch((e) => {
+    console.error('🤖 Telegram bot launch failed (retrying in 15s):', e.message);
+    setTimeout(startBot, RETRY_DELAY_MS);
+  });
 }
 
 startBot();
