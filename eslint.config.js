@@ -8,7 +8,7 @@ module.exports = [
     ignores: ['node_modules/**', 'dist/**', 'generated/**', 'prisma/**', '*.mjs', 'eslint.config.js'],
   },
   {
-    files: ['server.js', 'db.cjs', 'ai.cjs', 'integrations.cjs', 'telegram-bot.js', 'js/**/*.js'],
+    files: ['server.js', 'db.cjs', 'ai.cjs', 'integrations.cjs', 'telegram-bot.js', 'js/**/*.js', 'desktop/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',
