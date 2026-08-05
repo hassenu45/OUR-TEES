@@ -1,4 +1,4 @@
-/* Our Tees - Pro Admin Dashboard Controller */
+/* AZMA - Pro Admin Dashboard Controller */
 
 let appState = { settings: {}, products: [], orders: [] };
 const STATUS_LABELS = { new: 'جديد', completed: 'مكتمل', cancelled: 'ملغي' };
@@ -71,13 +71,28 @@ function renderSettings() {
   if (form.heroSubtitle) form.heroSubtitle.value = appState.settings.heroSubtitle || '';
   if (form.aboutTitle) form.aboutTitle.value = appState.settings.aboutTitle || '';
   if (form.aboutText) form.aboutText.value = appState.settings.aboutText || '';
+
+  const likesBox = $('likes-per-product');
+  if (likesBox) {
+    if (!appState.products.length) {
+      likesBox.innerHTML = '<span style="color:rgba(250,250,249,0.2);">لا توجد منتجات بعد.</span>';
+    } else {
+      likesBox.innerHTML = appState.products.map(p => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border:1px solid rgba(255,255,255,0.04);border-radius:10px;background:rgba(255,255,255,0.015);">
+          <span style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.name || 'منتج')}</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span style="font-size:11px;color:rgba(250,250,249,0.3);">❤️</span>
+            <input type="number" min="0" class="form-input" style="width:90px;text-align:center;padding:6px 10px;font-size:13px;" value="${parseInt(p.likes) || 0}" data-likes-id="${p.id}">
+          </div>
+        </div>`).join('');
+    }
+  }
 }
 
 function renderAISettings() {
   const form = $('ai-settings-form');
   if (!form) return;
   if (form.aiName) form.aiName.value = appState.settings.aiName || 'Tez';
-  if (form.aiApiKey) form.aiApiKey.value = appState.settings.aiApiKey || '';
   if (form.aiWelcome) form.aiWelcome.value = appState.settings.aiWelcome || '';
   if (form.aiPrompt) form.aiPrompt.value = appState.settings.aiPrompt || '';
   if (form.googleClientId) form.googleClientId.value = appState.settings.googleClientId || '';
@@ -102,6 +117,11 @@ async function saveSettings(e) {
       types: form.types.value.split(',').map(t => t.trim()).filter(Boolean),
     };
     await API.updateSettings(data);
+    const likesInputs = document.querySelectorAll('[data-likes-id]');
+    await Promise.all([...likesInputs].map(inp => {
+      const likes = Math.max(0, parseInt(inp.value) || 0);
+      return API.updateProduct(inp.dataset.likesId, { likes });
+    }));
     showToast('تم حفظ الإعدادات بنجاح');
     await loadAllData();
   } catch (err) { showToast(err.message, true); }
@@ -116,7 +136,6 @@ async function saveAISettings(e) {
   try {
     await API.updateSettings({
       aiName: form.aiName.value.trim() || 'Tez',
-      aiApiKey: form.aiApiKey.value.trim(),
       aiWelcome: form.aiWelcome.value.trim(),
       aiPrompt: form.aiPrompt.value.trim(),
       googleClientId: form.googleClientId?.value.trim() || '',
@@ -128,13 +147,20 @@ async function saveAISettings(e) {
 }
 
 /* ── Image Preview ── */
+const MAX_PRODUCT_IMAGES = 20;
 function previewProductImages(input) {
   const container = $('images-preview');
   const text = container?.previousElementSibling;
   if (!container) return;
+  if (input.files && input.files.length > MAX_PRODUCT_IMAGES) {
+    const dt = new DataTransfer();
+    Array.from(input.files).slice(0, MAX_PRODUCT_IMAGES).forEach(f => dt.items.add(f));
+    input.files = dt.files;
+    showToast(`يمكنك اختيار ${MAX_PRODUCT_IMAGES} صورة كحد أقصى`, true);
+  }
   container.innerHTML = '';
   if (input.files && input.files.length) {
-    if (text) text.textContent = `✅ تم اختيار (${input.files.length}) صورة`;
+    if (text) text.textContent = `✅ تم اختيار (${input.files.length}) من ${MAX_PRODUCT_IMAGES} صورة`;
     Array.from(input.files).forEach(f => {
       const r = new FileReader();
       r.onload = e => {
@@ -145,7 +171,7 @@ function previewProductImages(input) {
       r.readAsDataURL(f);
     });
   } else {
-    if (text) text.textContent = '📷 اضغط لاختيار صور المنتج';
+    if (text) text.textContent = `📷 اضغط لاختيار صور المنتج (حتى ${MAX_PRODUCT_IMAGES} صورة)`;
   }
 }
 
@@ -263,6 +289,7 @@ function renderOrdersList() {
         <div style="display:flex;gap:4px;">
           <button class="btn btn-sm ${o.status === 'completed' ? 'btn-outline' : 'btn-accent'}" style="padding:5px 10px;font-size:10px;" onclick="updateOrder('${o.id}','${nextStatus}')">${nextLabel === 'إعادة' ? '↩️' : '✅'} ${nextLabel}</button>
           ${o.status !== 'cancelled' ? `<button class="btn btn-sm btn-outline" style="padding:5px 8px;font-size:10px;color:#FCA5A5;" onclick="updateOrder('${o.id}','cancelled')">❌</button>` : ''}
+          <button class="btn btn-sm btn-outline" id="reply-btn-${o.id}" style="padding:5px 8px;font-size:10px;color:#FDE68A;" onclick="suggestOrderReply('${o.id}')" title="اقتراح رد ذكي">💬</button>
           <button class="btn btn-sm btn-danger" style="padding:5px 8px;font-size:10px;" onclick="deleteOrder('${o.id}')">🗑️</button>
         </div>
       </td>
@@ -291,13 +318,319 @@ async function deleteOrder(id) {
   } catch (err) { showToast(err.message, true); }
 }
 
+/* ── DeepSeek AI (Admin) ── */
+async function checkAIStatus() {
+  const badge = $('ai-status-badge');
+  if (badge) badge.textContent = 'جاري الفحص...';
+  try {
+    const status = await API.aiStatus();
+    if (!badge) return;
+    if (status.local) {
+      badge.textContent = '⚠️ الموقع لا يعمل عبر السيرفر';
+      badge.style.background = 'rgba(245,200,66,.12)';
+      badge.style.color = '#F5C842';
+    } else if (status.configured) {
+      badge.textContent = `✅ متصل (${status.model})`;
+      badge.style.background = 'rgba(34,197,94,.12)';
+      badge.style.color = '#4ADE80';
+    } else {
+      badge.textContent = '🔴 مفتاح غير مضبوط';
+      badge.style.background = 'rgba(239,68,68,.12)';
+      badge.style.color = '#F87171';
+    }
+  } catch (e) {
+    if (badge) { badge.textContent = '🔴 فشل الفحص'; }
+  }
+}
+
+async function generateProductDescription() {
+  const btn = $('generate-desc-btn');
+  const name = $('product-name-input')?.value.trim() || '';
+  const price = $('product-price-input')?.value || '';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري التوليد...'; }
+  try {
+    const res = await API.generateDescription({
+      name,
+      types: (appState.settings.types || []).slice(0, 3),
+      price,
+    });
+    const area = $('product-description-input');
+    if (area) area.value = res.description || '';
+    showToast('تم توليد الوصف بنجاح!');
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✨ توليد وصف بالذكاء'; }
+  }
+}
+
+async function suggestOrderReply(orderId) {
+  const order = appState.orders.find(o => o.id === orderId);
+  if (!order) return;
+  const btn = document.getElementById('reply-btn-' + orderId);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  try {
+    const res = await API.suggestOrderReply({
+      customerName: order.customerName,
+      productName: order.productName,
+      size: order.size,
+      notes: order.notes,
+      status: order.status,
+    });
+    const textEl = $('ai-reply-text');
+    if (textEl) textEl.textContent = res.reply || '';
+    $('ai-reply-modal')?.classList.add('active');
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💬'; }
+  }
+}
+
+function closeAIReplyModal() { $('ai-reply-modal')?.classList.remove('active'); }
+
+function copyAIReply() {
+  const text = $('ai-reply-text')?.textContent || '';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast('تم نسخ الرد'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('تم نسخ الرد');
+  }
+}
+
+/* ── Integrations (WhatsApp + Instagram bots) ── */
+function badgeState(el, text, color) {
+  if (!el) return;
+  el.textContent = text;
+  el.style.background = color || 'rgba(255,255,255,.06)';
+  el.style.color = '#888884';
+}
+
+async function loadIntegrations() {
+  try {
+    const st = await API.integrationStatus();
+    const f = $('integrations-form');
+    if (f) {
+      f.waEnabled.checked = !!st.wa.enabled;
+      f.waReplyEnabled.checked = !!st.wa.replyEnabled;
+      f.waPhoneId.value = st.wa.phoneId || '';
+      f.waTemplate.value = st.wa.template || '';
+      f.igEnabled.checked = !!st.ig.enabled;
+      f.igCommentReply.checked = !!st.ig.commentReply;
+      f.igDmReply.checked = !!st.ig.dmReply;
+      f.igUserId.value = st.ig.userId || '';
+      f.webhookSecret.value = st.webhookSecret || '';
+      f.waToken.value = '';
+      f.igToken.value = '';
+    }
+    const base = location.origin;
+    badgeState($('integrations-ai-badge'), st.ai.configured ? ('✅ AI متصل (' + st.ai.model + ')') : '🔴 AI غير مضبوط', st.ai.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    const aiB = $('integrations-ai-badge');
+    if (aiB && st.ai.configured) { aiB.style.color = '#4ADE80'; }
+    badgeState($('integrations-wa-badge'), st.wa.configured ? '✅ واتساب متصل' : '🔴 واتساب غير مضبوط', st.wa.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    const waB = $('integrations-wa-badge');
+    if (waB && st.wa.configured) { waB.style.color = '#4ADE80'; }
+    badgeState($('integrations-waapp-badge'), st.waApp && st.waApp.configured ? '✅ بيانات التطبيق ثابتة' : '🔴 بيانات التطبيق غير مضبوطة', st.waApp && st.waApp.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    const waAppB = $('integrations-waapp-badge');
+    if (waAppB && st.waApp && st.waApp.configured) { waAppB.style.color = '#4ADE80'; }
+    const waAppId = $('integrations-waapp-id');
+    const waAppSec = $('integrations-waapp-secret');
+    const waAppPhone = $('integrations-waapp-phone');
+    if (waAppId) waAppId.textContent = st.waApp ? (st.waApp.appId || '—') : '—';
+    if (waAppSec) waAppSec.textContent = st.waApp ? (st.waApp.secretMasked || '—') : '—';
+    if (waAppPhone) waAppPhone.textContent = st.waApp ? (st.waApp.phoneIdPlaceholder || '—') : '—';
+    const umInstance = $('integrations-ultramsg-instance');
+    const umToken = $('integrations-ultramsg-token');
+    const umWebhook = $('integrations-ultramsg-webhook');
+    if (umInstance) umInstance.textContent = st.ultramsg ? (st.ultramsg.instance || '—') : '—';
+    if (umToken) umToken.textContent = st.ultramsg ? (st.ultramsg.tokenMasked || '—') : '—';
+    if (umWebhook) umWebhook.textContent = st.webhookUrls && st.webhookUrls.ultramsg ? (base + st.webhookUrls.ultramsg) : '—';
+    badgeState($('integrations-ig-badge'), st.ig.configured ? '✅ انستقرام متصل' : '🔴 انستقرام غير مضبوط', st.ig.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    const igB = $('integrations-ig-badge');
+    if (igB && st.ig.configured) { igB.style.color = '#4ADE80'; }
+    badgeState($('integrations-igapp-badge'), st.igApp && st.igApp.configured ? '✅ بيانات التطبيق ثابتة' : '🔴 بيانات التطبيق غير مضبوطة', st.igApp && st.igApp.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    const igAppB = $('integrations-igapp-badge');
+    if (igAppB && st.igApp && st.igApp.configured) { igAppB.style.color = '#4ADE80'; }
+    const igAppId = $('integrations-igapp-id');
+    const igAppSec = $('integrations-igapp-secret');
+    if (igAppId) igAppId.textContent = st.igApp ? (st.igApp.appId || '—') : '—';
+    if (igAppSec) igAppSec.textContent = st.igApp ? (st.igApp.secretMasked || '—') : '—';
+    const urls = $('integrations-webhook-urls');
+    if (urls) {
+      urls.innerHTML = 'واتساب: <code dir="ltr">' + esc(base + st.webhookUrls.wa) + '</code><br>انستقرام: <code dir="ltr">' + esc(base + st.webhookUrls.ig) + '</code><br>Verify Token: <code dir="ltr">' + esc(st.webhookSecret || '') + '</code>';
+    }
+  } catch (e) {
+    showToast('فشل تحميل إعدادات البوت: ' + (e.message || e), true);
+  }
+}
+
+async function saveIntegrations(e) {
+  e.preventDefault();
+  const f = $('integrations-form');
+  if (!f) return;
+  const body = {
+    waEnabled: f.waEnabled.checked,
+    waReplyEnabled: f.waReplyEnabled.checked,
+    waPhoneId: f.waPhoneId.value,
+    waTemplate: f.waTemplate.value,
+    waToken: f.waToken.value,
+    igEnabled: f.igEnabled.checked,
+    igCommentReply: f.igCommentReply.checked,
+    igDmReply: f.igDmReply.checked,
+    igUserId: f.igUserId.value,
+    igToken: f.igToken.value,
+    webhookSecret: f.webhookSecret.value,
+  };
+  try {
+    await API.saveIntegrationSettings(body);
+    showToast('تم حفظ إعدادات البوت');
+    loadIntegrations();
+  } catch (err) {
+    showToast('فشل الحفظ: ' + (err.message || err), true);
+  }
+}
+
+async function testIntegrations() {
+  try {
+    const r = await API.testIntegrations();
+    showToast('UltraMsg: ' + (r.ultramsg || '') + ' | واتساب: ' + (r.wa || '') + ' | انستقرام: ' + (r.ig || '') + ' | IG التطبيق: ' + (r.igApp || ''));
+  } catch (err) {
+    showToast('فشل الفحص: ' + (err.message || err), true);
+  }
+}
+
+async function loadConversations() {
+  const box = $('integrations-conversations');
+  if (!box) return;
+  try {
+    const list = await API.integrationConversations();
+    if (!list.length) { box.textContent = 'لا توجد محادثات بعد.'; return; }
+    box.innerHTML = list.map(c => {
+      const channel = c.channel === 'wa' ? '💬 واتساب' : '📸 انستقرام';
+      const msgs = (c.history || []).map(m => {
+        const who = m.sender === 'user' ? 'العميل' : 'البوت';
+        return '<div style="margin:3px 0;"><span style="opacity:.55">' + who + ':</span> ' + esc(m.text) + '</div>';
+      }).join('');
+      return '<div style="border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;margin-bottom:10px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;">' +
+        '<div><strong>' + channel + '</strong> — <span dir="ltr">' + esc(c.externalId) + '</span>' + (c.name ? ' (' + esc(c.name) + ')' : '') + '</div>' +
+        '<button type="button" class="btn btn-outline" onclick="clearConversation(\'' + c.id + '\')" style="padding:4px 10px;font-size:10px;">🗑️ مسح</button>' +
+        '</div><div style="font-size:11px;">' + msgs + '</div></div>';
+    }).join('');
+  } catch (err) {
+    box.textContent = 'فشل تحميل المحادثات: ' + (err.message || err);
+  }
+}
+
+async function clearConversation(id) {
+  try {
+    await API.clearIntegrationConversation(id);
+    showToast('تم مسح المحادثة');
+    loadConversations();
+  } catch (err) {
+    showToast('فشل المسح: ' + (err.message || err), true);
+  }
+}
+
+/* ── App Login Gate (الإعدادات تُفتح بكلمة مرور من التطبيق فقط) ── */
+function showAppLoginGate() {
+  const overlay = document.getElementById('app-login-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  const input = document.getElementById('app-login-password');
+  const btn = document.getElementById('app-login-btn');
+  const msg = document.getElementById('app-login-msg');
+  if (!input || !btn) return;
+  async function submit() {
+    if (msg) msg.textContent = '';
+    const pw = input.value;
+    if (!pw) { if (msg) msg.textContent = 'أدخل كلمة المرور'; return; }
+    btn.disabled = true;
+    btn.textContent = 'جارٍ الدخول…';
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (j.success) { window.location.reload(); return; }
+      if (msg) msg.textContent = j.error || 'كلمة المرور غير صحيحة';
+    } catch (e) {
+      if (msg) msg.textContent = 'تعذر الاتصال بالسيرفر';
+    }
+    btn.disabled = false;
+    btn.textContent = 'دخول';
+  }
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  setTimeout(() => input.focus(), 100);
+}
+
 /* ── Init ── */
 async function init() {
+  const auth = await API.checkAuth();
+  if (!auth.authenticated) {
+    showAppLoginGate();
+    return;
+  }
   $('settings-form')?.addEventListener('submit', saveSettings);
   $('ai-settings-form')?.addEventListener('submit', saveAISettings);
+  $('integrations-form')?.addEventListener('submit', saveIntegrations);
   $('add-product-form')?.addEventListener('submit', handleAddProduct);
   $('edit-product-form')?.addEventListener('submit', handleSaveEditProduct);
   await loadAllData();
+  checkAIStatus();
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+/* ── Desktop app self-update (window.azma exists only inside Electron) ── */
+(function initDesktopUpdater() {
+  if (!window.azma) return;
+  const btn = document.getElementById('update-btn');
+  const label = document.getElementById('update-label');
+  const state = document.getElementById('update-state');
+  if (!btn || !state) return;
+  btn.style.display = 'flex';
+
+  window.azma.onUpdateProgress((p) => {
+    if (p.phase === 'download') state.textContent = `${p.done}/${p.total}`;
+    else if (p.phase === 'done') state.textContent = 'تم التحديث';
+    else if (p.phase === 'error') state.textContent = p.error || 'خطأ';
+  });
+  window.azma.onUpdateApplied(() => {
+    state.textContent = 'جاري إعادة التحميل…';
+    setTimeout(() => location.reload(), 1200);
+  });
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    label.textContent = 'جارٍ الفحص…';
+    try {
+      const r = await window.azma.checkForUpdates();
+      if (r && r.error) {
+        state.textContent = 'تعذر الاتصال بالسيرفر';
+      } else if (r && r.updateAvailable) {
+        state.textContent = 'تم التحديث ✓';
+        label.textContent = 'إعادة التحميل…';
+      } else {
+        state.textContent = 'آخر إصدار';
+        label.textContent = 'تحقق من التحديث';
+      }
+    } catch {
+      state.textContent = 'خطأ';
+    }
+    btn.disabled = false;
+  });
+
+  window.azma.getStatus().then((s) => {
+    if (s && s.version) state.textContent = 'v' + s.version;
+  }).catch(() => {});
+})();
