@@ -1,0 +1,51 @@
+{
+  "name": "azma-settings",
+  "productName": "AZMA Settings",
+  "version": "1.0.0",
+  "description": "AZMA — تطبيق إعدادات المتجر (سطح المكتب)",
+  "author": "AZMA",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder --win",
+    "build:portable": "electron-builder --win portable",
+    "build:web": "node scripts/build-web.mjs"
+  },
+  "build": {
+    "appId": "com.azma.settings",
+    "productName": "AZMA Settings",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "web/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "AZMA Settings",
+      "artifactName": "AZMA-Settings-Setup-${version}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3"
+  }
+}
