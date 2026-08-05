@@ -5,10 +5,12 @@ function readVersion() {
   try {
     const v = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf8').trim();
     if (v) return v;
-  } catch {}
+  } catch (_e) {
+    // ignore
+  }
   try {
     return require('./package.json').version || '0.0.0';
-  } catch {
+  } catch (_e) {
     return '0.0.0';
   }
 }
