@@ -1,0 +1,15 @@
+[
+  "admin.html",
+  "hub.html",
+  "login.html",
+  "index.html",
+  "store.html",
+  "designer.html",
+  "designer_debug.html",
+  "21.html",
+  "orders.html",
+  "styles.css",
+  "manifest.json",
+  "assets/**",
+  "js/**"
+]

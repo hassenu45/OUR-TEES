@@ -7,6 +7,7 @@ const fs = require('fs');
 const { OAuth2Client } = require('google-auth-library');
 const { z } = require('zod');
 const db = require('./db.cjs');
+const { safeResolve } = require('./updates-manifest.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -175,6 +176,25 @@ app.use((req, res, next) => {
   express.static(__dirname, { fallthrough: true })(req, res, next);
 });
 app.use('/uploads', express.static(UPLOADS_DIR));
+
+// ── Updates (self-update feed for the desktop app) ──
+const { buildManifest } = require('./updates-manifest.cjs');
+const { readVersion } = require('./server-version.cjs');
+
+app.get('/updates/manifest.json', (_req, res) => {
+  try {
+    res.json(buildManifest(__dirname, readVersion()));
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to build update manifest' });
+  }
+});
+
+app.get('/updates/file/*', (req, res) => {
+  const rel = decodeURIComponent(req.params[0] || '');
+  const file = safeResolve(__dirname, rel);
+  if (!file) return res.status(404).json({ error: 'Not found' });
+  res.sendFile(file);
+});
 
 function requireAuth(req, res, next) {
   if (req.session.authenticated) return next();
