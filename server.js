@@ -7,6 +7,7 @@ const fs = require('fs');
 const { OAuth2Client } = require('google-auth-library');
 const { z } = require('zod');
 const db = require('./db.cjs');
+const { isValidPhone, canCancelOrder, composeAddress } = require('./orders-rules.cjs');
 const { safeResolve } = require('./updates-manifest.cjs');
 
 const app = express();
@@ -53,6 +54,11 @@ const orderSchema = z.object({
     .optional()
     .default('')
     .transform((s) => s.trim()),
+  paymentMethod: z.enum(['cod', 'card']).optional().default('cod'),
+  city: z.string().max(100).optional().default(''),
+  area: z.string().max(100).optional().default(''),
+  street: z.string().max(100).optional().default(''),
+  landmark: z.string().max(100).optional().default(''),
 });
 
 const settingsSchema = z.object({
@@ -134,11 +140,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// صفحة الهبوط (index.html) عامة للجميع — المتجر وغيره خلف تسجيل الدخول
-const PROTECTED_PAGES = new Set(['/store.html', '/orders.html', '/designer.html', '/designer_debug.html', '/21.html']);
+// صفحة الهبوط (index.html) عامة للجميع — المتجر خلف تسجيل الدخول
+const PROTECTED_PAGES = new Set(['/store.html']);
+// صفحات الإدارة (admin.html / hub.html / orders.html / designer.html / 21.html) متاحة فقط عبر تطبيق الديستوب — غير موجودة على الويب إطلاقاً
+const ADMIN_ONLY_PAGES = new Set([
+  '/admin.html',
+  '/hub.html',
+  '/orders.html',
+  '/designer.html',
+  '/designer_debug.html',
+  '/21.html',
+]);
 app.use((req, res, next) => {
-  // صفحة الإعدادات (admin.html / hub.html) متاحة فقط عبر تطبيق الديستوب — غير موجودة على الويب إطلاقاً
-  if (req.path === '/admin.html' || req.path === '/hub.html') {
+  if (ADMIN_ONLY_PAGES.has(req.path)) {
     return res.status(404).send('Not Found');
   }
   const p = req.path;
@@ -169,6 +183,7 @@ const ALLOWED_STATIC_EXT = new Set([
   '.woff2',
   '.obj',
   '.mtl',
+  '.exe',
 ]);
 app.use((req, res, next) => {
   const ext = path.extname(req.path).toLowerCase();
@@ -262,16 +277,20 @@ app.post('/api/auth/google', rateLimit(10, 60000), async (req, res) => {
 });
 
 // ── Settings ──
-const FALLBACK_GOOGLE_CLIENT_ID = '936102274775-9megvda475t1tral1ujoote0lvika2sk1.apps.googleusercontent.com';
+const FALLBACK_GOOGLE_CLIENT_ID = '399722296678-4a24emue51l15p1jutugm8pieh62417r.apps.googleusercontent.com';
 
 // Google Sign-In عبر النافذة المنبثقة (OAuth code flow) — أكثر موثوقية من One Tap/FedCM
 app.post('/api/auth/google-code', rateLimit(10, 60000), async (req, res) => {
   const { code } = req.body || {};
   if (!code) return res.status(400).json({ error: 'رمز الدخول مفقود' });
+  let googleClientId;
   try {
     const settings = await db.getSettings();
-    const googleClientId = settings.googleClientId || FALLBACK_GOOGLE_CLIENT_ID;
-    const client = new OAuth2Client(googleClientId);
+    googleClientId = settings.googleClientId || FALLBACK_GOOGLE_CLIENT_ID;
+    const client = new OAuth2Client({
+      clientId: googleClientId,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || undefined,
+    });
     const { tokens } = await client.getToken({ code, redirect_uri: 'postmessage' });
     client.setCredentials(tokens);
     const ticket = await client.verifyIdToken({ idToken: tokens.id_token, audience: googleClientId });
@@ -283,7 +302,11 @@ app.post('/api/auth/google-code', rateLimit(10, 60000), async (req, res) => {
     req.session.userPicture = payload.picture;
     res.json({ success: true, email: payload.email, name: payload.name });
   } catch (err) {
-    console.error('google-code error:', err.message);
+    const detail =
+      err && err.response && err.response.data
+        ? JSON.stringify(err.response.data)
+        : (err && err.message) || String(err);
+    console.error('google-code error:', detail, '| clientId:', googleClientId);
     res.status(401).json({ error: 'رمز الدخول غير صالح' });
   }
 });
@@ -647,17 +670,32 @@ app.post('/api/orders', rateLimit(15, 60000), async (req, res) => {
     if (!product) return res.status(404).json({ error: 'المنتج غير موجود' });
     if (product.soldOut) return res.status(400).json({ error: 'المنتج نفد من المخزون' });
 
+    const { paymentMethod, ...rest } = data;
+    const address =
+      data.address ||
+      composeAddress({ city: data.city, area: data.area, street: data.street, landmark: data.landmark });
+
     const order = await db.createOrder({
-      productId: data.productId,
+      productId: rest.productId,
       productName: product.name,
       productPrice: product.price,
-      type: data.type,
-      size: data.size,
-      customerName: data.customerName,
-      phone: data.phone,
-      address: data.address || '',
-      notes: data.notes || '',
+      type: rest.type,
+      size: rest.size,
+      customerName: rest.customerName,
+      phone: rest.phone,
+      address,
+      notes: rest.notes,
       status: 'new',
+      paymentMethod,
+    });
+    await db.upsertCustomer({
+      phone: rest.phone,
+      name: rest.customerName,
+      city: data.city,
+      area: data.area,
+      street: data.street,
+      landmark: data.landmark,
+      notes: rest.notes,
     });
     notifyOrder(order)
       .then((r) => {
@@ -688,6 +726,33 @@ app.delete('/api/orders/:id', requireAuth, async (req, res) => {
   } catch (e) {
     if (e.code === 'P2025') return res.status(404).json({ error: 'الطلب غير موجود' });
     res.status(500).json({ error: 'خطأ في حذف الطلب' });
+  }
+});
+
+// ── Customer self-service (my-orders page) ──
+app.get('/api/customers/:phone', rateLimit(20, 60000), async (req, res) => {
+  try {
+    const phone = String(req.params.phone || '').trim();
+    if (!isValidPhone(phone)) return res.status(400).json({ error: 'رقم هاتف غير صالح' });
+    const [customer, orders] = await Promise.all([db.getCustomerByPhone(phone), db.getOrdersByPhone(phone)]);
+    res.json({ customer, orders });
+  } catch (e) {
+    console.error('get customer error:', e.message);
+    res.status(500).json({ error: 'خطأ في قراءة بيانات العميل' });
+  }
+});
+
+app.post('/api/orders/:id/cancel', rateLimit(20, 60000), async (req, res) => {
+  try {
+    const phone = String((req.body && req.body.phone) || '').trim();
+    const order = await db.getOrderById(req.params.id);
+    const check = canCancelOrder(order, phone);
+    if (!check.ok) return res.status(400).json({ error: check.error });
+    const updated = await db.updateOrderStatus(req.params.id, 'cancelled');
+    res.json({ ok: true, order: updated });
+  } catch (e) {
+    console.error('cancel order error:', e.message);
+    res.status(500).json({ error: 'خطأ في إلغاء الطلب' });
   }
 });
 
