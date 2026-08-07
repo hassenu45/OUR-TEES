@@ -8,7 +8,15 @@ module.exports = [
     ignores: ['node_modules/**', 'dist/**', 'generated/**', 'prisma/**', '**/*.mjs', 'eslint.config.js'],
   },
   {
-    files: ['server.js', 'db.cjs', 'ai.cjs', 'integrations.cjs', 'telegram-bot.js', 'server-version.cjs', 'desktop/**/*.js'],
+    files: [
+      'server.js',
+      'db.cjs',
+      'ai.cjs',
+      'integrations.cjs',
+      'telegram-bot.js',
+      'server-version.cjs',
+      'desktop/**/*.js',
+    ],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',
@@ -98,6 +106,10 @@ module.exports = [
         Video: 'readonly',
         localStorage: 'readonly',
         sessionStorage: 'readonly',
+        IntersectionObserver: 'readonly',
+        API: 'readonly',
+        DB: 'readonly',
+        module: 'readonly',
         IndexDB: 'readonly',
         IDBRequest: 'readonly',
         IDBDatabase: 'readonly',
