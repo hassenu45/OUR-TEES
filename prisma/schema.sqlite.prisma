@@ -1,5 +1,6 @@
-// AZMA Database Schema
-// PostgreSQL for production, SQLite for local development
+// AZMA Database Schema — LOCAL SQLite variant
+// Generated locally with: npx prisma generate --schema prisma/schema.sqlite.prisma
+// Railway/Production uses prisma/schema.prisma (postgresql) and regenerates at build.
 
 generator client {
   provider = "prisma-client"
@@ -7,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 // ── Settings ──
