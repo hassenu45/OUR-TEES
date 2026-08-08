@@ -123,7 +123,6 @@
     .mo-empty{text-align:center;padding:48px 16px;color:var(--tees-muted);font-size:13px}
     .mo-empty-icon{display:flex;justify-content:center;margin-bottom:14px}
     .mo-empty a{color:var(--tees-yellow)}
-    .mo-customer-name{font-weight:400;font-size:12px;color:var(--tees-muted)}
 
     /* ── Overlay ── */
     .mo-overlay{position:fixed;inset:0;background:rgba(5,5,5,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:50}
@@ -221,13 +220,8 @@
   </div>
 
   <div class="mo-wrap" id="panel-orders" style="display:none;">
-    <div class="mo-card" id="mo-phone-panel">
-      <h3 class="mo-card-title">شوف طلباتك</h3>
-      <div class="mo-field"><label>رقم الهاتف</label><input id="mo-lookup-phone" placeholder="07XXXXXXXX" dir="ltr"></div>
-      <button class="mo-btn" onclick="lookupOrders()">عرض طلباتي</button>
-    </div>
-    <div class="mo-card" id="mo-orders-panel" style="display:none;">
-      <h3 class="mo-card-title">طلباتي <span id="mo-customer-name" class="mo-customer-name"></span></h3>
+    <div class="mo-card">
+      <h3 class="mo-card-title">منتجاتك المختارة</h3>
       <div id="mo-orders-list"></div>
     </div>
   </div>

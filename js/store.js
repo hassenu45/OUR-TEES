@@ -1,10 +1,10 @@
-/* Our Tees - Store Controller
+/* AZMA - Store Controller
    Features: Cart, Search, Filter, AI Chat, Gallery */
 
 let settings = {};
 let products = [];
 let selectedProduct = null;
-let cart = JSON.parse(localStorage.getItem('ourtees_cart') || '[]');
+let cart = (() => { try { return JSON.parse(localStorage.getItem('azma_cart') || '[]'); } catch (e) { return []; } })();
 let chatHistory = [];
 let currentGalleryIndex = 0;
 let galleryImages = [];
@@ -14,7 +14,7 @@ function $(id) { return document.getElementById(id); }
 
 /* ── Cart ── */
 function saveCart() {
-  localStorage.setItem('ourtees_cart', JSON.stringify(cart));
+  localStorage.setItem('azma_cart', JSON.stringify(cart));
   updateCartUI();
 }
 
@@ -63,10 +63,16 @@ function toggleCartDrawer() {
   const drawer = $('cart-drawer');
   const overlay = $('cart-overlay');
   if (!drawer) return;
-  const isOpen = !drawer.classList.contains('hidden');
-  drawer.classList.toggle('hidden', isOpen);
-  if (overlay) overlay.classList.toggle('hidden', isOpen);
-  if (!isOpen) renderCartItems();
+  if (drawer.classList.contains('open')) {
+    drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  } else {
+    drawer.classList.add('open');
+    if (overlay) overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderCartItems();
+  }
 }
 
 function renderCartItems() {
@@ -79,7 +85,7 @@ function renderCartItems() {
 
   if (!cart.length) {
     container.innerHTML = '<p style="text-align:center;opacity:0.7;padding:var(--space-6);font-weight:bold;">السلة فارغة 🛒</p>';
-    if (totalEl) totalEl.textContent = '0 ر.س';
+    if (totalEl) totalEl.textContent = fmtLocalPrice(0);
     if (statusEl) statusEl.textContent = '0 منتج';
     if (checkoutBtn) checkoutBtn.style.display = 'none';
     return;
@@ -94,7 +100,7 @@ function renderCartItems() {
       <div style="flex:1;min-width:0;">
         <div style="font-weight:bold;font-size:var(--text-sm);">${item.name}</div>
         <div style="font-size:10px;opacity:0.7;">${item.size}${item.type ? ' · ' + item.type : ''}</div>
-        <div style="font-size:var(--text-sm);color:var(--color-accent);font-weight:bold;">${formatPrice(item.price * item.qty, settings.currencySymbol)}</div>
+        <div style="font-size:var(--text-sm);color:var(--color-accent);font-weight:bold;">${fmtLocalPrice(item.price * item.qty)}</div>
       </div>
       <div style="display:flex;align-items:center;gap:var(--space-1);">
         <button class="btn btn-sm" style="padding:2px 8px;font-size:14px;" onclick="updateCartQty('${item.key}', -1)">−</button>
@@ -105,7 +111,7 @@ function renderCartItems() {
     </div>
   `).join('');
 
-  if (totalEl) totalEl.textContent = formatPrice(getCartTotal(), settings.currencySymbol);
+  if (totalEl) totalEl.textContent = fmtLocalPrice(getCartTotal());
 }
 
 function updateCartUI() {
@@ -158,7 +164,7 @@ async function initStore() {
 }
 
 function applySettings() {
-  document.title = `${settings.siteName || 'Our Tees'} — Store`;
+  document.title = `${settings.siteName || 'AZMA'} — Store`;
   const heroBadge = $('hero-badge');
   const heroDrop = $('hero-drop');
   const heroTitle = $('hero-title');
@@ -186,39 +192,90 @@ function renderProducts(list) {
   if (!grid) return;
 
   if (!data.length) {
-    grid.innerHTML = '<p class="empty-state">لا توجد منتجات متطابقة مع البحث 🔍</p>';
-    const count = $('product-count');
-    if (count) count.textContent = `0 PRODUCTS`;
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--tees-muted);font-weight:700;">لا توجد منتجات متطابقة مع البحث 🔍</p>';
     return;
   }
 
+  const activeCat = window.activeFilter || 'all';
+
   grid.innerHTML = data.map((p, idx) => {
-    const badgeCls = p.badge === 'NEW' ? 'badge-accent' : p.badge === 'SOLD OUT' ? 'badge-muted' : 'badge-dark';
-    const badge = p.badge ? `<span class="badge ${badgeCls}" style="position:absolute;top:12px;left:12px;z-index:2;">${escapeHtml(p.badge)}</span>` : '';
+    const badgeHtml = p.badge
+      ? `<div class="ot-card-badge ${p.badge === 'NEW' ? 'badge-new' : p.badge === 'BESTSELLER' ? 'badge-best' : 'badge-sold'}">${escapeHtml(p.badge)}</div>`
+      : '';
     const imgSrc = (p.image || (p.images && p.images[0])) || '';
+    const sizes = (p.sizes && p.sizes.length) ? p.sizes : (settings.sizes || ['S','M','L','XL']);
+    const soldCls = p.soldOut ? ' sold-out' : '';
+    const catAttr = p.types && p.types.length ? `data-cat="${escapeHtml(p.types[0])}"` : '';
+    const visibility = (activeCat !== 'all' && p.types && p.types.length && !p.types.some(t => t === activeCat || tMap(t) === activeCat))
+      ? 'style="display:none"' : '';
     return `
-      <article class="product-card${p.soldOut ? ' sold-out' : ''}" data-id="${p.id}" style="animation-delay:${idx * 0.1}s;">
-        <div class="product-image-wrap">
-          ${badge}
-          <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name || 'Our Tee')}" loading="lazy">
+      <div class="ot-card${soldCls}" data-id="${p.id}" ${catAttr} ${visibility}>
+        ${badgeHtml}
+        <div class="ot-card-img">
+          ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name || 'Our Tee')}" loading="lazy">` : `<div class="ot-tee-mock" style="background:var(--tees-card);color:var(--tees-yellow)">OT</div>`}
+          ${p.soldOut ? '' : `
+          <div class="ot-card-actions">
+            <button class="ot-card-act" data-act="view" data-id="${p.id}" aria-label="عرض سريع" title="عرض سريع">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="ot-card-act" data-act="cart" data-id="${p.id}" aria-label="أضف إلى السلة" title="أضف إلى السلة">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </button>
+          </div>`}
         </div>
-        <h3 class="product-title">${escapeHtml(p.name || '')}</h3>
-        <p class="product-desc">${escapeHtml(p.description || '')}</p>
-        <p class="product-price">${formatPrice(p.price, settings.currencySymbol || 'ر.س')}</p>
-        <button class="btn order-btn" data-id="${p.id}" ${p.soldOut ? 'disabled' : ''}>
-          ${p.soldOut ? 'SOLD OUT' : 'ORDER NOW'}
-        </button>
-      </article>`;
+        <div class="ot-card-info">
+          <div class="ot-card-type">${p.types && p.types[0] ? escapeHtml(p.types[0]) : ''}</div>
+          <div class="ot-card-name">${escapeHtml(p.name || '')}</div>
+          <div class="ot-card-desc" style="font-size:12px;color:var(--tees-muted);margin-bottom:4px;">${escapeHtml(p.description || '')}</div>
+          <div class="ot-card-price-row">
+            <span class="ot-card-price">${fmtLocalPrice(p.price)}</span>
+            <div class="ot-card-sizes">
+              ${sizes.map(s => `<span class="ot-size">${escapeHtml(s)}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+        ${p.soldOut ? '' : `<button class="ot-card-order" data-id="${p.id}">ORDER NOW →</button>`}
+      </div>`;
   }).join('');
 
-  grid.querySelectorAll('.product-card').forEach(card => {
+  grid.querySelectorAll('.ot-card').forEach(card => {
     card.addEventListener('click', e => {
-      if (e.target.closest('.order-btn')) return;
+      if (e.target.closest('.ot-card-order')) return;
       const id = card.dataset.id;
       const p = products.find(x => x.id === id);
       if (p && !p.soldOut) openOrderModal(id);
     });
   });
+
+  grid.querySelectorAll('.ot-card-order').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (id) openOrderModal(id);
+    });
+  });
+
+  grid.querySelectorAll('.ot-card-act').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const p = products.find(x => x.id === id);
+      if (!p || p.soldOut) return;
+      if (btn.dataset.act === 'cart') {
+        const size = (p.sizes && p.sizes[0]) || (settings.sizes && settings.sizes[0]) || 'M';
+        const type = (p.types && p.types[0]) || '';
+        addToCart(p, size, type, 1);
+        toggleCartDrawer();
+      } else {
+        openOrderModal(id);
+      }
+    });
+  });
+}
+
+function tMap(type) {
+  const map = { 'قطن كلاسيك': 'cotton', 'فينتاج': 'vintage', 'بريميوم': 'premium', 'oversized': 'oversized' };
+  return map[type] || type;
 }
 
 /* ── Search & Filter ── */
@@ -263,7 +320,9 @@ function openOrderModal(productId) {
 
   $('modal-product-name').textContent = selectedProduct.name || '';
   $('modal-product-desc').textContent = selectedProduct.description || '';
-  $('modal-product-price').textContent = formatPrice(selectedProduct.price, settings.currencySymbol || 'ر.س');
+  $('modal-product-price').textContent = fmtLocalPrice(selectedProduct.price);
+  const addPrice = $('add-cart-price');
+  if (addPrice) addPrice.textContent = fmtLocalPrice(selectedProduct.price);
 
   // Type dropdown
   const typeSelect = $('order-type');
@@ -285,8 +344,10 @@ function openOrderModal(productId) {
   const form = $('order-form');
   if (form) form.reset();
   if (hiddenSize) hiddenSize.value = availableSizes[0] || 'L';
-  $('order-error').textContent = '';
-  $('order-success').classList.add('hidden');
+  const orderError = $('order-error');
+  if (orderError) orderError.textContent = '';
+  const orderSuccess = $('order-success');
+  if (orderSuccess) orderSuccess.classList.add('hidden');
   if (form) form.classList.remove('hidden');
 
   const modal = $('order-modal');
@@ -400,34 +461,17 @@ function sendQuickChip(text) {
 
 /* ── AI Chat (Tez) ── */
 function initTezChat() {
-  const sparkleBtn = document.querySelector('.sparkle-button');
   const drawer = $('tez-drawer');
   const overlay = $('tez-overlay');
-  const closeBtn = $('tez-close-btn');
   const form = $('tez-chat-form');
   const headerName = $('tez-name-header');
 
   if (headerName && settings.aiName) headerName.textContent = `${settings.aiName} AI`;
 
-  sparkleBtn?.addEventListener('click', e => {
-    e.stopPropagation();
-    const hidden = drawer?.classList.contains('hidden');
-    if (hidden) {
-      drawer?.classList.remove('hidden');
-      if (!chatHistory.length) {
-        const welcome = settings.aiWelcome || `أهلاً بك! أنا ${settings.aiName || 'Tez'}، المساعد الذكي. كيف يمكنني مساعدتك اليوم؟`;
-        addChatMsg(welcome, 'ai');
-      }
-    } else {
-      drawer?.classList.add('hidden');
-    }
-  });
-
-  closeBtn?.addEventListener('click', () => drawer?.classList.add('hidden'));
-
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && drawer && !drawer.classList.contains('hidden')) {
       drawer.classList.add('hidden');
+      overlay?.classList.add('hidden');
     }
   });
 
@@ -441,6 +485,25 @@ function initTezChat() {
   });
 }
 
+/* ── العمر (حتى يوصيك Tez بالمقاس الصحيح) ── */
+function getSavedAge() {
+  try { return localStorage.getItem('azma_age') || ''; } catch (e) { return ''; }
+}
+
+function captureAgeFromText(text) {
+  if (getSavedAge() || !text) return null;
+  const pure = text.trim().match(/^(\d{1,2})$/);
+  const phrased = text.match(/(?:عمري|عندي|أنا|انا)\s*(\d{1,2})\s*(?:سنة|سنين|عام|سنوات)?/i);
+  const numStr = pure ? pure[1] : (phrased ? phrased[1] : null);
+  if (!numStr) return null;
+  const n = parseInt(numStr, 10);
+  if (n >= 8 && n <= 99) {
+    try { localStorage.setItem('azma_age', String(n)); } catch (e) {}
+    return n;
+  }
+  return null;
+}
+
 async function sendChatMsg(text) {
   addChatMsg(text, 'user');
   chatHistory.push({ sender: 'user', text });
@@ -450,17 +513,45 @@ async function sendChatMsg(text) {
   if (sendBtn) sendBtn.disabled = true;
 
   try {
-    const res = await API.sendChat(text, chatHistory);
+    captureAgeFromText(text);
+    const userName = (typeof currentUser !== 'undefined' && currentUser && currentUser.name)
+      ? currentUser.name : '';
+    const userEmail = (typeof currentUser !== 'undefined' && currentUser && currentUser.email)
+      ? currentUser.email : '';
+    const userAge = getSavedAge();
+    const res = await API.sendChat(text, chatHistory, { name: userName, email: userEmail, age: userAge });
     removeChatMsg(typingId);
     const reply = res.reply || 'عفواً، لم أستطع فهم ذلك.';
     addChatMsg(reply, 'ai');
     chatHistory.push({ sender: 'ai', text: reply });
+    const suggestions = (res.structured && res.structured.suggestions) || [];
+    if (Array.isArray(suggestions) && suggestions.length) renderSuggestionChips(suggestions);
   } catch {
     removeChatMsg(typingId);
     addChatMsg('عذراً، حدث خطأ. حاول مرة أخرى!', 'ai');
   } finally {
     if (sendBtn) sendBtn.disabled = false;
   }
+}
+
+function renderSuggestionChips(suggestions) {
+  const container = $('tez-messages');
+  if (!container || !suggestions.length) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'tez-suggestion-row';
+  suggestions.slice(0, 4).forEach(q => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'tez-chip';
+    chip.textContent = q;
+    chip.addEventListener('click', () => {
+      if (typeof sendQuickChip === 'function') sendQuickChip(q);
+    });
+    wrap.appendChild(chip);
+  });
+  container.appendChild(wrap);
+  const body = $('tez-chat-body');
+  if (body) body.scrollTop = body.scrollHeight;
 }
 
 function addChatMsg(text, sender, isTyping = false) {
@@ -514,13 +605,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Theme
   (function() {
     const toggle = $('theme-toggle');
-    const body = document.body;
     if (!toggle) return;
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark') { body.classList.add('dark'); toggle.checked = true; }
+    const saved = localStorage.getItem('azma_theme');
+    if (saved === 'light') { document.body.classList.add('light'); toggle.checked = true; }
     toggle.addEventListener('change', function() {
-      body.classList.toggle('dark', this.checked);
-      localStorage.setItem('theme', this.checked ? 'dark' : 'light');
+      document.body.classList.toggle('light', this.checked);
+      localStorage.setItem('azma_theme', this.checked ? 'light' : 'dark');
     });
   })();
 });
