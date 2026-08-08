@@ -32,6 +32,7 @@
     .mo-logo span{color:var(--tees-yellow)}
     .mo-back{color:var(--tees-muted);text-decoration:none;font-size:12px;border:1px solid rgba(245,200,66,.25);padding:8px 16px;border-radius:100px;transition:all .3s var(--tees-ease)}
     .mo-back:hover{color:var(--tees-black);background:var(--tees-yellow);border-color:var(--tees-yellow)}
+    .mo-header-actions{display:flex;align-items:center;gap:12px;position:relative}
 
     /* ── Hero ── */
     .mo-hero{position:relative;text-align:center;padding:56px 20px 10px}
@@ -41,12 +42,21 @@
     .mo-title-line{width:96px;height:1px;background:var(--tees-gold-line);margin:0 auto;animation:fadeUp .6s .15s both}
     .mo-sub{color:var(--tees-muted);font-size:13px;margin:14px auto 0;max-width:420px;animation:fadeUp .6s .2s both}
 
-    /* ── Tabs ── */
-    .mo-tabs-wrap{max-width:720px;margin:34px auto 0;padding:0 16px;animation:fadeUp .6s .25s both}
-    .mo-tabs{display:flex;gap:6px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);padding:5px;border-radius:14px}
-    .mo-tab{flex:1;text-align:center;padding:12px;border:none;border-radius:10px;background:transparent;color:var(--tees-muted);cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .35s var(--tees-ease)}
-    .mo-tab.active{background:rgba(245,200,66,.12);color:var(--tees-yellow);box-shadow:inset 0 0 0 1px rgba(245,200,66,.35)}
-    .mo-tab:focus-visible{outline:2px solid var(--tees-yellow);outline-offset:2px}
+    /* ── Hamburger menu ── */
+    .mo-toggle-checkbox{display:none}
+    .mo-hamburger{width:38px;height:38px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;cursor:pointer;border:1px solid rgba(245,200,66,.25);border-radius:50%;background:rgba(255,255,255,.03);transition:border-color .3s var(--tees-ease),box-shadow .3s var(--tees-ease)}
+    .mo-hamburger:hover{border-color:rgba(245,200,66,.6);box-shadow:0 0 18px rgba(245,200,66,.12)}
+    .mo-hamburger .mo-bar{width:16px;height:2px;background:var(--tees-yellow);border-radius:10px;position:relative;transition:transform .3s ease,opacity .3s ease}
+    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(2){transform:translate(0,7px);opacity:0;transition-delay:.3s}
+    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(3){transform:translate(0,-7px);transition-delay:0s}
+    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(1){transform:rotate(-45deg) scale(.8);transition-delay:.6s}
+    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(3){transform:rotate(45deg) scale(.8);transition-delay:.6s}
+    .mo-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:220px;display:none;flex-direction:column;gap:4px;padding:8px;background:rgba(22,22,22,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(245,200,66,.18);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.5);transform-origin:top;animation:menuIn .3s var(--tees-ease)}
+    .mo-toggle-checkbox:checked ~ .mo-menu{display:flex}
+    .mo-menu-item{padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;color:var(--tees-muted);cursor:pointer;font-family:inherit;transition:all .3s var(--tees-ease)}
+    .mo-menu-item:hover{background:rgba(255,255,255,.04);color:var(--tees-white)}
+    .mo-menu-item.active{background:rgba(245,200,66,.12);color:var(--tees-yellow);box-shadow:inset 0 0 0 1px rgba(245,200,66,.35)}
+    @keyframes menuIn{from{opacity:0;transform:scaleY(.85) translateY(-6px)}to{opacity:1;transform:none}}
 
     /* ── Wrap & Cards ── */
     .mo-wrap{max-width:720px;margin:18px auto 72px;padding:0 16px;display:grid;gap:16px;animation:tabIn .4s var(--tees-ease)}
@@ -140,7 +150,19 @@
 <body>
   <header class="mo-header">
     <div class="mo-logo">OUR <span>TEES</span></div>
-    <a class="mo-back" href="store.html">→ العودة للمتجر</a>
+    <div class="mo-header-actions">
+      <a class="mo-back" href="store.html">→ العودة للمتجر</a>
+      <input type="checkbox" id="mo-toggle" class="mo-toggle-checkbox" />
+      <label class="mo-hamburger" for="mo-toggle">
+        <div class="mo-bar"></div>
+        <div class="mo-bar"></div>
+        <div class="mo-bar"></div>
+      </label>
+      <nav class="mo-menu">
+        <label class="mo-menu-item active" id="tab-checkout" for="mo-toggle" onclick="switchTab('checkout')">🛒 إتمام الطلب</label>
+        <label class="mo-menu-item" id="tab-orders" for="mo-toggle" onclick="switchTab('orders')">📦 طلباتي</label>
+      </nav>
+    </div>
   </header>
 
   <div class="mo-hero">
@@ -148,13 +170,6 @@
     <h1 class="mo-title">طلباتي</h1>
     <div class="mo-title-line"></div>
     <p class="mo-sub">تابع طلباتك، أعد الطلب بعنوانك المحفوظ، وأكمل الشراء بكل سهولة</p>
-  </div>
-
-  <div class="mo-tabs-wrap">
-    <div class="mo-tabs">
-      <button class="mo-tab active" id="tab-checkout" onclick="switchTab('checkout')">🛒 إتمام الطلب</button>
-      <button class="mo-tab" id="tab-orders" onclick="switchTab('orders')">📦 طلباتي</button>
-    </div>
   </div>
 
   <div class="mo-wrap" id="panel-checkout">
