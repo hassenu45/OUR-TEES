@@ -273,14 +273,16 @@ function renderOrdersList() {
     return;
   }
   // Use table layout
-  let html = '<div class="table-wrap"><table><thead><tr><th>العميل</th><th>الهاتف</th><th>المنتج</th><th>المقاس</th><th>السعر</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>';
+  let html = '<div class="table-wrap"><table><thead><tr><th>العميل/المنتج</th><th>الهاتف</th><th>المقاس</th><th>السعر</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>';
   filtered.forEach(o => {
     const nextStatus = STATUS_NEXT[o.status] || 'completed';
     const nextLabel = o.status === 'completed' ? 'إعادة' : o.status === 'cancelled' ? 'إعادة' : 'تسليم';
     html += `<tr>
-      <td><strong>${esc(o.customerName)}</strong></td>
+      <td>
+        <strong>${esc(o.customerName)}</strong>
+        <div style="font-size:11px;color:rgba(250,250,249,.4);">${esc(o.productName)} ${o.paymentMethod === 'card' ? '<span class="badge" style="background:rgba(96,165,250,.15);color:#93C5FD;font-size:9px;">💳 إلكتروني</span>' : '<span class="badge" style="background:rgba(74,222,128,.12);color:#4ADE80;font-size:9px;">💵 كاش</span>'}</div>
+      </td>
       <td dir="ltr">${esc(o.phone)}</td>
-      <td>${esc(o.productName)}</td>
       <td>${esc(o.size)}</td>
       <td style="font-family:'Cormorant';font-weight:700;color:#A16207;">${parseFloat(o.productPrice).toFixed(2)} ${appState.settings.currencySymbol||'ر.س'}</td>
       <td style="font-size:11px;color:rgba(250,250,249,0.3);">${new Date(o.createdAt).toLocaleDateString('ar-SA')}</td>
