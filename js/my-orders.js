@@ -101,7 +101,22 @@ async function submitOrderFlow() {
           paymentMethod, city, area: $('mo-area').value.trim(), street: $('mo-street').value.trim(), landmark: $('mo-landmark').value.trim(),
         });
       } else if (typeof DB !== 'undefined' && DB.createOrder) {
-        DB.createOrder({ ...item, customerName: name, phone, address, notes: [notes, qtyNote].filter(Boolean).join(' | '), paymentMethod, city, area: $('mo-area').value.trim(), street: $('mo-street').value.trim(), landmark: $('mo-landmark').value.trim() });
+        DB.createOrder({
+          productId: item.id,
+          productName: item.name,
+          productPrice: item.price,
+          type: item.type || '',
+          size: item.size || '',
+          customerName: name,
+          phone,
+          address,
+          notes: [notes, qtyNote].filter(Boolean).join(' | '),
+          paymentMethod,
+          city: $('mo-city').value.trim(),
+          area: $('mo-area').value.trim(),
+          street: $('mo-street').value.trim(),
+          landmark: $('mo-landmark').value.trim(),
+        });
       }
     }
     cart = [];
