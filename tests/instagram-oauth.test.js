@@ -9,6 +9,7 @@ import {
   subscribeIgWebhook,
   metaErrorMessage,
 } from '../instagram-oauth.cjs';
+import { createRouter } from '../integrations.cjs';
 
 function fakeFetch(responder) {
   return async (url) => ({
@@ -106,5 +107,49 @@ describe('instagram-oauth helpers', () => {
   it('metaErrorMessage maps code 101 to Arabic hint', () => {
     expect(metaErrorMessage({ error: { code: 101, message: 'x' } })).toContain('Live');
     expect(metaErrorMessage({ error: { code: 999, message: 'boom' } })).toContain('boom');
+  });
+});
+
+function makeReqRes() {
+  const session = {};
+  const req = { session, query: {}, protocol: 'http', get: (h) => (h === 'host' ? 'azma.com' : undefined) };
+  let redirected = null;
+  const res = {
+    redirect: (u) => {
+      redirected = u;
+    },
+    status: () => res,
+    sendStatus: () => res,
+  };
+  return { req, res, getRedirect: () => redirected };
+}
+
+function findRouteHandler(router, path) {
+  for (const layer of router.stack) {
+    if (layer.route && layer.route.path === path) return layer.route.stack[0].handle;
+  }
+  return null;
+}
+
+describe('instagram connect routes', () => {
+  it('connect route redirects to Facebook dialog with state in session', async () => {
+    const router = createRouter(() => {});
+    const hit = findRouteHandler(router, '/instagram/connect');
+    expect(hit).toBeDefined();
+    const { req, res, getRedirect } = makeReqRes();
+    hit(req, res);
+    expect(getRedirect()).toContain('https://www.facebook.com/v21.0/dialog/oauth');
+    expect(req.session.igOAuthState).toBeTruthy();
+  });
+
+  it('callback with wrong state redirects to admin error', async () => {
+    const router = createRouter(() => {});
+    const hit = findRouteHandler(router, '/instagram/callback');
+    expect(hit).toBeDefined();
+    const { req, res, getRedirect } = makeReqRes();
+    req.session.igOAuthState = 'expected-state';
+    req.query = { state: 'wrong-state', code: 'CODE' };
+    await hit(req, res);
+    expect(getRedirect()).toContain('/admin.html?ig=error');
   });
 });
