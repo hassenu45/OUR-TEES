@@ -70,6 +70,9 @@
     .mo-field input,.mo-field textarea{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--tees-white);font-size:13px;font-family:inherit;transition:border-color .3s var(--tees-ease),box-shadow .3s var(--tees-ease)}
     .mo-field input:focus,.mo-field textarea:focus{outline:none;border-color:rgba(245,200,66,.6);box-shadow:0 0 0 3px rgba(245,200,66,.12)}
     .mo-field textarea{resize:vertical;min-height:64px}
+    .mo-fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .mo-fields-grid .mo-field{margin-bottom:0}
+    .mo-fields-grid .mo-span2{grid-column:1/-1}
 
     /* ── Payment ── */
     .mo-pay-title{margin:18px 0 12px}
@@ -141,6 +144,7 @@
 
     @media (max-width:600px){
       .mo-pay{grid-template-columns:1fr}
+      .mo-fields-grid{grid-template-columns:1fr}
       .mo-title{font-size:36px}
       .mo-header{padding:14px 18px}
       .mo-card{padding:18px}
@@ -183,13 +187,15 @@
     </div>
     <div class="mo-card">
       <h3 class="mo-card-title">معلومات التوصيل</h3>
-      <div class="mo-field"><label>الاسم الكامل *</label><input id="mo-name" placeholder="محمد أحمد"></div>
-      <div class="mo-field"><label>رقم الهاتف *</label><input id="mo-phone" placeholder="07XXXXXXXX" dir="ltr"></div>
-      <div class="mo-field"><label>المدينة *</label><input id="mo-city" placeholder="عمّان"></div>
-      <div class="mo-field"><label>الحي / المنطقة</label><input id="mo-area" placeholder="الصويفية"></div>
-      <div class="mo-field"><label>الشارع</label><input id="mo-street" placeholder="شارع المدينة"></div>
-      <div class="mo-field"><label>معلم قريب (اختياري)</label><input id="mo-landmark" placeholder="بجانب المسجد"></div>
-      <div class="mo-field"><label>ملاحظات (اختياري)</label><textarea id="mo-notes" rows="2" placeholder="أي تفاصيل إضافية..."></textarea></div>
+      <div class="mo-fields-grid">
+        <div class="mo-field"><label>الاسم الكامل *</label><input id="mo-name" placeholder="محمد أحمد"></div>
+        <div class="mo-field"><label>رقم الهاتف *</label><input id="mo-phone" placeholder="07XXXXXXXX" dir="ltr"></div>
+        <div class="mo-field"><label>المدينة *</label><input id="mo-city" placeholder="عمّان"></div>
+        <div class="mo-field"><label>الحي / المنطقة</label><input id="mo-area" placeholder="الصويفية"></div>
+        <div class="mo-field"><label>الشارع</label><input id="mo-street" placeholder="شارع المدينة"></div>
+        <div class="mo-field"><label>معلم قريب (اختياري)</label><input id="mo-landmark" placeholder="بجانب المسجد"></div>
+        <div class="mo-field mo-span2"><label>ملاحظات (اختياري)</label><textarea id="mo-notes" rows="2" placeholder="أي تفاصيل إضافية..."></textarea></div>
+      </div>
       <h3 class="mo-card-title mo-pay-title">طريقة الدفع</h3>
       <div class="mo-pay">
         <div class="mo-pay-opt selected" id="pay-cod" onclick="pickPayment('cod')">
