@@ -1,43 +1,132 @@
-/* Our Tees - API Wrapper (Local Mode, No Server Needed)
-   All operations go through DB (localStorage).
-   This file keeps the same interface so admin.js / store.js need no changes. */
+/* AZMA - API Wrapper
+   Server Mode: calls the Express server (/api/...) when the page is served by server.js.
+   Local Mode: falls back to DB (localStorage) so the site still works without a server. */
+
+let _serverMode = null;
+let _serverCheck = null;
+
+function isServerMode() {
+  if (_serverMode !== null) return Promise.resolve(_serverMode);
+  if (typeof fetch !== 'function' || location.protocol === 'file:') {
+    _serverMode = false;
+    return Promise.resolve(false);
+  }
+  if (!_serverCheck) {
+    _serverCheck = fetch('/api/settings', { method: 'GET', headers: { Accept: 'application/json' } })
+      .then(r => {
+        const ct = (r.headers.get('content-type') || '').toLowerCase();
+        _serverMode = r.ok && ct.includes('application/json');
+        return _serverMode;
+      })
+      .catch(() => { _serverMode = false; return false; });
+  }
+  return _serverCheck;
+}
+
+/* Fetch helper: throws with the server's error message when not ok */
+async function serverFetch(url, options) {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    let msg = 'خطأ في الخادم';
+    try {
+      const j = await res.json();
+      if (j && j.error) msg = typeof j.error === 'string' ? j.error : 'خطأ في الخادم';
+    } catch {}
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+async function fallbackTo(fn, fallback) {
+  try {
+    if (await isServerMode()) return await fn();
+  } catch (e) {
+    if (e && (e.status !== undefined || e instanceof TypeError)) throw e;
+  }
+  return fallback();
+}
 
 const API = {
   /* ── Settings ── */
   async getSettings() {
-    return DB.getSettings();
+    return fallbackTo(
+      () => serverFetch('/api/settings'),
+      () => DB.getSettings()
+    );
   },
 
   async getAdminSettings() {
-    return DB.getAdminSettings();
+    return fallbackTo(
+      () => serverFetch('/api/settings/admin'),
+      () => DB.getAdminSettings()
+    );
   },
 
   async updateSettings(data) {
-    return DB.updateSettings(data);
+    return fallbackTo(
+      () => serverFetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
+      () => DB.updateSettings(data)
+    );
   },
 
   /* ── Products ── */
   async getProducts() {
-    return DB.getProducts();
+    return fallbackTo(
+      () => serverFetch('/api/products'),
+      () => DB.getProducts()
+    );
   },
 
   async getProduct(id) {
-    return DB.getProduct(id);
+    const list = await this.getProducts();
+    return list.find(p => p.id === id) || null;
   },
 
   async createProduct(data) {
-    return DB.createProduct(data);
+    return fallbackTo(
+      () => serverFetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
+      () => DB.createProduct(data)
+    );
   },
 
   async updateProduct(id, data) {
-    return DB.updateProduct(id, data);
+    return fallbackTo(
+      () => serverFetch('/api/products/' + encodeURIComponent(id), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
+      () => DB.updateProduct(id, data)
+    );
   },
 
   async deleteProduct(id) {
-    return DB.deleteProduct(id);
+    return fallbackTo(
+      () => serverFetch('/api/products/' + encodeURIComponent(id), { method: 'DELETE' }),
+      () => DB.deleteProduct(id)
+    );
   },
 
   async createProductWithFormData(formData) {
+    if (await isServerMode()) {
+      const res = await fetch('/api/products/with-images', { method: 'POST', body: formData });
+      if (!res.ok) {
+        let msg = 'خطأ في إنشاء المنتج';
+        try { const j = await res.json(); if (j && j.error) msg = j.error; } catch {}
+        throw new Error(msg);
+      }
+      return res.json();
+    }
     const data = {};
     formData.forEach((value, key) => {
       if (key === 'images') return;
@@ -55,35 +144,183 @@ const API = {
   },
 
   async uploadProductImage(id, file) {
+    if (await isServerMode()) {
+      const fd = new FormData();
+      fd.append('image', file);
+      return serverFetch('/api/products/' + encodeURIComponent(id) + '/image', { method: 'POST', body: fd });
+    }
     const dataUrl = await fileToDataUrl(file);
     return DB.updateProduct(id, { image: dataUrl, images: [dataUrl] });
   },
 
   /* ── Orders ── */
   async getOrders() {
-    return DB.getOrders();
+    return fallbackTo(
+      () => serverFetch('/api/orders'),
+      () => DB.getOrders()
+    );
   },
 
   async submitOrder(data) {
-    return DB.createOrder(data);
+    return fallbackTo(
+      () => serverFetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }),
+      () => DB.createOrder(data)
+    );
   },
 
   async updateOrderStatus(id, status) {
-    return DB.updateOrderStatus(id, status);
+    return fallbackTo(
+      () => serverFetch('/api/orders/' + encodeURIComponent(id) + '/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      }),
+      () => DB.updateOrderStatus(id, status)
+    );
   },
 
   async deleteOrder(id) {
-    return DB.deleteOrder(id);
+    return fallbackTo(
+      () => serverFetch('/api/orders/' + encodeURIComponent(id), { method: 'DELETE' }),
+      () => DB.deleteOrder(id)
+    );
   },
 
-  /* ── Auth (removed - direct access) ── */
+  async getCustomerByPhone(phone) {
+    return fallbackTo(
+      () => serverFetch('/api/customers/' + encodeURIComponent(phone)),
+      () => DB.getCustomerByPhone(phone)
+    );
+  },
+
+  async cancelOrder(id, phone) {
+    return fallbackTo(
+      () => serverFetch('/api/orders/' + encodeURIComponent(id) + '/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      }),
+      () => DB.cancelOrder(id, phone)
+    );
+  },
+
+  /* ── Auth ── */
   async checkAuth() {
+    if (await isServerMode()) {
+      try {
+        return await serverFetch('/api/auth/check');
+      } catch (e) {
+        return { authenticated: false, isAdmin: false };
+      }
+    }
     return { authenticated: true, isAdmin: true, name: 'Admin' };
   },
 
   /* ── Chat ── */
-  async sendChat(message, history) {
-    return DB.sendChat(message, history);
+  async sendChat(message, history, user) {
+    if (await isServerMode()) {
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history: history || [], user: user || null }),
+        });
+        const json = await res.json();
+        if (res.ok && json.reply) return { reply: json.reply, name: json.name || 'Tez' };
+        throw new Error((json && json.error) || 'تعذر الاتصال بالمساعد الذكي');
+      } catch (e) {
+        if (e instanceof TypeError) return DB.sendChat(message, history, user);
+        throw e;
+      }
+    }
+    return DB.sendChat(message, history, user);
+  },
+
+  /* ── DeepSeek AI ── */
+  async aiStatus() {
+    try {
+      if (!(await isServerMode())) return { configured: false, model: null, local: true };
+      const res = await fetch('/api/ai/status');
+      if (res.ok) return res.json();
+      return { configured: false, model: null };
+    } catch (e) {
+      return { configured: false, model: null };
+    }
+  },
+
+  async generateDescription(data) {
+    if (!(await isServerMode())) {
+      throw new Error('ميزة الذكاء تحتاج تشغيل الموقع عبر السيرفر (node server.js)');
+    }
+    const res = await fetch('/api/ai/generate-description', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'فشل توليد الوصف');
+    return json;
+  },
+
+  async suggestOrderReply(order) {
+    if (!(await isServerMode())) {
+      throw new Error('ميزة الذكاء تحتاج تشغيل الموقع عبر السيرفر (node server.js)');
+    }
+    const res = await fetch('/api/ai/order-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(order || {}),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'فشل توليد الرد');
+    return json;
+  },
+
+  /* ── Integrations (WhatsApp + Instagram bots) ── */
+  async integrationStatus() {
+    if (!(await isServerMode())) throw new Error('الميزة تحتاج السيرفر');
+    const res = await fetch('/api/integrations/status');
+    if (!res.ok) throw new Error('فشل جلب حالة البوت');
+    return res.json();
+  },
+
+  async saveIntegrationSettings(data) {
+    if (!(await isServerMode())) throw new Error('الميزة تحتاج السيرفر');
+    const res = await fetch('/api/integrations/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data || {}),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'فشل الحفظ');
+    return json;
+  },
+
+  async testIntegrations() {
+    if (!(await isServerMode())) throw new Error('الميزة تحتاج السيرفر');
+    const res = await fetch('/api/integrations/test', { method: 'POST' });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'فشل الفحص');
+    return json;
+  },
+
+  async integrationConversations() {
+    if (!(await isServerMode())) throw new Error('الميزة تحتاج السيرفر');
+    const res = await fetch('/api/integrations/conversations');
+    if (!res.ok) throw new Error('فشل جلب المحادثات');
+    return res.json();
+  },
+
+  async clearIntegrationConversation(id) {
+    if (!(await isServerMode())) throw new Error('الميزة تحتاج السيرفر');
+    const res = await fetch('/api/integrations/conversations/' + encodeURIComponent(id) + '/clear', { method: 'POST' });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'فشل المسح');
+    return json;
   },
 };
 
@@ -99,7 +336,7 @@ function fileToDataUrl(file) {
 
 /* ── Formatting (unchanged) ── */
 function formatPrice(price, symbol) {
-  return `${parseFloat(price).toFixed(2)} ${symbol || 'ر.س'}`;
+  return `${parseFloat(price).toFixed(2)} ${symbol || 'د.أ'}`;
 }
 
 function escapeHtml(str) {
