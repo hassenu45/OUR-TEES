@@ -499,7 +499,7 @@ function createRouter(requireAuth) {
       try {
         const token = await getIGAppAccessToken();
         results.igApp = token ? 'مثبتة ✓ (تطبيق Instagram صالح للتوكن)' : 'فشل الوصول للتوكن';
-      } catch (e) { results.igApp = 'فشل: ' + e.message; }
+      } catch (e) { results.igApp = 'فشل: ' + (e.message || 'خطأ غير معروف') + ' — تأكد من وضع Live والمفتاح السري'; }
     }
     results.waApp = 'غير مضبوطة';
     if (isWAAppConfigured()) {

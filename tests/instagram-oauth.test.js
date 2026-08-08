@@ -108,6 +108,11 @@ describe('instagram-oauth helpers', () => {
     expect(metaErrorMessage({ error: { code: 101, message: 'x' } })).toContain('Live');
     expect(metaErrorMessage({ error: { code: 999, message: 'boom' } })).toContain('boom');
   });
+
+  it('metaErrorMessage covers 190 and 200 for /test route reporting', () => {
+    expect(metaErrorMessage({ error: { code: 190, message: 'Invalid OAuth access token' } })).toContain('التوكن');
+    expect(metaErrorMessage({ error: { code: 200, message: 'Permissions error' } })).toContain('الأذونات');
+  });
 });
 
 function makeReqRes() {
