@@ -5,6 +5,28 @@ const GRAPH = 'https://graph.facebook.com/v21.0';
 const OAUTH_DIALOG = 'https://www.facebook.com/v21.0/dialog/oauth';
 const SCOPES = 'instagram_basic,instagram_manage_messages,instagram_manage_comments,pages_show_list';
 
+// In-memory state store (CSRF) — the callback arrives in a different browser
+// context than the desktop proxy that started the flow, so sessions don't work.
+function createStateStore(ttlMs = 10 * 60 * 1000, maxEntries = 2000) {
+  const store = new Map();
+  return {
+    put(state) {
+      if (store.size >= maxEntries) store.clear();
+      store.set(state, Date.now() + ttlMs);
+    },
+    consume(state) {
+      if (!state) return false;
+      const expires = store.get(String(state));
+      if (!expires) return false;
+      store.delete(String(state));
+      return Date.now() < expires;
+    },
+    size() {
+      return store.size;
+    },
+  };
+}
+
 function buildOAuthUrl({ appId, redirectUri, state }) {
   const qs = new URLSearchParams({
     client_id: appId,
@@ -82,6 +104,7 @@ module.exports = {
   buildOAuthUrl,
   verifyOAuthState,
   getCallbackUrl,
+  createStateStore,
   exchangeCode,
   exchangeForLongToken,
   findIgBusinessAccount,

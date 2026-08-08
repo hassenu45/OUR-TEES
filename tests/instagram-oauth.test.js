@@ -3,6 +3,7 @@ import {
   buildOAuthUrl,
   verifyOAuthState,
   getCallbackUrl,
+  createStateStore,
   exchangeCode,
   exchangeForLongToken,
   findIgBusinessAccount,
@@ -137,24 +138,58 @@ function findRouteHandler(router, path) {
 }
 
 describe('instagram connect routes', () => {
-  it('connect route redirects to Facebook dialog with state in session', async () => {
+  it('connect route redirects to Facebook dialog with state', async () => {
     const router = createRouter(() => {});
     const hit = findRouteHandler(router, '/instagram/connect');
     expect(hit).toBeDefined();
     const { req, res, getRedirect } = makeReqRes();
     hit(req, res);
-    expect(getRedirect()).toContain('https://www.facebook.com/v21.0/dialog/oauth');
-    expect(req.session.igOAuthState).toBeTruthy();
+    const url = getRedirect();
+    expect(url).toContain('https://www.facebook.com/v21.0/dialog/oauth');
+    expect(url).toContain('state=');
   });
 
-  it('callback with wrong state redirects to admin error', async () => {
+  it('callback with unknown state redirects to public result page error', async () => {
     const router = createRouter(() => {});
     const hit = findRouteHandler(router, '/instagram/callback');
     expect(hit).toBeDefined();
     const { req, res, getRedirect } = makeReqRes();
-    req.session.igOAuthState = 'expected-state';
     req.query = { state: 'wrong-state', code: 'CODE' };
     await hit(req, res);
-    expect(getRedirect()).toContain('/admin.html?ig=error');
+    expect(getRedirect()).toContain('/instagram-connected.html?ig=error');
+  });
+
+  it('callback with valid state but no code redirects to error without network', async () => {
+    const router = createRouter(() => {});
+    const connectHit = findRouteHandler(router, '/instagram/connect');
+    const { req: reqC, res: resC, getRedirect: getRedirectC } = makeReqRes();
+    connectHit(reqC, resC);
+    const state = new URL(getRedirectC()).searchParams.get('state');
+    expect(state).toBeTruthy();
+
+    const callbackHit = findRouteHandler(router, '/instagram/callback');
+    const { req, res, getRedirect } = makeReqRes();
+    req.query = { state, code: '' };
+    await callbackHit(req, res);
+    expect(getRedirect()).toContain('/instagram-connected.html?ig=error');
+  });
+
+  it('state store consumes a state only once', () => {
+    const store = createStateStore();
+    store.put('abc');
+    expect(store.consume('abc')).toBe(true);
+    expect(store.consume('abc')).toBe(false);
+    expect(store.consume('missing')).toBe(false);
+  });
+
+  it('state store rejects expired states', () => {
+    const store = createStateStore(1, 100);
+    store.put('abc');
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        expect(store.consume('abc')).toBe(false);
+        resolve();
+      }, 5);
+    });
   });
 });

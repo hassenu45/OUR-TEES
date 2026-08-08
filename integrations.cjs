@@ -18,6 +18,8 @@ function isIGAppConfigured() {
   return !!(IG_APP_ID && IG_APP_SECRET);
 }
 
+const igStateStore = oauth.createStateStore();
+
 async function getIGAppAccessToken() {
   const qs = new URLSearchParams({
     client_id: IG_APP_ID,
@@ -367,9 +369,10 @@ function createRouter(requireAuth) {
   });
 
   // Instagram one-click connect (OAuth)
+  // state مخزن داخل الخادم (وليس الجلسة) لأن الـ callback يعود لمتصفح خارجي
   router.get('/instagram/connect', (req, res) => {
     const state = crypto.randomBytes(24).toString('hex');
-    req.session.igOAuthState = state;
+    igStateStore.put(state);
     const redirectUri = oauth.getCallbackUrl(req);
     res.redirect(oauth.buildOAuthUrl({ appId: IG_APP_ID, redirectUri, state }));
   });
@@ -377,19 +380,18 @@ function createRouter(requireAuth) {
   router.get('/instagram/callback', async (req, res) => {
     try {
       const { code, state } = req.query;
-      if (!oauth.verifyOAuthState(state, req.session.igOAuthState)) {
-        return res.redirect('/admin.html?ig=error&reason=' + encodeURIComponent('طلب غير صالح (state mismatch)'));
+      if (!igStateStore.consume(state)) {
+        return res.redirect('/instagram-connected.html?ig=error&reason=' + encodeURIComponent('طلب غير صالح (انتهت صلاحية الطلب)'));
       }
-      delete req.session.igOAuthState;
       if (!code) {
-        return res.redirect('/admin.html?ig=error&reason=' + encodeURIComponent('لم يتم الحصول على رمز التفويض'));
+        return res.redirect('/instagram-connected.html?ig=error&reason=' + encodeURIComponent('لم يتم الحصول على رمز التفويض'));
       }
       const redirectUri = oauth.getCallbackUrl(req);
       const short = await oauth.exchangeCode({ code, appId: IG_APP_ID, appSecret: IG_APP_SECRET, redirectUri });
       const long = await oauth.exchangeForLongToken({ shortToken: short.access_token, appId: IG_APP_ID, appSecret: IG_APP_SECRET });
       const account = await oauth.findIgBusinessAccount(long.access_token);
       if (!account) {
-        return res.redirect('/admin.html?ig=error&reason=' + encodeURIComponent('لم يتم العثور على حساب انستقرام للأعمال مرتبط بصفحة فيسبوك'));
+        return res.redirect('/instagram-connected.html?ig=error&reason=' + encodeURIComponent('لم يتم العثور على حساب انستقرام للأعمال مرتبط بصفحة فيسبوك'));
       }
       await oauth.subscribeIgWebhook(account.id, long.access_token).catch(() => {});
       await db.updateIntegrationSettings({
@@ -399,9 +401,9 @@ function createRouter(requireAuth) {
         igDmReply: true,
         igCommentReply: true,
       });
-      res.redirect('/admin.html?ig=connected&user=' + encodeURIComponent(account.username));
+      res.redirect('/instagram-connected.html?ig=connected&user=' + encodeURIComponent(account.username));
     } catch (e) {
-      res.redirect('/admin.html?ig=error&reason=' + encodeURIComponent(e.message));
+      res.redirect('/instagram-connected.html?ig=error&reason=' + encodeURIComponent(e.message));
     }
   });
 

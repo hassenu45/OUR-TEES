@@ -618,10 +618,50 @@ function connectInstagram() {
   const status = $('ig-connect-status');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '⏳ جارٍ فتح صفحة التسجيل...';
+    btn.textContent = '⏳ بانتظار الموافقة في المتصفح...';
   }
-  if (status) status.textContent = 'إذا لم تفتح الصفحة، اسمح بالنوافذ المنبثقة ثم أعد المحاولة.';
-  window.location.href = '/api/integrations/instagram/connect';
+  if (status) status.textContent = 'افتح المتصفح الخارجي، سجّل الدخول ووافق، ثم عد هنا — سيتم الكشف تلقائياً.';
+  window.open('/api/integrations/instagram/connect', '_blank');
+  waitForInstagramConnection(btn, status);
+}
+
+async function waitForInstagramConnection(btn, status) {
+  let tries = 0;
+  const poll = setInterval(async () => {
+    tries++;
+    try {
+      const st = await API.integrationStatus();
+      if (st.ig && st.ig.configured) {
+        clearInterval(poll);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '📸 اتصال بالانستقرام';
+        }
+        if (status) status.textContent = '✅ متصل — الحساب: ' + (st.ig.userId || '') + ' (التوكن محفوظ بشكل دائم)';
+        showToast('✅ تم الاتصال بالانستقرام — التوكن محفوظ بشكل دائم');
+        loadIntegrations();
+        return;
+      }
+      if (tries >= 30) {
+        clearInterval(poll);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '📸 اتصال بالانستقرام';
+        }
+        if (status) status.textContent = 'لم يكتمل الاتصال — أعد المحاولة.';
+        showToast('❌ لم يكتمل الاتصال: قد يكون التطبيق في وضع Development أو المفاتيح غير صحيحة', true);
+      }
+    } catch {
+      if (tries >= 30) {
+        clearInterval(poll);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '📸 اتصال بالانستقرام';
+        }
+        if (status) status.textContent = 'لم يكتمل الاتصال — أعد المحاولة.';
+      }
+    }
+  }, 3000);
 }
 
 async function testIntegrations() {
@@ -751,15 +791,6 @@ async function init() {
   $('edit-product-form')?.addEventListener('submit', handleSaveEditProduct);
   await loadAllData();
   checkAIStatus();
-
-  const igParams = new URLSearchParams(location.search);
-  if (igParams.get('ig') === 'connected') {
-    showToast('✅ تم الاتصال بالانستقرام — التوكن محفوظ بشكل دائم');
-    history.replaceState(null, '', location.pathname);
-  } else if (igParams.get('ig') === 'error') {
-    showToast('❌ فشل الاتصال: ' + (igParams.get('reason') || 'خطأ غير معروف'), true);
-    history.replaceState(null, '', location.pathname);
-  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
