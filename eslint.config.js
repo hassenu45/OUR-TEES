@@ -13,6 +13,7 @@ module.exports = [
       'db.cjs',
       'ai.cjs',
       'integrations.cjs',
+      'instagram-oauth.cjs',
       'telegram-bot.js',
       'server-version.cjs',
       'desktop/**/*.js',
