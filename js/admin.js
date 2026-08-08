@@ -4,7 +4,9 @@ let appState = { settings: {}, products: [], orders: [] };
 const STATUS_LABELS = { new: 'جديد', completed: 'مكتمل', cancelled: 'ملغي' };
 const STATUS_NEXT = { new: 'completed', completed: 'new', cancelled: 'new' };
 
-function $(id) { return document.getElementById(id); }
+function $(id) {
+  return document.getElementById(id);
+}
 
 function showToast(msg, isError) {
   const t = $('toast');
@@ -13,10 +15,17 @@ function showToast(msg, isError) {
   t.style.display = 'block';
   t.style.background = isError ? 'rgba(220,38,38,0.9)' : 'rgba(28,25,23,0.95)';
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+  t._timer = setTimeout(() => {
+    t.style.display = 'none';
+  }, 3000);
 }
 
-function esc(str) { if (!str) return ''; const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+function esc(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
 
 /* ── Data Loading ── */
 async function loadAllData() {
@@ -24,7 +33,7 @@ async function loadAllData() {
     const [settings, products, orders] = await Promise.all([
       API.getAdminSettings(),
       API.getProducts(),
-      API.getOrders()
+      API.getOrders(),
     ]);
     appState.settings = settings;
     appState.products = products;
@@ -47,12 +56,16 @@ function renderAll() {
 function renderStats() {
   const totalP = appState.products.length;
   const totalO = appState.orders.length;
-  const revenue = appState.orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (parseFloat(o.productPrice)||0), 0);
-  const pending = appState.orders.filter(o => o.status === 'new').length;
+  const revenue = appState.orders
+    .filter((o) => o.status !== 'cancelled')
+    .reduce((s, o) => s + (parseFloat(o.productPrice) || 0), 0);
+  const pending = appState.orders.filter((o) => o.status === 'new').length;
   if ($('stat-products')) $('stat-products').textContent = totalP;
   if ($('stat-orders')) $('stat-orders').textContent = totalO;
   if ($('stat-pending')) $('stat-pending').textContent = pending;
-  if ($('stat-revenue')) $('stat-revenue').innerHTML = revenue.toFixed(2) + ' <span style="font-size:16px;">' + (appState.settings.currencySymbol||'ر.س') + '</span>';
+  if ($('stat-revenue'))
+    $('stat-revenue').innerHTML =
+      revenue.toFixed(2) + ' <span style="font-size:16px;">' + (appState.settings.currencySymbol || 'ر.س') + '</span>';
   if ($('sidebar-products-count')) $('sidebar-products-count').textContent = totalP;
   if ($('sidebar-orders-count')) $('sidebar-orders-count').textContent = totalO;
 }
@@ -77,14 +90,18 @@ function renderSettings() {
     if (!appState.products.length) {
       likesBox.innerHTML = '<span style="color:rgba(250,250,249,0.2);">لا توجد منتجات بعد.</span>';
     } else {
-      likesBox.innerHTML = appState.products.map(p => `
+      likesBox.innerHTML = appState.products
+        .map(
+          (p) => `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border:1px solid rgba(255,255,255,0.04);border-radius:10px;background:rgba(255,255,255,0.015);">
           <span style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.name || 'منتج')}</span>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
             <span style="font-size:11px;color:rgba(250,250,249,0.3);">❤️</span>
             <input type="number" min="0" class="form-input" style="width:90px;text-align:center;padding:6px 10px;font-size:13px;" value="${parseInt(p.likes) || 0}" data-likes-id="${p.id}">
           </div>
-        </div>`).join('');
+        </div>`
+        )
+        .join('');
     }
   }
 }
@@ -113,19 +130,30 @@ async function saveSettings(e) {
       heroSubtitle: form.heroSubtitle.value.trim(),
       aboutTitle: form.aboutTitle?.value.trim() || '',
       aboutText: form.aboutText?.value.trim() || '',
-      sizes: form.sizes.value.split(',').map(s => s.trim()).filter(Boolean),
-      types: form.types.value.split(',').map(t => t.trim()).filter(Boolean),
+      sizes: form.sizes.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      types: form.types.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
     };
     await API.updateSettings(data);
     const likesInputs = document.querySelectorAll('[data-likes-id]');
-    await Promise.all([...likesInputs].map(inp => {
-      const likes = Math.max(0, parseInt(inp.value) || 0);
-      return API.updateProduct(inp.dataset.likesId, { likes });
-    }));
+    await Promise.all(
+      [...likesInputs].map((inp) => {
+        const likes = Math.max(0, parseInt(inp.value) || 0);
+        return API.updateProduct(inp.dataset.likesId, { likes });
+      })
+    );
     showToast('تم حفظ الإعدادات بنجاح');
     await loadAllData();
-  } catch (err) { showToast(err.message, true); }
-  finally { btn.disabled = false; }
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function saveAISettings(e) {
@@ -142,8 +170,11 @@ async function saveAISettings(e) {
     });
     showToast('تم حفظ إعدادات الذكاء الاصطناعي');
     await loadAllData();
-  } catch (err) { showToast(err.message, true); }
-  finally { btn.disabled = false; }
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 /* ── Image Preview ── */
@@ -154,16 +185,18 @@ function previewProductImages(input) {
   if (!container) return;
   if (input.files && input.files.length > MAX_PRODUCT_IMAGES) {
     const dt = new DataTransfer();
-    Array.from(input.files).slice(0, MAX_PRODUCT_IMAGES).forEach(f => dt.items.add(f));
+    Array.from(input.files)
+      .slice(0, MAX_PRODUCT_IMAGES)
+      .forEach((f) => dt.items.add(f));
     input.files = dt.files;
     showToast(`يمكنك اختيار ${MAX_PRODUCT_IMAGES} صورة كحد أقصى`, true);
   }
   container.innerHTML = '';
   if (input.files && input.files.length) {
     if (text) text.textContent = `✅ تم اختيار (${input.files.length}) من ${MAX_PRODUCT_IMAGES} صورة`;
-    Array.from(input.files).forEach(f => {
+    Array.from(input.files).forEach((f) => {
       const r = new FileReader();
-      r.onload = e => {
+      r.onload = (e) => {
         const img = document.createElement('img');
         img.src = e.target.result;
         container.appendChild(img);
@@ -190,8 +223,12 @@ async function handleAddProduct(e) {
     if ($('images-preview')) $('images-preview').innerHTML = '';
     await loadAllData();
     switchPanel('products');
-  } catch (err) { showToast(err.message, true); }
-  finally { btn.disabled = false; btn.textContent = '🚀 إضافة المنتج للمتجر'; }
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 إضافة المنتج للمتجر';
+  }
 }
 
 /* ── Products List ── */
@@ -202,9 +239,13 @@ function renderProductsList() {
     grid.innerHTML = '<p class="empty-state">لا يوجد منتجات. أضف أول منتج من قسم "إضافة منتج".</p>';
     return;
   }
-  grid.innerHTML = appState.products.map(p => {
-    const imgSrc = (p.images && p.images[0]) || p.image || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="%23262626"%3E%3Crect width="100" height="100" rx="8"/%3E%3Ctext x="50" y="55" text-anchor="middle" fill="%23525252" font-size="28"%3E👕%3C/text%3E%3C/svg%3E';
-    return `<div class="product-card" style="position:relative;">
+  grid.innerHTML = appState.products
+    .map((p) => {
+      const imgSrc =
+        (p.images && p.images[0]) ||
+        p.image ||
+        'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="%23262626"%3E%3Crect width="100" height="100" rx="8"/%3E%3Ctext x="50" y="55" text-anchor="middle" fill="%23525252" font-size="28"%3E👕%3C/text%3E%3C/svg%3E';
+      return `<div class="product-card" style="position:relative;">
       ${p.soldOut ? '<span class="sold-out-badge">نفذت</span>' : ''}
       <img src="${encodeURI(imgSrc)}" alt="${esc(p.name)}" loading="lazy">
       <h4>${esc(p.name)}</h4>
@@ -214,19 +255,20 @@ function renderProductsList() {
         <button class="btn btn-sm btn-danger" style="flex:1;padding:6px;" onclick="deleteProduct('${p.id}')">🗑️</button>
       </div>
     </div>`;
-  }).join('');
+    })
+    .join('');
 }
 
 function filterProducts() {
   const q = ($('products-search')?.value || '').toLowerCase();
-  document.querySelectorAll('.product-card').forEach(c => {
+  document.querySelectorAll('.product-card').forEach((c) => {
     c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 }
 
 /* ── Edit Modal ── */
 function openEditModal(id) {
-  const p = appState.products.find(x => x.id === id);
+  const p = appState.products.find((x) => x.id === id);
   if (!p) return;
   $('edit-product-id').value = p.id;
   $('edit-product-name').value = p.name;
@@ -236,7 +278,9 @@ function openEditModal(id) {
   $('edit-modal').classList.add('active');
 }
 
-function closeEditModal() { $('edit-modal').classList.remove('active'); }
+function closeEditModal() {
+  $('edit-modal').classList.remove('active');
+}
 
 async function handleSaveEditProduct(e) {
   e.preventDefault();
@@ -250,7 +294,9 @@ async function handleSaveEditProduct(e) {
     showToast('تم تحديث المنتج');
     closeEditModal();
     await loadAllData();
-  } catch (err) { showToast(err.message, true); }
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
 async function deleteProduct(id) {
@@ -259,7 +305,9 @@ async function deleteProduct(id) {
     await API.deleteProduct(id);
     showToast('تم حذف المنتج');
     await loadAllData();
-  } catch (err) { showToast(err.message, true); }
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
 /* ── Orders ── */
@@ -267,14 +315,15 @@ function renderOrdersList() {
   const container = $('admin-orders-list');
   if (!container) return;
   const filter = $('orders-filter')?.value || 'all';
-  const filtered = filter === 'all' ? appState.orders : appState.orders.filter(o => o.status === filter);
+  const filtered = filter === 'all' ? appState.orders : appState.orders.filter((o) => o.status === filter);
   if (!filtered.length) {
     container.innerHTML = '<p class="empty-state">لا توجد طلبات' + (filter !== 'all' ? ' بهذه الحالة' : '') + '.</p>';
     return;
   }
   // Use table layout
-  let html = '<div class="table-wrap"><table><thead><tr><th>العميل/المنتج</th><th>الهاتف</th><th>المقاس</th><th>السعر</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>';
-  filtered.forEach(o => {
+  let html =
+    '<div class="table-wrap"><table><thead><tr><th>العميل/المنتج</th><th>الهاتف</th><th>المقاس</th><th>السعر</th><th>التاريخ</th><th>الحالة</th><th></th></tr></thead><tbody>';
+  filtered.forEach((o) => {
     const nextStatus = STATUS_NEXT[o.status] || 'completed';
     const nextLabel = o.status === 'completed' ? 'إعادة' : o.status === 'cancelled' ? 'إعادة' : 'تسليم';
     html += `<tr>
@@ -284,7 +333,7 @@ function renderOrdersList() {
       </td>
       <td dir="ltr">${esc(o.phone)}</td>
       <td>${esc(o.size)}</td>
-      <td style="font-family:'Cormorant';font-weight:700;color:#A16207;">${parseFloat(o.productPrice).toFixed(2)} ${appState.settings.currencySymbol||'ر.س'}</td>
+      <td style="font-family:'Cormorant';font-weight:700;color:#A16207;">${parseFloat(o.productPrice).toFixed(2)} ${appState.settings.currencySymbol || 'ر.س'}</td>
       <td style="font-size:11px;color:rgba(250,250,249,0.3);">${new Date(o.createdAt).toLocaleDateString('ar-SA')}</td>
       <td><span class="badge badge-${o.status}">${STATUS_LABELS[o.status]}</span></td>
       <td>
@@ -301,14 +350,18 @@ function renderOrdersList() {
   container.innerHTML = html;
 }
 
-function filterOrders() { renderOrdersList(); }
+function filterOrders() {
+  renderOrdersList();
+}
 
 async function updateOrder(id, status) {
   try {
     await API.updateOrderStatus(id, status);
     showToast('تم تحديث حالة الطلب');
     await loadAllData();
-  } catch (err) { showToast(err.message, true); }
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
 async function deleteOrder(id) {
@@ -317,7 +370,9 @@ async function deleteOrder(id) {
     await API.deleteOrder(id);
     showToast('تم حذف الطلب');
     await loadAllData();
-  } catch (err) { showToast(err.message, true); }
+  } catch (err) {
+    showToast(err.message, true);
+  }
 }
 
 /* ── DeepSeek AI (Admin) ── */
@@ -341,7 +396,9 @@ async function checkAIStatus() {
       badge.style.color = '#F87171';
     }
   } catch (e) {
-    if (badge) { badge.textContent = '🔴 فشل الفحص'; }
+    if (badge) {
+      badge.textContent = '🔴 فشل الفحص';
+    }
   }
 }
 
@@ -349,7 +406,10 @@ async function generateProductDescription() {
   const btn = $('generate-desc-btn');
   const name = $('product-name-input')?.value.trim() || '';
   const price = $('product-price-input')?.value || '';
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري التوليد...'; }
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ جاري التوليد...';
+  }
   try {
     const res = await API.generateDescription({
       name,
@@ -362,15 +422,21 @@ async function generateProductDescription() {
   } catch (err) {
     showToast(err.message, true);
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '✨ توليد وصف بالذكاء'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '✨ توليد وصف بالذكاء';
+    }
   }
 }
 
 async function suggestOrderReply(orderId) {
-  const order = appState.orders.find(o => o.id === orderId);
+  const order = appState.orders.find((o) => o.id === orderId);
   if (!order) return;
   const btn = document.getElementById('reply-btn-' + orderId);
-  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳';
+  }
   try {
     const res = await API.suggestOrderReply({
       customerName: order.customerName,
@@ -385,11 +451,16 @@ async function suggestOrderReply(orderId) {
   } catch (err) {
     showToast(err.message, true);
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '💬'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '💬';
+    }
   }
 }
 
-function closeAIReplyModal() { $('ai-reply-modal')?.classList.remove('active'); }
+function closeAIReplyModal() {
+  $('ai-reply-modal')?.classList.remove('active');
+}
 
 function copyAIReply() {
   const text = $('ai-reply-text')?.textContent || '';
@@ -432,40 +503,84 @@ async function loadIntegrations() {
       f.igToken.value = '';
     }
     const base = location.origin;
-    badgeState($('integrations-ai-badge'), st.ai.configured ? ('✅ AI متصل (' + st.ai.model + ')') : '🔴 AI غير مضبوط', st.ai.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    badgeState(
+      $('integrations-ai-badge'),
+      st.ai.configured ? '✅ AI متصل (' + st.ai.model + ')' : '🔴 AI غير مضبوط',
+      st.ai.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)'
+    );
     const aiB = $('integrations-ai-badge');
-    if (aiB && st.ai.configured) { aiB.style.color = '#4ADE80'; }
-    badgeState($('integrations-wa-badge'), st.wa.configured ? '✅ واتساب متصل' : '🔴 واتساب غير مضبوط', st.wa.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    if (aiB && st.ai.configured) {
+      aiB.style.color = '#4ADE80';
+    }
+    badgeState(
+      $('integrations-wa-badge'),
+      st.wa.configured ? '✅ واتساب متصل' : '🔴 واتساب غير مضبوط',
+      st.wa.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)'
+    );
     const waB = $('integrations-wa-badge');
-    if (waB && st.wa.configured) { waB.style.color = '#4ADE80'; }
-    badgeState($('integrations-waapp-badge'), st.waApp && st.waApp.configured ? '✅ بيانات التطبيق ثابتة' : '🔴 بيانات التطبيق غير مضبوطة', st.waApp && st.waApp.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    if (waB && st.wa.configured) {
+      waB.style.color = '#4ADE80';
+    }
+    badgeState(
+      $('integrations-waapp-badge'),
+      st.waApp && st.waApp.configured ? '✅ بيانات التطبيق ثابتة' : '🔴 بيانات التطبيق غير مضبوطة',
+      st.waApp && st.waApp.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)'
+    );
     const waAppB = $('integrations-waapp-badge');
-    if (waAppB && st.waApp && st.waApp.configured) { waAppB.style.color = '#4ADE80'; }
+    if (waAppB && st.waApp && st.waApp.configured) {
+      waAppB.style.color = '#4ADE80';
+    }
     const waAppId = $('integrations-waapp-id');
     const waAppSec = $('integrations-waapp-secret');
     const waAppPhone = $('integrations-waapp-phone');
-    if (waAppId) waAppId.textContent = st.waApp ? (st.waApp.appId || '—') : '—';
-    if (waAppSec) waAppSec.textContent = st.waApp ? (st.waApp.secretMasked || '—') : '—';
-    if (waAppPhone) waAppPhone.textContent = st.waApp ? (st.waApp.phoneIdPlaceholder || '—') : '—';
+    if (waAppId) waAppId.textContent = st.waApp ? st.waApp.appId || '—' : '—';
+    if (waAppSec) waAppSec.textContent = st.waApp ? st.waApp.secretMasked || '—' : '—';
+    if (waAppPhone) waAppPhone.textContent = st.waApp ? st.waApp.phoneIdPlaceholder || '—' : '—';
     const umInstance = $('integrations-ultramsg-instance');
     const umToken = $('integrations-ultramsg-token');
     const umWebhook = $('integrations-ultramsg-webhook');
-    if (umInstance) umInstance.textContent = st.ultramsg ? (st.ultramsg.instance || '—') : '—';
-    if (umToken) umToken.textContent = st.ultramsg ? (st.ultramsg.tokenMasked || '—') : '—';
-    if (umWebhook) umWebhook.textContent = st.webhookUrls && st.webhookUrls.ultramsg ? (base + st.webhookUrls.ultramsg) : '—';
-    badgeState($('integrations-ig-badge'), st.ig.configured ? '✅ انستقرام متصل' : '🔴 انستقرام غير مضبوط', st.ig.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    if (umInstance) umInstance.textContent = st.ultramsg ? st.ultramsg.instance || '—' : '—';
+    if (umToken) umToken.textContent = st.ultramsg ? st.ultramsg.tokenMasked || '—' : '—';
+    if (umWebhook)
+      umWebhook.textContent = st.webhookUrls && st.webhookUrls.ultramsg ? base + st.webhookUrls.ultramsg : '—';
+    badgeState(
+      $('integrations-ig-badge'),
+      st.ig.configured ? '✅ انستقرام متصل' : '🔴 انستقرام غير مضبوط',
+      st.ig.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)'
+    );
     const igB = $('integrations-ig-badge');
-    if (igB && st.ig.configured) { igB.style.color = '#4ADE80'; }
-    badgeState($('integrations-igapp-badge'), st.igApp && st.igApp.configured ? '✅ بيانات التطبيق ثابتة' : '🔴 بيانات التطبيق غير مضبوطة', st.igApp && st.igApp.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)');
+    if (igB && st.ig.configured) {
+      igB.style.color = '#4ADE80';
+    }
+    badgeState(
+      $('integrations-igapp-badge'),
+      st.igApp && st.igApp.configured ? '✅ بيانات التطبيق ثابتة' : '🔴 بيانات التطبيق غير مضبوطة',
+      st.igApp && st.igApp.configured ? 'rgba(34,197,94,.12)' : 'rgba(239,68,68,.12)'
+    );
     const igAppB = $('integrations-igapp-badge');
-    if (igAppB && st.igApp && st.igApp.configured) { igAppB.style.color = '#4ADE80'; }
+    if (igAppB && st.igApp && st.igApp.configured) {
+      igAppB.style.color = '#4ADE80';
+    }
     const igAppId = $('integrations-igapp-id');
     const igAppSec = $('integrations-igapp-secret');
-    if (igAppId) igAppId.textContent = st.igApp ? (st.igApp.appId || '—') : '—';
-    if (igAppSec) igAppSec.textContent = st.igApp ? (st.igApp.secretMasked || '—') : '—';
+    if (igAppId) igAppId.textContent = st.igApp ? st.igApp.appId || '—' : '—';
+    if (igAppSec) igAppSec.textContent = st.igApp ? st.igApp.secretMasked || '—' : '—';
+    const igC = $('ig-connect-status');
+    if (igC)
+      igC.textContent =
+        st.ig && st.ig.configured
+          ? '✅ متصل — الحساب: ' + (st.ig.userId || '') + ' (التوكن محفوظ بشكل دائم)'
+          : 'اتصال واحد فقط — يفتح صفحة فيسبوك/انستقرام لتسجيل الدخول';
     const urls = $('integrations-webhook-urls');
     if (urls) {
-      urls.innerHTML = 'واتساب: <code dir="ltr">' + esc(base + st.webhookUrls.wa) + '</code><br>انستقرام: <code dir="ltr">' + esc(base + st.webhookUrls.ig) + '</code><br>Verify Token: <code dir="ltr">' + esc(st.webhookSecret || '') + '</code>';
+      urls.innerHTML =
+        'واتساب: <code dir="ltr">' +
+        esc(base + st.webhookUrls.wa) +
+        '</code><br>انستقرام: <code dir="ltr">' +
+        esc(base + st.webhookUrls.ig) +
+        '</code><br>Verify Token: <code dir="ltr">' +
+        esc(st.webhookSecret || '') +
+        '</code>';
     }
   } catch (e) {
     showToast('فشل تحميل إعدادات البوت: ' + (e.message || e), true);
@@ -498,10 +613,30 @@ async function saveIntegrations(e) {
   }
 }
 
+function connectInstagram() {
+  const btn = $('ig-connect-btn');
+  const status = $('ig-connect-status');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ جارٍ فتح صفحة التسجيل...';
+  }
+  if (status) status.textContent = 'إذا لم تفتح الصفحة، اسمح بالنوافذ المنبثقة ثم أعد المحاولة.';
+  window.location.href = '/api/integrations/instagram/connect';
+}
+
 async function testIntegrations() {
   try {
     const r = await API.testIntegrations();
-    showToast('UltraMsg: ' + (r.ultramsg || '') + ' | واتساب: ' + (r.wa || '') + ' | انستقرام: ' + (r.ig || '') + ' | IG التطبيق: ' + (r.igApp || ''));
+    showToast(
+      'UltraMsg: ' +
+        (r.ultramsg || '') +
+        ' | واتساب: ' +
+        (r.wa || '') +
+        ' | انستقرام: ' +
+        (r.ig || '') +
+        ' | IG التطبيق: ' +
+        (r.igApp || '')
+    );
   } catch (err) {
     showToast('فشل الفحص: ' + (err.message || err), true);
   }
@@ -512,19 +647,38 @@ async function loadConversations() {
   if (!box) return;
   try {
     const list = await API.integrationConversations();
-    if (!list.length) { box.textContent = 'لا توجد محادثات بعد.'; return; }
-    box.innerHTML = list.map(c => {
-      const channel = c.channel === 'wa' ? '💬 واتساب' : '📸 انستقرام';
-      const msgs = (c.history || []).map(m => {
-        const who = m.sender === 'user' ? 'العميل' : 'البوت';
-        return '<div style="margin:3px 0;"><span style="opacity:.55">' + who + ':</span> ' + esc(m.text) + '</div>';
-      }).join('');
-      return '<div style="border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;margin-bottom:10px;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;">' +
-        '<div><strong>' + channel + '</strong> — <span dir="ltr">' + esc(c.externalId) + '</span>' + (c.name ? ' (' + esc(c.name) + ')' : '') + '</div>' +
-        '<button type="button" class="btn btn-outline" onclick="clearConversation(\'' + c.id + '\')" style="padding:4px 10px;font-size:10px;">🗑️ مسح</button>' +
-        '</div><div style="font-size:11px;">' + msgs + '</div></div>';
-    }).join('');
+    if (!list.length) {
+      box.textContent = 'لا توجد محادثات بعد.';
+      return;
+    }
+    box.innerHTML = list
+      .map((c) => {
+        const channel = c.channel === 'wa' ? '💬 واتساب' : '📸 انستقرام';
+        const msgs = (c.history || [])
+          .map((m) => {
+            const who = m.sender === 'user' ? 'العميل' : 'البوت';
+            return '<div style="margin:3px 0;"><span style="opacity:.55">' + who + ':</span> ' + esc(m.text) + '</div>';
+          })
+          .join('');
+        return (
+          '<div style="border:1px solid #2a2a2a;border-radius:8px;padding:10px 12px;margin-bottom:10px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;">' +
+          '<div><strong>' +
+          channel +
+          '</strong> — <span dir="ltr">' +
+          esc(c.externalId) +
+          '</span>' +
+          (c.name ? ' (' + esc(c.name) + ')' : '') +
+          '</div>' +
+          '<button type="button" class="btn btn-outline" onclick="clearConversation(\'' +
+          c.id +
+          '\')" style="padding:4px 10px;font-size:10px;">🗑️ مسح</button>' +
+          '</div><div style="font-size:11px;">' +
+          msgs +
+          '</div></div>'
+        );
+      })
+      .join('');
   } catch (err) {
     box.textContent = 'فشل تحميل المحادثات: ' + (err.message || err);
   }
@@ -552,7 +706,10 @@ function showAppLoginGate() {
   async function submit() {
     if (msg) msg.textContent = '';
     const pw = input.value;
-    if (!pw) { if (msg) msg.textContent = 'أدخل كلمة المرور'; return; }
+    if (!pw) {
+      if (msg) msg.textContent = 'أدخل كلمة المرور';
+      return;
+    }
     btn.disabled = true;
     btn.textContent = 'جارٍ الدخول…';
     try {
@@ -562,7 +719,10 @@ function showAppLoginGate() {
         body: JSON.stringify({ password: pw }),
       });
       const j = await res.json().catch(() => ({}));
-      if (j.success) { window.location.reload(); return; }
+      if (j.success) {
+        window.location.reload();
+        return;
+      }
       if (msg) msg.textContent = j.error || 'كلمة المرور غير صحيحة';
     } catch (e) {
       if (msg) msg.textContent = 'تعذر الاتصال بالسيرفر';
@@ -571,7 +731,9 @@ function showAppLoginGate() {
     btn.textContent = 'دخول';
   }
   btn.addEventListener('click', submit);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submit();
+  });
   setTimeout(() => input.focus(), 100);
 }
 
@@ -589,6 +751,15 @@ async function init() {
   $('edit-product-form')?.addEventListener('submit', handleSaveEditProduct);
   await loadAllData();
   checkAIStatus();
+
+  const igParams = new URLSearchParams(location.search);
+  if (igParams.get('ig') === 'connected') {
+    showToast('✅ تم الاتصال بالانستقرام — التوكن محفوظ بشكل دائم');
+    history.replaceState(null, '', location.pathname);
+  } else if (igParams.get('ig') === 'error') {
+    showToast('❌ فشل الاتصال: ' + (igParams.get('reason') || 'خطأ غير معروف'), true);
+    history.replaceState(null, '', location.pathname);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
@@ -632,7 +803,10 @@ document.addEventListener('DOMContentLoaded', init);
     btn.disabled = false;
   });
 
-  window.azma.getStatus().then((s) => {
-    if (s && s.version) state.textContent = 'v' + s.version;
-  }).catch(() => {});
+  window.azma
+    .getStatus()
+    .then((s) => {
+      if (s && s.version) state.textContent = 'v' + s.version;
+    })
+    .catch(() => {});
 })();

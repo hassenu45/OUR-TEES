@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة التحكم — AZMA.COM</title>
-  <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1193,6 +1193,10 @@
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
                       <div style="font-weight:800;">📸 انستقرام (رد التعليقات + الرسائل الخاصة)</div>
                       <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" name="igEnabled"> تفعيل</label>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                      <button type="button" class="btn btn-accent" id="ig-connect-btn" onclick="connectInstagram()">📸 اتصال بالانستقرام</button>
+                      <span id="ig-connect-status" style="font-size:12px;opacity:.85;">اتصال واحد فقط — يفتح صفحة فيسبوك/انستقرام لتسجيل الدخول</span>
                     </div>
                     <div class="form-row">
                       <div class="form-group"><label>Instagram Business Account ID</label><input type="text" name="igUserId" class="form-input" dir="ltr" placeholder="1784xxxxxxxx"></div>
