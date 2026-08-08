@@ -199,7 +199,7 @@ async function cancelOrder(id) {
 function showToast(msg, isErr) {
   const t = document.createElement('div');
   t.textContent = msg;
-  t.style.cssText = 'position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:' + (isErr ? '#7F1D1D' : '#14532D') + ';color:#FAFAF9;padding:11px 20px;border-radius:10px;font-size:13px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.4);';
+  t.style.cssText = 'position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:rgba(22,25,22,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid ' + (isErr ? 'rgba(252,165,165,.4)' : 'rgba(245,200,66,.35)') + ';color:' + (isErr ? '#FCA5A5' : 'var(--tees-yellow,#F5C842)') + ';padding:11px 20px;border-radius:12px;font-size:13px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.4);';
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2600);
 }
