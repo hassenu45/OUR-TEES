@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AZMA.COM — متجر التيشيرتات العصرية</title>
+    <meta name="description" content="تيشيرتات مصممة بعناية — قطن عالي الجودة، مقاسات متعددة، وسعر يناسبك.">
+    <meta name="theme-color" content="#0D0D0D">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="AZMA">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta property="og:title" content="AZMA — متجر التيشيرتات العصرية">
+    <meta property="og:description" content="تيشيرتات عصرية بجودة بريميوم. تشكيلات حصرية بتصاميم فريدة.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1200&q=80">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ar_SA">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AZMA">
+    <meta name="twitter:description" content="تيشيرتات عصرية بجودة بريميوم.">
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cairo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --tees-black:#0D0D0D;
+            --tees-surface:#161616;
+            --tees-card:#1E1E1E;
+            --tees-yellow:#F5C842;
+            --tees-yellow-dim:#c9a42e;
+            --tees-white:#F5F5F0;
+            --tees-muted:#888884;
+            --tees-border:#2a2a2a;
+            --tees-font:'Cairo',sans-serif;
+            --tees-display:'Bebas Neue',sans-serif;
+            --tees-radius:8px;
+            --tees-transition:0.25s cubic-bezier(0.16,1,0.3,1);
+        }
+        body{background:var(--tees-black);font-family:var(--tees-font);color:var(--tees-white);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+        img{display:block;max-width:100%;height:auto}
+        a{color:inherit;text-decoration:none}
+        ::selection{background:var(--tees-yellow);color:var(--tees-black)}
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:var(--tees-surface)}
+        ::-webkit-scrollbar-thumb{background:var(--tees-border);border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:var(--tees-muted)}
+        .hidden{display:none!important}
+        .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+        .accent{color:var(--tees-yellow)}
+
+        /* LOADER */
+        .page-loader{position:fixed;inset:0;z-index:9999;background:var(--tees-black);display:flex;align-items:center;justify-content:center;transition:opacity .6s,visibility .6s}
+        .page-loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+        .loader-inner{display:flex;flex-direction:column;align-items:center;gap:16px}
+        .loader-logo{width:76px;height:76px;border-radius:14px;box-shadow:0 0 0 1px rgba(245,200,66,.25),0 10px 34px rgba(0,0,0,.55);animation:float 2.2s ease-in-out infinite}
+        .loader-brand{font-family:var(--tees-display);font-size:30px;letter-spacing:6px;color:var(--tees-white)}
+        .loader-brand span{color:var(--tees-yellow)}
+        .spinner{position:relative;width:60px;height:60px;display:flex;justify-content:center;align-items:center;border-radius:50%;margin-left:-75px}
+        .spinner span{position:absolute;top:50%;left:var(--left);width:35px;height:7px;background:#ffff;animation:dominos 1s ease infinite;box-shadow:2px 2px 3px 0px black}
+        .spinner span:nth-child(1){--left:80px;animation-delay:0.125s}
+        .spinner span:nth-child(2){--left:70px;animation-delay:0.3s}
+        .spinner span:nth-child(3){left:60px;animation-delay:0.425s}
+        .spinner span:nth-child(4){animation-delay:0.54s;left:50px}
+        .spinner span:nth-child(5){animation-delay:0.665s;left:40px}
+        .spinner span:nth-child(6){animation-delay:0.79s;left:30px}
+        .spinner span:nth-child(7){animation-delay:0.915s;left:20px}
+        .spinner span:nth-child(8){left:10px}
+        @keyframes dominos{50%{opacity:0.7}75%{-webkit-transform:rotate(90deg);transform:rotate(90deg)}80%{opacity:1}}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @media(max-width:480px){.loader-logo{width:60px;height:60px}}
+
+        /* NAV */
+        .ot-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:1px solid var(--tees-border);position:sticky;top:0;z-index:100;background:rgba(13,13,13,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+        .ot-logo{font-family:var(--tees-display);font-size:26px;letter-spacing:3px;color:var(--tees-white);display:flex;align-items:center;gap:10px;transition:opacity .2s}
+        .ot-logo:hover{opacity:.85}
+        .ot-logo img{width:34px;height:34px;object-fit:contain;border-radius:6px}
+        .ot-logo span{color:var(--tees-yellow)}
+        .ot-nav-links{display:flex;gap:24px;list-style:none}
+        .ot-nav-links a{color:var(--tees-muted);font-size:12px;letter-spacing:1.5px;transition:color .2s;font-weight:600;position:relative;padding:4px 0}
+        .ot-nav-links a::after{content:'';position:absolute;bottom:0;left:0;width:0;height:1px;background:var(--tees-yellow);transition:width .25s}
+        .ot-nav-links a:hover{color:var(--tees-yellow)}
+        .ot-nav-links a:hover::after{width:100%}
+        .ot-nav-right{display:flex;align-items:center;gap:10px}
+        .ot-cart-btn{background:var(--tees-yellow);color:var(--tees-black);border:none;padding:8px 18px;font-family:var(--tees-font);font-weight:700;font-size:12px;cursor:pointer;letter-spacing:.5px;transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:6px;position:relative;border-radius:var(--tees-radius)}
+        .ot-cart-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,200,66,.25)}
+        .ot-cart-btn:active{transform:translateY(0)}
+        .ot-cart-badge{position:absolute;top:-5px;right:-5px;background:var(--tees-black);color:var(--tees-yellow);width:18px;height:18px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1px solid var(--tees-border);transition:transform .2s}
+        .cart-btn-pulse{animation:cartPulse .4s ease}
+        @keyframes cartPulse{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+
+        .currency-select,.country-select{padding:5px 8px;border-radius:6px;background:var(--tees-surface);border:1px solid var(--tees-border);color:var(--tees-muted);font-size:11px;font-family:var(--tees-font);cursor:pointer;outline:none;min-width:60px;-webkit-appearance:none;appearance:none;transition:border-color .2s}
+        .currency-select:focus,.country-select:focus{border-color:var(--tees-yellow)}
+        .currency-select option,.country-select option{background:var(--tees-black);color:var(--tees-white)}
+
+        .user-greeting{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:100px;background:var(--tees-surface);border:1px solid var(--tees-border);transition:border-color .2s}
+        .user-greeting:hover{border-color:var(--tees-yellow)}
+        .greeting-avatar{width:26px;height:26px;border-radius:50%;background:var(--tees-yellow);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--tees-black);flex-shrink:0;overflow:hidden}
+        .greeting-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+        .greeting-name{font-size:11px;font-weight:600;color:var(--tees-white);white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis}
+        /* LOGIN */
+        .login-btn{background:transparent;border:1px solid var(--tees-border);color:var(--tees-white);padding:7px 14px;border-radius:100px;font-family:var(--tees-font);font-size:12px;font-weight:700;cursor:pointer;transition:border-color .2s,color .2s;letter-spacing:.5px;white-space:nowrap}
+        .login-btn:hover{border-color:var(--tees-yellow);color:var(--tees-yellow)}
+        .logout-btn{background:none;border:none;color:var(--tees-muted);font-size:15px;cursor:pointer;line-height:1;padding:2px 4px;transition:color .2s}
+        .logout-btn:hover{color:#ef4444}
+
+        /* HERO */
+        .ot-hero{position:relative;padding:56px 32px 44px;overflow:hidden;max-width:1200px;margin:0 auto}
+        .ot-hero-bg-text{font-family:var(--tees-display);font-size:clamp(100px,16vw,200px);line-height:.85;color:transparent;-webkit-text-stroke:1px #222;position:absolute;top:0;left:-4%;right:0;pointer-events:none;user-select:none;white-space:nowrap;z-index:0;opacity:.6}
+        .ot-hero-content{position:relative;z-index:2;max-width:520px}
+        .ot-hero-eyebrow{font-size:11px;letter-spacing:4px;color:var(--tees-yellow);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+        .ot-hero-eyebrow::before{content:'';display:block;width:28px;height:1px;background:var(--tees-yellow)}
+        .ot-hero-title{font-family:var(--tees-display);font-size:clamp(52px,7.5vw,88px);line-height:.88;margin-bottom:20px;letter-spacing:2px}
+        .ot-hero-title em{color:var(--tees-yellow);font-style:normal}
+        .ot-hero-desc{font-size:15px;color:var(--tees-muted);line-height:1.7;max-width:400px;margin-bottom:32px}
+        .ot-hero-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+        .ot-btn-primary{background:var(--tees-yellow);color:var(--tees-black);border:none;padding:13px 32px;font-family:var(--tees-font);font-weight:700;font-size:14px;cursor:pointer;letter-spacing:.5px;transition:transform .2s,box-shadow .2s,background .2s;border-radius:var(--tees-radius)}
+        .ot-btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(245,200,66,.3);background:#f7d050}
+        .ot-btn-primary:active{transform:translateY(0)}
+        .ot-btn-ghost{background:transparent;color:var(--tees-white);border:1px solid var(--tees-border);padding:13px 28px;font-family:var(--tees-font);font-weight:600;font-size:14px;cursor:pointer;transition:border-color .2s,color .2s,transform .2s;border-radius:var(--tees-radius)}
+        .ot-btn-ghost:hover{border-color:var(--tees-yellow);color:var(--tees-yellow);transform:translateY(-1px)}
+        .ot-hero-stats{position:absolute;left:32px;top:50%;transform:translateY(-50%);z-index:2;display:flex;flex-direction:column;gap:24px;align-items:flex-start}
+        .ot-stat{text-align:left}
+        .ot-stat-num{font-family:var(--tees-display);font-size:42px;line-height:1;color:var(--tees-white);letter-spacing:1px}
+        .ot-stat-label{font-size:11px;color:var(--tees-muted);letter-spacing:2px;text-transform:uppercase}
+        .ot-stat-divider{width:32px;height:1px;background:var(--tees-border);align-self:flex-start}
+
+        /* MARQUEE */
+        .ot-marquee{background:var(--tees-yellow);padding:10px 0;overflow:hidden;position:relative}
+        .ot-marquee-inner{display:flex;white-space:nowrap;animation:marquee 24s linear infinite;will-change:transform}
+        .ot-marquee-item{font-family:var(--tees-display);font-size:14px;letter-spacing:3px;color:var(--tees-black);padding:0 28px;display:flex;align-items:center;gap:20px;flex-shrink:0}
+        .ot-marquee-dot{width:4px;height:4px;background:var(--tees-black);opacity:.35;border-radius:50%;display:inline-block;flex-shrink:0}
+        @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+        /* SECTION */
+        .ot-section{max-width:1200px;margin:0 auto;padding:44px 32px 0}
+
+        /* FILTER */
+        .ot-filter{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+        .ot-filter-label{font-size:10px;color:var(--tees-muted);letter-spacing:2px;text-transform:uppercase;margin-left:6px;font-weight:600}
+        .ot-filter-btn{background:transparent;border:1px solid var(--tees-border);color:var(--tees-muted);padding:6px 16px;font-family:var(--tees-font);font-size:12px;cursor:pointer;transition:all .2s;letter-spacing:.5px;border-radius:0;font-weight:600}
+        .ot-filter-btn.active,.ot-filter-btn:hover{background:var(--tees-yellow);border-color:var(--tees-yellow);color:var(--tees-black);font-weight:700}
+        .ot-search-sort{display:flex;gap:10px;align-items:center;flex:1;justify-content:flex-end}
+        .ot-search-input{background:var(--tees-surface);border:1px solid var(--tees-border);padding:7px 12px 7px 32px;font-family:var(--tees-font);font-size:12px;color:var(--tees-white);outline:none;min-width:180px;max-width:260px;transition:border-color .2s;border-radius:var(--tees-radius);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23888884' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+        .ot-search-input::placeholder{color:var(--tees-muted)}
+        .ot-search-input:focus{border-color:var(--tees-yellow)}
+        .ot-sort-select{background:var(--tees-surface);border:1px solid var(--tees-border);padding:7px 10px;font-family:var(--tees-font);font-size:11px;color:var(--tees-muted);cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;border-radius:var(--tees-radius);transition:border-color .2s;min-width:100px}
+        .ot-sort-select:focus{border-color:var(--tees-yellow)}
+        .ot-sort-select option{background:var(--tees-black);color:var(--tees-white)}
+
+        /* PRODUCTS GRID */
+        .ot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--tees-border);border:1px solid var(--tees-border)}
+        .ot-card{background:var(--tees-card);position:relative;overflow:hidden;cursor:pointer;transition:background .3s;display:flex;flex-direction:column}
+        .ot-card:hover{background:#232323}
+        .ot-card-img{width:100%;aspect-ratio:3/4;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--tees-surface)}
+        .ot-card-img img{width:100%;height:100%;object-fit:cover;transition:transform .45s}
+        .ot-card:hover .ot-card-img img{transform:scale(1.08)}
+        .ot-card-badge{position:absolute;top:12px;left:12px;z-index:2;font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:700;padding:3px 8px}
+        .badge-new{background:var(--tees-yellow);color:var(--tees-black)}
+        .badge-best{background:#fff;color:#000}
+        .badge-sold{background:#333;color:var(--tees-muted)}
+        .ot-card-info{padding:14px 16px 18px;flex:1}
+        .ot-card-type{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--tees-muted);margin-bottom:4px;font-weight:600}
+        .ot-card-name{font-family:var(--tees-display);font-size:20px;letter-spacing:1px;margin-bottom:2px}
+        .ot-card-desc{font-size:11px;color:var(--tees-muted);margin-bottom:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .ot-card-price-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+        .ot-card-price{font-family:var(--tees-display);font-size:18px;color:var(--tees-yellow)}
+        .ot-card-sizes{display:flex;gap:3px}
+        .ot-size{font-size:8px;border:1px solid var(--tees-border);color:var(--tees-muted);padding:1px 4px;letter-spacing:.5px}
+        .ot-card-order{position:absolute;bottom:0;left:0;right:0;background:var(--tees-yellow);color:var(--tees-black);padding:9px;font-family:var(--tees-font);font-weight:700;font-size:12px;text-align:center;letter-spacing:1px;transform:translateY(100%);transition:transform .3s cubic-bezier(.16,1,.3,1);border:none;cursor:pointer;z-index:3}
+        .ot-card:hover .ot-card-order{transform:translateY(0)}
+        .ot-card.sold-out .ot-card-order{display:none}
+        .ot-card.sold-out{cursor:default}
+        .ot-card.sold-out:hover{background:var(--tees-card)}
+        .ot-card-actions{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:8px;z-index:3;opacity:0;transform:translateX(8px);transition:opacity .25s,transform .25s}
+        .ot-card:hover .ot-card-actions{opacity:1;transform:translateX(0)}
+        .ot-card-act{width:36px;height:36px;border-radius:50%;background:rgba(20,20,20,.85);border:1px solid var(--tees-border);color:var(--tees-white);display:grid;place-items:center;cursor:pointer;backdrop-filter:blur(8px);transition:all .2s}
+        .ot-card-act:hover{background:var(--tees-yellow);color:var(--tees-black);border-color:var(--tees-yellow);transform:scale(1.08)}
+        .ot-card-act:active{transform:scale(.94)}
+        @media(hover:none){.ot-card-actions{opacity:1;transform:none}}
+
+        .empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--tees-muted);font-weight:600;font-size:14px}
+
+        /* FEATURED STRIP */
+        .ot-featured{margin:0 auto;max-width:1200px;padding:0 32px}
+        .ot-featured-inner{background:var(--tees-card);border:1px solid var(--tees-border);border-top:none;padding:20px 24px;display:flex;align-items:center;gap:32px}
+        .ot-featured-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--tees-yellow);min-width:70px;font-weight:600;flex-shrink:0}
+        .ot-featured-tags{display:flex;gap:10px;flex-wrap:wrap}
+        .ot-tag{border:1px solid var(--tees-border);color:var(--tees-muted);padding:5px 14px;font-size:11px;letter-spacing:1px;transition:all .2s;cursor:pointer;background:transparent;font-family:var(--tees-font);border-radius:0;font-weight:600}
+        .ot-tag:hover{border-color:var(--tees-white);color:var(--tees-white)}
+        .ot-featured-right{margin-left:auto;font-size:12px;color:var(--tees-muted);display:flex;align-items:center;gap:6px;cursor:pointer;transition:color .2s;font-weight:600;flex-shrink:0}
+        .ot-featured-right:hover{color:var(--tees-yellow)}
+        .ot-featured-right svg{transition:transform .2s}
+        .ot-featured-right:hover svg{transform:translateX(4px)}
+        .ot-arrow{font-family:var(--tees-display);font-size:16px}
+
+        /* ABOUT */
+        .ot-about{max-width:1200px;margin:0 auto;padding:56px 32px}
+        .ot-about-inner{background:var(--tees-card);border:1px solid var(--tees-border);padding:44px}
+        .ot-about-title{font-family:var(--tees-display);font-size:38px;letter-spacing:2px;margin-bottom:12px}
+        .ot-about-text{font-size:14px;color:var(--tees-muted);line-height:1.8;max-width:560px}
+
+        /* FOOTER */
+        .ot-footer{border-top:1px solid var(--tees-border);margin-top:56px;padding:44px 32px 20px}
+        .ot-footer-inner{max-width:1200px;margin:0 auto}
+        .ot-footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:36px;margin-bottom:36px}
+        .ot-footer-brand .ot-logo{display:inline-flex;margin-bottom:10px}
+        .ot-footer-tagline{font-size:12px;color:var(--tees-muted);max-width:260px;line-height:1.7}
+        .ot-footer-col h4{font-family:var(--tees-display);font-size:16px;letter-spacing:2px;margin-bottom:14px}
+        .ot-footer-links{list-style:none}
+        .ot-footer-links li{margin-bottom:6px}
+        .ot-footer-links a{font-size:12px;color:var(--tees-muted);transition:color .2s}
+        .ot-footer-links a:hover{color:var(--tees-yellow)}
+        .social-icons{display:flex;gap:10px}
+        .social-icon{width:38px;height:38px;border:1px solid var(--tees-border);display:flex;align-items:center;justify-content:center;transition:all .2s;border-radius:0}
+        .social-icon:hover{border-color:var(--tees-yellow);background:rgba(245,200,66,.06)}
+        .social-icon svg{color:var(--tees-muted);transition:color .2s}
+        .social-icon:hover svg{color:var(--tees-yellow)}
+        .ot-footer-bottom{padding-top:20px;border-top:1px solid var(--tees-border);text-align:center;font-size:11px;color:var(--tees-muted);letter-spacing:1px}
+
+        /* BOT BUBBLE (Tez) */
+        .ot-bot{position:fixed;bottom:24px;left:24px;z-index:50;display:flex;flex-direction:column;align-items:flex-start;gap:6px;transition:transform .2s}
+        .ot-bot:hover{transform:translateY(-2px)}
+        .ot-bot-bubble{background:var(--tees-surface);border:1px solid var(--tees-border);padding:10px 14px;font-size:12px;color:var(--tees-white);max-width:190px;line-height:1.5;position:relative;border-radius:0;transition:border-color .2s}
+        .ot-bot:hover .ot-bot-bubble{border-color:var(--tees-yellow)}
+        .ot-bot-bubble::after{content:'';position:absolute;bottom:-7px;left:16px;border:4px solid transparent;border-top-color:var(--tees-border);transition:border-top-color .2s}
+        .ot-bot:hover .ot-bot-bubble::after{border-top-color:var(--tees-yellow)}
+        .ot-bot-name{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--tees-muted);margin-bottom:0;font-weight:600}
+
+        /* TEZ WELCOME */
+        .tez-welcome{position:fixed;bottom:90px;left:24px;z-index:50;animation:welcomeIn .45s ease;max-width:300px}
+        @keyframes welcomeIn{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .tez-welcome-inner{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;background:rgba(22,22,22,.97);border:1px solid var(--tees-border);backdrop-filter:blur(20px);box-shadow:0 12px 40px -8px rgba(0,0,0,.6);position:relative}
+        .tez-welcome-icon{flex-shrink:0;margin-top:1px}
+        .tez-welcome-text{font-size:11px;font-weight:500;color:var(--tees-muted);line-height:1.5}
+        .tez-welcome-name{font-size:10px;color:var(--tees-yellow);font-weight:600;display:block;margin-top:3px}
+        .tez-welcome-close{position:absolute;top:5px;left:5px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(255,255,255,.05);color:rgba(250,250,249,.3);font-size:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+        .tez-welcome-close:hover{background:rgba(255,255,255,.1);color:rgba(250,250,249,.6)}
+
+        /* WELCOME TOAST (top, under nav) */
+        .welcome-toast{position:fixed;top:76px;right:50%;transform:translateX(50%) translateY(-24px);z-index:2000;width:min(420px,calc(100vw - 32px));background:rgba(16,16,16,.98);border:1px solid var(--tees-border);border-radius:16px;box-shadow:0 20px 60px -12px rgba(0,0,0,.75);backdrop-filter:blur(20px);opacity:0;pointer-events:none;transition:all .5s cubic-bezier(.16,1,.3,1);overflow:hidden}
+        .welcome-toast.show{opacity:1;transform:translateX(50%) translateY(0);pointer-events:auto}
+        .welcome-toast-inner{display:flex;align-items:center;gap:12px;padding:14px 16px}
+        .welcome-avatar{width:42px;height:42px;border-radius:50%;background:var(--tees-yellow);color:var(--tees-black);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;overflow:hidden;box-shadow:0 4px 14px rgba(245,200,66,.4)}
+        .welcome-avatar img{width:100%;height:100%;object-fit:cover}
+        .welcome-body{flex:1;min-width:0}
+        .welcome-body h4{font-family:var(--tees-display);font-size:17px;letter-spacing:1px;color:var(--tees-white);line-height:1.2}
+        .welcome-body h4 b{color:var(--tees-yellow)}
+        .welcome-body p{font-size:11.5px;color:var(--tees-muted);margin-top:3px;line-height:1.5}
+        .welcome-close{background:none;border:none;color:var(--tees-muted);font-size:16px;cursor:pointer;line-height:1;padding:4px;transition:color .2s;align-self:flex-start}
+        .welcome-close:hover{color:var(--tees-white)}
+        .welcome-country{border-top:1px solid var(--tees-border);padding:10px 16px;display:flex;align-items:center;gap:8px;background:var(--tees-surface)}
+        .welcome-country label{font-size:10px;color:var(--tees-muted);font-weight:700;white-space:nowrap}
+        .welcome-country select{flex:1}
+
+        /* CART DRAWER */
+        /* LIGHT THEME */
+        body.light{
+          --tees-black:#F5F5F0;
+          --tees-surface:#FFFFFF;
+          --tees-card:#F0EFEA;
+          --tees-white:#121212;
+          --tees-muted:#6b6b66;
+          --tees-border:#E4E3DD;
+        }
+        body.light .ot-hero-bg-text,body.light .ot-marquee{color:rgba(13,13,13,.04)}
+        body.light .ot-nav,body.light .tez-header,body.light .tez-chat-footer{background:rgba(245,245,240,.85)}
+        body.light .tez-welcome-inner,body.light .welcome-toast{background:rgba(250,250,247,.98);border-color:var(--tees-border);box-shadow:0 20px 60px -12px rgba(0,0,0,.18)}
+        body.light .msg-tez{background:var(--tees-card);border-color:var(--tees-border)}
+        body.light .ot-card-actions .ot-card-act{background:rgba(255,255,255,.9)}
+
+        /* Sparkle Button */
+        .sp{position:fixed;bottom:24px;right:24px;z-index:1000}
+        .sparkle-button{--active:0;--transition:.3s;--spark:3;background:var(--tees-surface);font-size:1rem;font-weight:600;font-family:var(--tees-font);border:1px solid var(--tees-border);cursor:pointer;padding:.85em 1em;display:flex;align-items:center;gap:.3em;white-space:nowrap;border-radius:100px;position:relative;color:var(--tees-white);transition:all .3s}
+        .sparkle-button:hover{--active:1;border-color:var(--tees-yellow);color:var(--tees-yellow);box-shadow:0 0 24px rgba(245,200,66,.15),inset 0 0 24px rgba(245,200,66,.04)}
+        .sparkle-button:active{transform:scale(.96)}
+        .sparkle-button svg{inline-size:1.15em;translate:-20% -4%}
+        .sparkle path{color:var(--tees-yellow);fill:currentColor;stroke:currentColor}
+        .spark{position:absolute;inset:0;border-radius:100px;overflow:hidden;mask:linear-gradient(white,transparent 50%);animation:flip calc(var(--spark)*2) infinite steps(2,end)}
+        @keyframes flip{to{rotate:360deg}}
+        .spark:before{content:"";position:absolute;width:200%;aspect-ratio:1;top:0;left:50%;z-index:-1;translate:-50% -15%;opacity:calc(var(--active)+.4);background:conic-gradient(from 0deg,transparent 0 340deg,white 360deg);transition:opacity var(--transition);animation:rotate var(--spark) linear infinite both}
+        @keyframes rotate{to{transform:rotate(90deg)}}
+        .backdrop{position:absolute;inset:var(--cut);background:var(--bg);border-radius:100px;transition:background var(--transition)}
+        .bodydrop{position:absolute;inset:var(--cut);border-radius:100px}
+
+        /* TEZ CHAT DRAWER */
+        .tez-fab{position:fixed;bottom:24px;right:24px;z-index:1070;width:56px;height:56px;border-radius:50%;background:transparent;color:var(--tees-black);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s}
+        .tez-fab:hover{transform:scale(1.08)}
+        .tez-fab:active{transform:scale(.95)}
+        .glass-icon{display:inline-block;width:40px;height:40px;transition:all .5s cubic-bezier(.25,1,.5,1)}
+        .tez-fab:hover .glass-icon{transform:translateY(-2px) scale(1.05) rotate(-8deg)}
+        .tez-overlay{position:fixed;inset:0;z-index:1055;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);transition:opacity .3s;display:none}
+        .tez-overlay:not(.hidden){display:block}
+        .tez-drawer{position:fixed;bottom:90px;right:24px;top:auto;left:auto;width:350px;max-width:calc(100vw - 32px);height:440px;max-height:calc(100vh - 120px);background:var(--tees-surface);border:1px solid var(--tees-border);border-radius:14px;z-index:1060;display:flex;flex-direction:column;transform:translateY(0) scale(1);opacity:1;transform-origin:bottom right;transition:transform .25s cubic-bezier(.16,1,.3,1),opacity .25s;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.5)}
+        .tez-drawer.hidden{transform:translateY(16px) scale(.92);opacity:0;pointer-events:none}
+        .tez-header{padding:12px 14px;background:var(--tees-black);border-bottom:1px solid var(--tees-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+        .tez-header-title{display:flex;align-items:center;gap:10px}
+        .tez-avatar{width:32px;height:32px;background:var(--tees-yellow);color:var(--tees-black);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;flex-shrink:0}
+        .tez-header h3{font-family:var(--tees-display);font-size:18px;line-height:1;letter-spacing:1px}
+        .tez-status{font-size:9px;font-weight:700;color:#16a34a}
+        .tez-close{background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--tees-muted);line-height:1;padding:0 4px;transition:color .2s}
+        .tez-close:hover{color:var(--tees-white)}
+        .tez-chat-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+        .tez-messages{display:flex;flex-direction:column;gap:8px}
+        .msg-bubble{max-width:82%;padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.45;word-break:break-word;animation:msgIn .25s ease-out}
+        @keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .msg-user{align-self:flex-start;background:var(--tees-yellow);color:var(--tees-black);font-weight:600}
+        .msg-tez{align-self:flex-end;background:var(--tees-card);color:var(--tees-white);border:1px solid var(--tees-border)}
+        .tez-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+        .tez-chip{background:var(--tees-card);border:1px solid var(--tees-border);padding:5px 10px;font-family:var(--tees-font);font-size:9px;font-weight:700;border-radius:14px;cursor:pointer;transition:all .2s;color:var(--tees-muted)}
+        .tez-chip:hover{background:var(--tees-yellow);color:var(--tees-black);border-color:var(--tees-yellow)}
+        .tez-suggestion-row{display:flex;gap:6px;flex-wrap:wrap;padding:2px 0 4px}
+        .tez-chat-footer{padding:10px;background:var(--tees-black);border-top:1px solid var(--tees-border);display:flex;gap:8px;flex-shrink:0}
+        .tez-input{flex:1;padding:8px 12px;border:1px solid var(--tees-border);border-radius:6px;font-family:var(--tees-font);font-size:12px;background:var(--tees-surface);color:var(--tees-white);outline:none;transition:border-color .2s}
+        .tez-input:focus{border-color:var(--tees-yellow)}
+        .tez-input::placeholder{color:var(--tees-muted)}
+        .tez-send-btn{padding:8px 12px;background:var(--tees-yellow);color:var(--tees-black);border:none;border-radius:6px;cursor:pointer;font-weight:700;transition:transform .15s,box-shadow .15s;display:flex;align-items:center}
+        .tez-send-btn:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(245,200,66,.3)}
+        .tez-personal-greeting{text-align:center;padding:8px 12px;margin-bottom:8px;background:rgba(245,200,66,.05);border-radius:8px;font-size:11px;color:var(--tees-muted)}
+        .tez-personal-greeting strong{color:var(--tees-yellow)}
+        .tez-chat-body::-webkit-scrollbar{width:3px}
+        .tez-chat-body::-webkit-scrollbar-thumb{background:var(--tees-border);border-radius:3px}
+
+        /* CART BOTTOM SHEET */
+        #cart-overlay{position:fixed;inset:0;z-index:1040;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .4s ease,visibility .4s}
+        #cart-overlay.open{opacity:1;visibility:visible;pointer-events:auto}
+        #cart-drawer{position:fixed;left:0;right:0;bottom:0;width:100%;max-width:600px;margin:0 auto;max-height:88vh;background:var(--tees-surface);border-top:1px solid var(--tees-border);border-radius:22px 22px 0 0;z-index:1050;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -20px 60px rgba(0,0,0,.55);transform:translateY(105%);visibility:hidden;transition:transform .45s cubic-bezier(.4,0,.2,1),visibility .45s;will-change:transform}
+        #cart-drawer.open{transform:translateY(0);visibility:visible;transition:transform .6s cubic-bezier(.34,1.3,.4,1),visibility .6s}
+        #cart-drawer.dragging{transition:none}
+        .cart-handle{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:10px 0 4px;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+        .cart-handle:active{cursor:grabbing}
+        .cart-handle-bar{width:46px;height:5px;border-radius:99px;background:var(--tees-border);transition:background .3s,box-shadow .3s}
+        #cart-drawer.open .cart-handle-bar{background:rgba(245,200,66,.55);box-shadow:0 0 10px rgba(245,200,66,.35)}
+        #cart-drawer .tez-header{padding:12px 16px 8px}
+        .cart-scroll{flex:1;overflow-y:auto;padding:8px 14px}
+        .cart-scroll::-webkit-scrollbar{width:3px}
+        .cart-scroll::-webkit-scrollbar-thumb{background:var(--tees-border);border-radius:3px}
+        .cart-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(42,42,42,.5)}
+        .cart-item:last-child{border-bottom:none}
+        .cart-item-img{width:52px;height:52px;object-fit:cover;border-radius:6px;background:var(--tees-card);flex-shrink:0}
+        .cart-item-info{flex:1;min-width:0}
+        .cart-item-name{font-family:var(--tees-display);font-size:15px;letter-spacing:.5px}
+        .cart-item-details{font-size:10px;color:var(--tees-muted)}
+        .cart-item-price{font-family:var(--tees-display);font-size:16px;color:var(--tees-yellow);margin-top:2px}
+        .cart-item-qty{display:flex;align-items:center;gap:4px}
+        .cart-qty-btn{width:22px;height:22px;background:var(--tees-card);border:1px solid var(--tees-border);color:var(--tees-white);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-weight:700;border-radius:4px}
+        .cart-qty-btn:hover{background:var(--tees-yellow);color:var(--tees-black);border-color:var(--tees-yellow)}
+        .cart-qty-val{font-weight:700;font-size:12px;min-width:18px;text-align:center}
+        .cart-item-remove{background:none;border:none;color:var(--tees-muted);cursor:pointer;font-size:14px;padding:4px;transition:color .2s;line-height:1}
+        .cart-item-remove:hover{color:#ef4444}
+        #cart-drawer .tez-chat-footer{padding:12px 14px;flex-direction:column;gap:8px;flex-shrink:0}
+
+        #cart-drawer.checkout-active .cart-scroll{display:none}
+        .order-success-anim{text-align:center;padding:38px 0;animation:successPop .5s cubic-bezier(.34,1.56,.64,1) both}
+        @keyframes successPop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+        .order-success-anim .chk{width:54px;height:54px;border-radius:50%;background:var(--tees-yellow);color:var(--tees-black);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;font-weight:900;box-shadow:0 8px 30px rgba(245,200,66,.45);animation:chkDraw .6s .15s cubic-bezier(.34,1.56,.64,1) both}
+        @keyframes chkDraw{from{transform:scale(0) rotate(-30deg)}to{transform:scale(1) rotate(0)}}
+        .order-success-anim h4{font-family:var(--tees-display);font-size:21px;letter-spacing:1px;margin-bottom:4px}
+        .order-success-anim p{font-size:12px;color:var(--tees-muted)}
+
+        /* QUICK VIEW MODAL */
+        .quickview-modal{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .3s,visibility .3s}
+        .quickview-modal.active{opacity:1;visibility:visible;pointer-events:auto}
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:-1}
+        .quickview-content{width:100%;max-width:760px;max-height:90vh;overflow-y:auto;background:var(--tees-surface);border:1px solid var(--tees-border);position:relative;transform:translateY(20px) scale(.95);transition:transform .35s cubic-bezier(.16,1,.3,1);padding:0;border-radius:0}
+        .quickview-modal.active .quickview-content{transform:translateY(0) scale(1)}
+        .quickview-close{position:absolute;top:12px;right:12px;background:var(--tees-black);border:1px solid var(--tees-border);border-radius:50%;width:34px;height:34px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;color:var(--tees-muted);transition:all .2s}
+        .quickview-close:hover{color:var(--tees-white);border-color:var(--tees-yellow);background:var(--tees-surface)}
+        .quickview-layout{display:grid;grid-template-columns:1fr 1fr;gap:0}
+        .quickview-gallery{background:var(--tees-black);position:relative}
+        .quickview-main-img{position:relative;width:100%;aspect-ratio:1;overflow:hidden}
+        .quickview-main-img img{width:100%;height:100%;object-fit:cover}
+        .gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(30,30,30,.8);border:1px solid var(--tees-border);color:var(--tees-white);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:14px;z-index:5;border-radius:0}
+        .gallery-arrow:hover{background:var(--tees-yellow);color:var(--tees-black);border-color:var(--tees-yellow)}
+        .gallery-arrow.prev{right:8px}
+        .gallery-arrow.next{left:8px}
+        .quickview-thumbs{display:flex;gap:6px;padding:8px;overflow-x:auto;background:var(--tees-black)}
+        .quickview-thumbs img{width:48px;height:48px;object-fit:cover;cursor:pointer;opacity:.45;transition:opacity .2s,border-color .2s;flex-shrink:0;border:1px solid transparent}
+        .quickview-thumbs img.active,.quickview-thumbs img:hover{opacity:1;border-color:var(--tees-yellow)}
+        .quickview-info{padding:24px;display:flex;flex-direction:column}
+        .quickview-badge{display:inline-block;font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:700;padding:3px 8px;background:var(--tees-yellow);color:var(--tees-black);margin-bottom:10px;width:fit-content}
+        .quickview-title{font-family:var(--tees-display);font-size:28px;letter-spacing:1px;margin-bottom:6px}
+        .quickview-desc{font-size:12px;color:var(--tees-muted);line-height:1.6;margin-bottom:10px}
+        .quickview-price{font-family:var(--tees-display);font-size:26px;color:var(--tees-yellow);margin-bottom:18px}
+        .quickview-options{display:flex;flex-direction:column;gap:14px;margin-bottom:18px}
+        .quickview-option label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--tees-muted);font-weight:600;display:block;margin-bottom:4px}
+        .size-pills-container{display:flex;gap:6px;flex-wrap:wrap}
+        .size-pill{min-width:40px;height:40px;padding:0 10px;background:var(--tees-card);color:var(--tees-white);border:1px solid var(--tees-border);font-family:var(--tees-font);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;user-select:none}
+        .size-pill:hover,.size-pill.active{background:var(--tees-yellow);color:var(--tees-black);border-color:var(--tees-yellow);transform:translateY(-1px)}
+        .quickview-select{width:100%;padding:9px 12px;background:var(--tees-card);border:1px solid var(--tees-border);color:var(--tees-white);font-family:var(--tees-font);font-size:13px;outline:none;cursor:pointer;transition:border-color .2s}
+        .quickview-select:focus{border-color:var(--tees-yellow)}
+        .quickview-select option{background:var(--tees-black);color:var(--tees-white)}
+        .quickview-add{width:100%;padding:12px;background:var(--tees-yellow);color:var(--tees-black);border:none;font-family:var(--tees-font);font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .15s,box-shadow .15s;margin-top:auto;border-radius:var(--tees-radius)}
+        .quickview-add:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,200,66,.25)}
+        .quickview-add:active{transform:translateY(0)}
+        .form-error{font-size:11px;color:#ef4444;margin-bottom:6px;font-weight:600}
+
+        /* RESPONSIVE */
+        @media(max-width:992px){
+            .ot-grid{grid-template-columns:repeat(2,1fr)}
+            .quickview-layout{grid-template-columns:1fr}
+            .ot-hero-stats{display:none}
+            .ot-hero-bg-text{font-size:clamp(80px,12vw,140px)}
+        }
+        @media(max-width:768px){
+            .ot-nav{padding:12px 20px}
+            .ot-nav-links{display:none}
+            .ot-hero{padding:36px 20px 28px}
+            .ot-hero-title{font-size:clamp(36px,9vw,56px)}
+            .ot-section{padding:28px 20px 0}
+            .ot-grid{margin:0 20px}
+            .ot-filter{padding:0 20px}
+            .ot-featured{padding:0 20px}
+            .ot-featured-inner{flex-wrap:wrap;gap:16px}
+            .ot-featured-right{margin-left:0}
+            .ot-about{padding:36px 20px}
+            .ot-about-inner{padding:28px 24px}
+            .ot-footer{padding:28px 20px 16px}
+            .ot-footer-grid{grid-template-columns:1fr;gap:20px}
+            .ot-search-sort{flex:1 1 100%;margin-top:6px}
+            .ot-search-input{min-width:140px;max-width:100%}
+            .ot-bot{left:16px;bottom:16px}
+            .ot-bot-bubble{display:none}
+            .sp{right:16px;bottom:16px}
+            .tez-drawer{right:16px;bottom:80px;width:calc(100vw - 32px);height:400px}
+            #cart-drawer{max-width:100%;border-radius:18px 18px 0 0}
+            .country-select{min-width:52px;font-size:10px;padding:4px 6px}
+        }
+        @media(max-width:480px){
+            .ot-grid{grid-template-columns:1fr}
+            .ot-hero-stats{display:none}
+            .ot-nav{padding:10px 14px}
+            .ot-nav-right{gap:6px}
+            .ot-cart-btn{padding:6px 12px;font-size:11px}
+            .ot-cart-btn span.cart-text{display:none}
+            .ot-hero{padding:32px 16px 24px}
+            .ot-hero-actions{gap:12px}
+            .ot-btn-primary,.ot-btn-ghost{padding:11px 24px;font-size:13px}
+            .quickview-modal{padding:12px}
+            .quickview-info{padding:18px}
+        }
+        @media(max-width:380px){
+            .ot-grid{grid-template-columns:1fr}
+            .country-select{min-width:44px;padding:3px 4px;font-size:9px}
+        }
+        @media(prefers-reduced-motion:reduce){
+            *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+            .ot-marquee-inner{animation:none}
+            .ot-card:hover .ot-card-img img{transform:none}
+            .ot-card-order{transform:none}
+            .ot-card:hover .ot-card-order{transform:none}
+        }
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body>
+
+    <!-- AUTH GATE -->
+    <div id="auth-gate" style="position:fixed;inset:0;z-index:99999;background:#0D0D0D;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-family:'Cairo',sans-serif">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:6px;color:#F5F5F0">AZ<span style="color:#F5C842">MA</span></div>
+        <div style="width:170px;height:3px;border-radius:2px;background:#2a2a2a;overflow:hidden"><i style="display:block;height:100%;width:40%;background:#F5C842;animation:azgate 1.1s ease-in-out infinite"></i></div>
+        <div id="auth-gate-txt" style="font-size:12px;color:#888884">جارٍ التحقق من الجلسة…</div>
+    </div>
+    <style>@keyframes azgate{0%{transform:translateX(-130%)}100%{transform:translateX(330%)}}</style>
+    <script>
+        (function () {
+            var gate = document.getElementById('auth-gate');
+            function deny() { window.location.replace('login.html'); }
+            function allow() { if (gate) gate.remove(); }
+            fetch('/api/auth/check', { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d && d.authenticated) allow(); else deny();
+                })
+                .catch(deny);
+        })();
+    </script>
+
+    <!-- LOADER -->
+    <div id="page-loader" class="page-loader">
+        <div class="loader-inner">
+            <img src="assets/images/logo.png" alt="AZMA" class="loader-logo">
+            <div class="loader-brand">AZ<span>MA</span></div>
+            <div class="spinner" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            function hideLoader() {
+                var el = document.getElementById('page-loader');
+                if (el) el.classList.add('hidden');
+            }
+            window.addEventListener('load', function () { setTimeout(hideLoader, 400); });
+            setTimeout(hideLoader, 2500);
+        })();
+    </script>
+
+    <!-- NAV -->
+    <nav class="ot-nav">
+        <a href="store.html" class="ot-logo">
+            <img src="assets/images/logo.png" alt="AZMA">
+            AZMA
+        </a>
+        <ul class="ot-nav-links">
+            <li><a href="#products">STORE</a></li>
+            <li><a href="#about">ABOUT</a></li>
+        </ul>
+        <div class="ot-nav-right">
+            <button id="login-btn" class="login-btn" onclick="location.href='login.html'" style="display:none">تسجيل الدخول</button>
+            <div id="user-greeting" class="user-greeting" style="display:none">
+                <span class="greeting-avatar" id="user-avatar"></span>
+                <span class="greeting-name" id="user-name"></span>
+                <button id="logout-btn" class="logout-btn" onclick="signOut()" title="تسجيل الخروج">&times;</button>
+            </div>
+            <select id="country-select" class="country-select" onchange="changeCountry(this.value)" title="دولتك — العملة">
+            </select>
+            <button id="cart-btn" class="ot-cart-btn" onclick="toggleCartDrawer()" aria-label="عربة التسوق">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                <span class="cart-text">CART</span>
+                <span id="cart-count" class="ot-cart-badge" style="display:none">0</span>
+            </button>
+            <a href="my-orders.html" class="ot-cart-btn" style="text-decoration:none;background:none;border:1px solid rgba(255,255,255,.12);color:rgba(250,250,249,.7);">📦 طلباتي</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="ot-hero">
+        <div class="ot-hero-bg-text" aria-hidden="true">AZMA</div>
+        <div class="ot-hero-content">
+            <p id="hero-badge" class="ot-hero-eyebrow">SUMMER DROP 2025</p>
+            <h1 id="hero-title" class="ot-hero-title">WEAR<br><em>YOUR</em><br>STORY</h1>
+            <p id="hero-subtitle" class="ot-hero-desc">تيشيرتات مصممة بعناية — قطن عالي الجودة، مقاسات متعددة، وسعر يناسبك.</p>
+            <div class="ot-hero-actions">
+                <a href="#products" class="ot-btn-primary">تسوق الآن</a>
+                <a href="#about" class="ot-btn-ghost">شاهد الكولكشن</a>
+            </div>
+        </div>
+        <div class="ot-hero-stats" aria-label="إحصائيات المتجر">
+            <div class="ot-stat">
+                <div class="ot-stat-num">48+</div>
+                <div class="ot-stat-label">DESIGNS</div>
+            </div>
+            <div class="ot-stat-divider"></div>
+            <div class="ot-stat">
+                <div class="ot-stat-num">2K+</div>
+                <div class="ot-stat-label">ORDERS</div>
+            </div>
+            <div class="ot-stat-divider"></div>
+            <div class="ot-stat">
+                <div class="ot-stat-num">4.9</div>
+                <div class="ot-stat-label">RATING</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <div class="ot-marquee" role="marquee" aria-label="شعارات المتجر">
+        <div class="ot-marquee-inner" id="marquee-track">
+            <span class="ot-marquee-item">NEW COLLECTION<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">OVERSIZED FIT<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">PREMIUM COTTON<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">FREE SHIPPING +200<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">VINTAGE WASH<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">AZMA STORE<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">NEW COLLECTION<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">OVERSIZED FIT<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">PREMIUM COTTON<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">FREE SHIPPING +200<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">VINTAGE WASH<span class="ot-marquee-dot"></span></span>
+            <span class="ot-marquee-item">AZMA STORE<span class="ot-marquee-dot"></span></span>
+        </div>
+    </div>
+
+    <!-- PRODUCTS SECTION -->
+    <section class="ot-section" id="products">
+        <div class="ot-filter">
+            <span class="ot-filter-label">FILTER</span>
+            <button class="ot-filter-btn active" data-filter="all" onclick="setFilter(this,'all')">الكل</button>
+            <button class="ot-filter-btn" data-filter="cotton" onclick="setFilter(this,'cotton')">قطن</button>
+            <button class="ot-filter-btn" data-filter="vintage" onclick="setFilter(this,'vintage')">فينتاج</button>
+            <button class="ot-filter-btn" data-filter="premium" onclick="setFilter(this,'premium')">بريميوم</button>
+            <button class="ot-filter-btn" data-filter="oversized" onclick="setFilter(this,'oversized')">أوفر سايز</button>
+            <div class="ot-search-sort">
+                <input type="text" id="store-search" class="ot-search-input" placeholder="بحث عن تيشيرت..." oninput="filterStoreProducts()">
+                <select id="store-sort" class="ot-sort-select" onchange="sortStoreProducts()">
+                    <option value="default">ترتيب</option>
+                    <option value="price-asc">السعر: من الأقل</option>
+                    <option value="price-desc">السعر: من الأعلى</option>
+                    <option value="name">الاسم</option>
+                </select>
+            </div>
+        </div>
+        <div class="ot-grid" id="products-grid">
+            <p class="empty-state">Loading products...</p>
+        </div>
+    </section>
+
+    <!-- FEATURED STRIP -->
+    <div class="ot-featured">
+        <div class="ot-featured-inner">
+            <span class="ot-featured-label">EXPLORE</span>
+            <div class="ot-featured-tags">
+                <button class="ot-tag" onclick="toggleFeaturedTag(this)">Summer Drop</button>
+                <button class="ot-tag" onclick="toggleFeaturedTag(this)">Graphic Tees</button>
+                <button class="ot-tag" onclick="toggleFeaturedTag(this)">Monochrome</button>
+                <button class="ot-tag" onclick="toggleFeaturedTag(this)">Limited Edition</button>
+            </div>
+            <div class="ot-featured-right" onclick="openTezWithMessage('عرض الكاتالوج كاملاً')">
+                <span>عرض الكاتالوج كاملاً</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABOUT -->
+    <section class="ot-about" id="about">
+        <div class="ot-about-inner">
+            <h2 id="about-title" class="ot-about-title">BUILT DIFFERENT.</h2>
+            <p id="about-text" class="ot-about-text">AZMA started in a garage with one screen printer. Premium streetwear for people who wear their attitude on their sleeve.</p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="ot-footer">
+        <div class="ot-footer-inner">
+            <div class="ot-footer-grid">
+                <div class="ot-footer-brand">
+                    <a href="store.html" class="ot-logo">
+                        <img src="assets/images/logo.png" alt="AZMA">
+                        AZMA
+                    </a>
+                    <p class="ot-footer-tagline">Premium streetwear for people who wear their attitude on their sleeve.</p>
+                </div>
+                <div class="ot-footer-col">
+                    <h4>HELP</h4>
+                    <ul class="ot-footer-links">
+                        <li><a href="#">Shipping</a></li>
+                        <li><a href="#">Returns</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="ot-footer-col">
+                    <h4>FOLLOW</h4>
+                    <div class="social-icons">
+                        <a href="https://www.instagram.com/_a.z.m.a0/" target="_blank" class="social-icon" aria-label="Instagram">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="ot-footer-bottom">&copy; 2026 AZMA. ALL RIGHTS RESERVED.</div>
+        </div>
+    </footer>
+
+    <!-- WELCOME TOAST -->
+    <div id="welcome-toast" class="welcome-toast" role="status">
+        <div class="welcome-toast-inner">
+            <span class="welcome-avatar" id="welcome-avatar">👋</span>
+            <div class="welcome-body">
+                <h4 id="welcome-title">أهلاً بك! 👋</h4>
+                <p id="welcome-msg">إذا في عندك سؤال اسألني وأنا جاهز 💬</p>
+            </div>
+            <button class="welcome-close" onclick="dismissWelcomeToast()" aria-label="إغلاق">&times;</button>
+        </div>
+        <div id="welcome-country-row" class="welcome-country" style="display:none">
+            <label for="welcome-country">اختار بلدك عشان تشوف الأسعار بعملتك:</label>
+            <select id="welcome-country" class="country-select" onchange="changeCountryFromWelcome(this.value)"></select>
+        </div>
+    </div>
+
+    <!-- CART OVERLAY -->
+    <div id="cart-overlay"></div>
+
+    <!-- CART DRAWER -->
+    <aside id="cart-drawer" class="tez-drawer" aria-label="سلة المشتريات">
+        <div class="cart-handle" id="cart-handle" aria-hidden="true"><div class="cart-handle-bar"></div></div>
+        <div class="tez-header">
+            <div class="tez-header-title">
+                <div class="tez-avatar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </div>
+                <div>
+                    <h3>سلة المشتريات</h3>
+                    <span class="tez-status" id="cart-status">0 منتج</span>
+                </div>
+            </div>
+            <button class="tez-close" onclick="toggleCartDrawer()" aria-label="إغلاق">&times;</button>
+        </div>
+        <div class="cart-scroll" id="cart-items">
+            <p style="text-align:center;opacity:0.5;padding:32px 0;font-weight:600;font-size:13px;">السلة فارغة</p>
+        </div>
+        <div class="tez-chat-footer">
+            <div style="display:flex;justify-content:space-between;font-weight:700;font-size:16px;font-family:var(--tees-display);letter-spacing:.5px">
+                <span>المجموع:</span>
+                <span id="cart-total">0 د.أ</span>
+            </div>
+            <button id="checkout-btn" class="ot-btn-primary" onclick="location.href='my-orders.html'" style="display:none;width:100%;text-align:center;padding:10px;font-size:13px">إتمام الطلب</button>
+        </div>
+    </aside>
+
+    <!-- TEZ CHAT -->
+    <div id="tez-overlay" class="tez-overlay hidden"></div>
+    <button id="tez-fab" class="tez-fab" onclick="toggleTezDrawer()" aria-label="محادثة Tez">
+        <svg viewBox="0 0 256 256" class="glass-icon" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="geminiGrad1" cx="78%" cy="55%" r="78%" fx="78%" fy="55%">
+                    <stop offset="0%" stop-color="#1ba1e3"></stop>
+                    <stop offset="30%" stop-color="#5489d6"></stop>
+                    <stop offset="54%" stop-color="#9b72cb"></stop>
+                    <stop offset="82%" stop-color="#d96570"></stop>
+                    <stop offset="100%" stop-color="#f49c46"></stop>
+                </radialGradient>
+                <radialGradient id="geminiGrad2" cx="-3%" cy="-54%" r="169%" fx="-3%" fy="-54%">
+                    <stop offset="0%" stop-color="#1ba1e3"></stop>
+                    <stop offset="30%" stop-color="#5489d6"></stop>
+                    <stop offset="54%" stop-color="#9b72cb"></stop>
+                    <stop offset="82%" stop-color="#d96570"></stop>
+                    <stop offset="100%" stop-color="#f49c46"></stop>
+                </radialGradient>
+            </defs>
+            <g transform="translate(53, 53) scale(0.58)" filter="drop-shadow(0 0 15px rgba(27, 161, 227, 0.4))">
+                <path fill="url(#geminiGrad1)" d="m122.062 172.77l-10.27 23.52c-3.947 9.042-16.459 9.042-20.406 0l-10.27-23.52c-9.14-20.933-25.59-37.595-46.108-46.703L6.74 113.52c-8.987-3.99-8.987-17.064 0-21.053l27.385-12.156C55.172 70.97 71.917 53.69 80.9 32.043L91.303 6.977c3.86-9.303 16.712-9.303 20.573 0l10.403 25.066c8.983 21.646 25.728 38.926 46.775 48.268l27.384 12.156c8.987 3.99 8.987 17.063 0 21.053l-28.267 12.547c-20.52 9.108-36.97 25.77-46.109 46.703"></path>
+                <path fill="url(#geminiGrad2)" d="m217.5 246.937l-2.888 6.62c-2.114 4.845-8.824 4.845-10.937 0l-2.889-6.62c-5.148-11.803-14.42-21.2-25.992-26.34l-8.898-3.954c-4.811-2.137-4.811-9.131 0-11.269l8.4-3.733c11.87-5.273 21.308-15.017 26.368-27.22l2.966-7.154c2.067-4.985 8.96-4.985 11.027 0l2.966 7.153c5.06 12.204 14.499 21.948 26.368 27.221l8.4 3.733c4.812 2.138 4.812 9.132 0 11.27l-8.898 3.953c-11.571 5.14-20.844 14.537-25.992 26.34"></path>
+            </g>
+        </svg>
+    </button>
+    <aside id="tez-drawer" class="tez-drawer hidden" aria-label="محادثة Tez">
+        <div class="tez-header">
+            <div class="tez-header-title">
+                <div class="tez-avatar">T</div>
+                <div>
+                    <h3 id="tez-name-header">Tez AI</h3>
+                    <div class="tez-status" id="tez-status-text">🟢 متصل</div>
+                </div>
+            </div>
+            <button class="tez-close" id="tez-close-btn" aria-label="إغلاق">&times;</button>
+        </div>
+        <div class="tez-chat-body">
+            <div class="tez-messages" id="tez-messages"></div>
+            <div class="tez-chips">
+                <button class="tez-chip" type="button" onclick="sendQuickChip('وش مقاساتكم المتوفرة؟')">📏 المقاسات</button>
+                <button class="tez-chip" type="button" onclick="sendQuickChip('كم أسعار التيشيرتات؟')">💰 الأسعار</button>
+                <button class="tez-chip" type="button" onclick="sendQuickChip('ساعدني أختار مقاس وتصميم يناسبني')">🎨 مساعد تخصيص</button>
+                <button class="tez-chip" type="button" onclick="sendQuickChip('كيف أطلب ويوصلني الطلب؟')">🚚 الشحن والطلب</button>
+            </div>
+        </div>
+        <div class="tez-chat-footer">
+            <form id="tez-chat-form" style="display:flex;gap:8px;width:100%;margin:0;">
+                <input type="text" id="tez-input" class="tez-input" placeholder="اسأل Tez عن المقاسات والأسعار والتوصيات..." autocomplete="off">
+                <button type="submit" id="tez-send-btn" class="tez-send-btn" aria-label="إرسال">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- QUICK VIEW MODAL -->
+    <div id="order-modal" class="quickview-modal">
+        <div id="modal-overlay" class="modal-overlay" onclick="closeQuickView()"></div>
+        <div class="quickview-content" role="dialog" aria-labelledby="modal-product-name">
+            <button id="modal-close" class="quickview-close" onclick="closeQuickView()" aria-label="إغلاق">✕</button>
+            <div class="quickview-layout">
+                <div class="quickview-gallery">
+                    <div class="quickview-main-img">
+                        <img id="modal-product-img" src="" alt="صورة المنتج">
+                        <button id="gallery-prev-btn" class="gallery-arrow prev" aria-label="السابق">&#10094;</button>
+                        <button id="gallery-next-btn" class="gallery-arrow next" aria-label="التالي">&#10095;</button>
+                    </div>
+                    <div class="quickview-thumbs" id="modal-gallery-thumbs"></div>
+                </div>
+                <div class="quickview-info">
+                    <span class="quickview-badge" id="quickview-badge">NEW</span>
+                    <h2 id="modal-product-name" class="quickview-title"></h2>
+                    <p id="modal-product-desc" class="quickview-desc"></p>
+                    <p id="modal-product-price" class="quickview-price"></p>
+                    <div class="quickview-options">
+                        <div class="quickview-option">
+                            <label>المقاس (SIZE)</label>
+                            <div id="order-size-pills" class="size-pills-container"></div>
+                            <input type="hidden" id="order-size">
+                        </div>
+                        <div class="quickview-option">
+                            <label>النوع (TYPE)</label>
+                            <select id="order-type" class="quickview-select"></select>
+                        </div>
+                    </div>
+                    <p id="modal-order-error" class="form-error" style="display:none;"></p>
+                    <button id="add-to-cart-btn" class="quickview-add" onclick="addToCartFromQuickView()">
+                        <span>أضف إلى السلة</span>
+                        <span id="add-cart-price"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="js/db-local.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/design-tokens.js"></script>
+    <script src="js/store.js"></script>
+
+    <!-- App Scripts -->
+    <script>
+    const COUNTRIES = {
+        SA: { currency: 'SAR', symbol: 'ر.س', prefix: '+966', flag: '🇸🇦', name: 'السعودية' },
+        JO: { currency: 'JOD', symbol: 'د.أ', prefix: '+962', flag: '🇯🇴', name: 'الأردن' },
+        BH: { currency: 'BHD', symbol: 'د.ب', prefix: '+973', flag: '🇧🇭', name: 'البحرين' },
+        KW: { currency: 'KWD', symbol: 'د.ك', prefix: '+965', flag: '🇰🇼', name: 'الكويت' },
+        YE: { currency: 'YER', symbol: 'ر.ي', prefix: '+967', flag: '🇾🇪', name: 'اليمن' },
+        EG: { currency: 'EGP', symbol: 'ج.م', prefix: '+20', flag: '🇪🇬', name: 'مصر' },
+        AE: { currency: 'AED', symbol: 'د.إ', prefix: '+971', flag: '🇦🇪', name: 'الإمارات' },
+        QA: { currency: 'QAR', symbol: 'ر.ق', prefix: '+974', flag: '🇶🇦', name: 'قطر' },
+        OM: { currency: 'OMR', symbol: 'ر.ع', prefix: '+968', flag: '🇴🇲', name: 'عمان' },
+        US: { currency: 'USD', symbol: '$', prefix: '+1', flag: '🇺🇸', name: 'أمريكا' },
+    };
+    // سعر الأساس ثابت بالدينار الأردني، ويتحول لعملة بلد الزائر بأسعار صرف ثابتة
+    const CURRENCY_RATES = { JOD: 1, SAR: 5.29, BHD: 0.53, KWD: 0.43, YER: 355, EGP: 68.5, AED: 5.18, QAR: 5.13, OMR: 0.54, USD: 1.41 };
+
+    function fillCountrySelect(sel, current) {
+        if (!sel) return;
+        sel.innerHTML = Object.keys(COUNTRIES).map(c =>
+            '<option value="' + c + '"' + (c === current ? ' selected' : '') + '>' + COUNTRIES[c].flag + ' ' + COUNTRIES[c].name + ' — ' + COUNTRIES[c].symbol + '</option>'
+        ).join('');
+    }
+
+    let currentUser = null;
+
+    function getSavedUser() {
+        try { return JSON.parse(localStorage.getItem('azma_user')); } catch { return null; }
+    }
+
+    function saveUser(user) {
+        localStorage.setItem('azma_user', JSON.stringify(user));
+        currentUser = user;
+    }
+
+    function detectCountry(code) {
+        return COUNTRIES[code] || COUNTRIES['JO'];
+    }
+
+    function getSavedCountryCode() {
+        const saved = localStorage.getItem('azma_country');
+        if (saved && COUNTRIES[saved]) return saved;
+        const legacyCur = localStorage.getItem('azma_currency');
+        if (legacyCur) {
+            const hit = Object.keys(COUNTRIES).find(c => COUNTRIES[c].currency === legacyCur);
+            if (hit) return hit;
+        }
+        return 'JO';
+    }
+
+    function getCurrentCountry() {
+        return detectCountry(getSavedCountryCode());
+    }
+
+    function getCurrentCurrency() { return getCurrentCountry(); }
+
+    function convertPrice(baseJOD) {
+        const rate = CURRENCY_RATES[getCurrentCountry().currency] || 1;
+        return (parseFloat(baseJOD) || 0) * rate;
+    }
+
+    function fmtLocalPrice(baseJOD) {
+        const c = getCurrentCountry();
+        return formatPrice(convertPrice(baseJOD), c.symbol);
+    }
+
+    function applyUserSettings(user) {
+        if (!user) return;
+        const country = detectCountry(user.country || getSavedCountryCode() || 'JO');
+        const code = getSavedCountryCode();
+        const sel = document.getElementById('country-select');
+        if (sel) fillCountrySelect(sel, code);
+        const greeting = document.getElementById('user-greeting');
+        const nameEl = document.getElementById('user-name');
+        const avatarEl = document.getElementById('user-avatar');
+        if (greeting && nameEl && avatarEl) {
+            nameEl.textContent = user.name || 'صديق';
+            avatarEl.innerHTML = user.picture
+                ? '<img src="' + user.picture + '" alt="">'
+                : (user.name ? user.name.charAt(0).toUpperCase() : 'G');
+            greeting.style.display = 'flex';
+        }
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) loginBtn.style.display = 'none';
+        showTezGreeting(user);
+        if (typeof renderProducts === 'function') renderProducts();
+        showWelcomeToast(user);
+    }
+
+    function localeToCountry(locale) {
+        if (!locale) return 'JO';
+        const map = { sa:'SA', jo:'JO', bh:'BH', kw:'KW', ye:'YE', eg:'EG', ae:'AE', qa:'QA', om:'OM', us:'US', gb:'US' };
+        const code = locale.split('-')[1] || locale.split('_')[1] || locale;
+        return map[code.toUpperCase()] || map[code.toLowerCase()] || 'JO';
+    }
+
+    function changeCountry(code) {
+        if (!COUNTRIES[code]) return;
+        localStorage.setItem('azma_country', code);
+        const els = [document.getElementById('country-select')];
+        els.forEach(el => { if (el) el.value = code; });
+        const welcomeCountry = document.getElementById('welcome-country');
+        if (welcomeCountry) welcomeCountry.value = code;
+        if (typeof renderProducts === 'function') renderProducts();
+        if (typeof renderCartItems === 'function') renderCartItems();
+        const c = COUNTRIES[code];
+        showToast('بألف دينار! 🎉 صارت الأسعار بـ ' + c.name + ' (' + c.symbol + ')');
+    }
+
+    function changeCountryFromWelcome(code) {
+        changeCountry(code);
+        dismissWelcomeToast();
+    }
+
+    function showTezGreeting(user) {
+        const name = user ? user.name : null;
+        const msgs = document.getElementById('tez-messages');
+        if (!msgs) return;
+        const hasAge = !!localStorage.getItem('azma_age');
+        const header = document.getElementById('tez-name-header');
+        if (header && name) header.textContent = 'Tez — ' + name.split(' ')[0];
+        const status = document.getElementById('tez-status-text');
+        if (status && name) status.textContent = '🟢 أهلاً ' + name.split(' ')[0];
+        const askAge = !hasAge
+            ? ' كم عمرك؟ عشان أنصحك بالمقاس الصحيح لك 😊'
+            : ' كيف أقدر أساعدك اليوم؟';
+        const existing = msgs.querySelector('.tez-personal-greeting');
+        if (!existing) {
+            const div = document.createElement('div');
+            div.className = 'tez-personal-greeting';
+            div.innerHTML = name
+                ? '👋 أهلين <strong>' + name.split(' ')[0] + '</strong>!' + askAge
+                : '👋 أهلاً! أنا Tez، كيف أقدر أساعدك اليوم؟';
+            msgs.prepend(div);
+        } else if (name) {
+            existing.innerHTML = '👋 أهلين <strong>' + name.split(' ')[0] + '</strong>!' + askAge;
+        }
+    }
+
+    function showWelcomeToast(user) {
+        const toast = document.getElementById('welcome-toast');
+        if (!toast) return;
+        if (sessionStorage.getItem('azma_welcomed')) return;
+        const first = user && user.name ? user.name.split(' ')[0] : 'صديق';
+        const title = document.getElementById('welcome-title');
+        const avatar = document.getElementById('welcome-avatar');
+        const countryRow = document.getElementById('welcome-country-row');
+        const welcomeCountry = document.getElementById('welcome-country');
+        if (title) title.innerHTML = 'أهلاً <b>' + escapeHtml(first) + '</b>! 👋';
+        if (avatar) {
+            avatar.innerHTML = user && user.picture
+                ? '<img src="' + user.picture + '" alt="">'
+                : '👋';
+        }
+        const needCountry = !localStorage.getItem('azma_country');
+        if (countryRow) countryRow.style.display = needCountry ? 'flex' : 'none';
+        if (welcomeCountry) fillCountrySelect(welcomeCountry, getSavedCountryCode());
+        toast.classList.add('show');
+        sessionStorage.setItem('azma_welcomed', '1');
+        if (!needCountry) {
+            setTimeout(dismissWelcomeToast, 6500);
+        }
+    }
+
+    function dismissWelcomeToast() {
+        const toast = document.getElementById('welcome-toast');
+        if (toast) toast.classList.remove('show');
+    }
+
+    function showToast(msg) {
+        const existing = document.getElementById('toast');
+        if (existing) existing.remove();
+        const d = document.createElement('div');
+        d.id = 'toast';
+        d.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);padding:10px 24px;border-radius:8px;background:rgba(22,22,22,.97);border:1px solid #2a2a2a;color:#F5F5F0;font-size:12px;font-weight:500;z-index:9999;backdrop-filter:blur(12px);opacity:0;transition:all .3s ease;';
+        d.textContent = msg;
+        document.body.appendChild(d);
+        requestAnimationFrame(() => { d.style.opacity = '1'; d.style.transform = 'translateX(-50%) translateY(0)'; });
+        setTimeout(() => {
+            d.style.opacity = '0'; d.style.transform = 'translateX(-50%) translateY(10px)';
+            setTimeout(() => d.remove(), 300);
+        }, 2500);
+    }
+
+    function signOut() {
+        localStorage.removeItem('azma_user');
+        currentUser = null;
+        var greeting = document.getElementById('user-greeting');
+        var loginBtn = document.getElementById('login-btn');
+        if (greeting) greeting.style.display = 'none';
+        if (loginBtn) loginBtn.style.display = '';
+        if (typeof showTezGreeting === 'function') showTezGreeting(null);
+        showToast('تم تسجيل الخروج — مع السلامة!');
+        fetch('/api/logout', { method: 'POST' })
+            .then(function () { window.location.href = 'login.html'; })
+            .catch(function () { window.location.href = 'login.html'; });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // ملء قوائم البلد/العملة (nav + الإعدادات + نافذة الترحيب)
+        const countryCode = getSavedCountryCode();
+        fillCountrySelect(document.getElementById('country-select'), countryCode);
+        fillCountrySelect(document.getElementById('welcome-country'), countryCode);
+        // جلب المستخدم من جلسة الخادم (Google) — اسمه وصورته ليعرفها Tez
+        fetch('/api/auth/check', { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                const saved = getSavedUser();
+                if (d && d.authenticated) {
+                    const serverUser = {
+                        id: (saved && saved.id) || (d.email || 'user'),
+                        name: d.name || (saved && saved.name) || 'صديق',
+                        email: d.email || (saved && saved.email) || '',
+                        picture: d.picture || (saved && saved.picture) || '',
+                    };
+                    saveUser(serverUser);
+                    applyUserSettings(serverUser);
+                    const loginBtn = document.getElementById('login-btn');
+                    if (loginBtn) loginBtn.style.display = 'none';
+                } else if (saved) {
+                    currentUser = saved;
+                    applyUserSettings(saved);
+                    const loginBtn = document.getElementById('login-btn');
+                    if (loginBtn) loginBtn.style.display = 'none';
+                } else {
+                    const loginBtn = document.getElementById('login-btn');
+                    if (loginBtn) loginBtn.style.display = '';
+                }
+            })
+            .catch(function () {
+                const saved = getSavedUser();
+                if (saved) { currentUser = saved; applyUserSettings(saved); }
+            });
+    });
+
+    // ── Filter ──
+    function setFilter(btn, cat) {
+        document.querySelectorAll('.ot-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        window.activeFilter = cat;
+        if (typeof renderProducts === 'function') renderProducts();
+    }
+    window.activeFilter = 'all';
+
+    // ── Helpers ──
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;';
+            if (m === '"') return '&quot;'; return '&#39;';
+        });
+    }
+
+    function formatPrice(price, symbol) {
+        return (Math.round(price * 100) / 100).toFixed(2).replace(/\.00$/, '') + ' ' + (symbol || 'ر.س');
+    }
+
+    function closeQuickView() {
+        if (typeof closeOrderModal === 'function') closeOrderModal();
+    }
+
+    function addToCartFromQuickView() {
+        if (typeof selectedProduct === 'undefined' || !selectedProduct) return;
+        const size = document.getElementById('order-size')?.value || 'M';
+        const type = document.getElementById('order-type')?.value || '';
+        if (typeof addToCart === 'function') {
+            addToCart(selectedProduct, size, type, 1);
+            closeQuickView();
+            if (typeof toggleCartDrawer === 'function') toggleCartDrawer();
+        }
+    }
+
+    // ── Toggle Tez Drawer ──
+    function toggleTezDrawer() {
+        const drawer = document.getElementById('tez-drawer');
+        const overlay = document.getElementById('tez-overlay');
+        const input = document.getElementById('tez-input');
+        if (!drawer) return;
+        if (drawer.classList.contains('hidden')) {
+            drawer.classList.remove('hidden');
+            if (overlay) overlay.classList.remove('hidden');
+            setTimeout(() => input?.focus(), 300);
+            if (typeof chatHistory !== 'undefined' && !chatHistory.length && typeof addChatMsg === 'function') {
+                const welcome = (typeof settings !== 'undefined' && settings.aiWelcome) || 'أهلاً بك! أنا Tez، المساعد الذكي. كيف يمكنني مساعدتك اليوم؟';
+                addChatMsg(welcome, 'ai');
+            }
+        } else {
+            drawer.classList.add('hidden');
+            if (overlay) overlay.classList.add('hidden');
+        }
+    }
+
+    function openTezWithMessage(msg) {
+        toggleTezDrawer();
+        setTimeout(() => {
+            if (typeof sendQuickChip === 'function' && msg) sendQuickChip(msg);
+        }, 400);
+    }
+
+    // Close Tez with X & overlay
+    document.addEventListener('DOMContentLoaded', () => {
+        const closeBtn = document.getElementById('tez-close-btn');
+        if (closeBtn) closeBtn.addEventListener('click', toggleTezDrawer);
+        const tezOverlay = document.getElementById('tez-overlay');
+        if (tezOverlay) tezOverlay.addEventListener('click', toggleTezDrawer);
+    });
+
+    // ── Cart Bottom Sheet ──
+    function toggleCartDrawer() {
+        const drawer = document.getElementById('cart-drawer');
+        if (!drawer) return;
+        if (drawer.classList.contains('open')) {
+            closeCartDrawer();
+        } else {
+            openCartDrawer();
+        }
+    }
+
+    function openCartDrawer() {
+        const drawer = document.getElementById('cart-drawer');
+        const overlay = document.getElementById('cart-overlay');
+        if (!drawer) return;
+        drawer.classList.add('open');
+        if (overlay) overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        if (typeof renderCartItems === 'function') renderCartItems();
+    }
+
+    function closeCartDrawer() {
+        const drawer = document.getElementById('cart-drawer');
+        const overlay = document.getElementById('cart-overlay');
+        if (!drawer) return;
+        drawer.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    // Overlay click + Escape + drag-to-close
+    document.addEventListener('DOMContentLoaded', function () {
+        const overlay = document.getElementById('cart-overlay');
+        if (overlay) overlay.addEventListener('click', closeCartDrawer);
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeCartDrawer();
+        });
+        initCartDrag();
+    });
+
+    function initCartDrag() {
+        const drawer = document.getElementById('cart-drawer');
+        const handle = document.getElementById('cart-handle');
+        if (!drawer || !handle) return;
+        let startY = 0, dragging = false;
+        handle.addEventListener('pointerdown', function (e) {
+            dragging = true;
+            startY = e.clientY;
+            drawer.classList.add('dragging');
+            try { handle.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+        });
+        handle.addEventListener('pointermove', function (e) {
+            if (!dragging) return;
+            const dy = e.clientY - startY;
+            if (dy > 0) drawer.style.transform = 'translateY(' + dy + 'px)';
+        });
+        function endDrag(e) {
+            if (!dragging) return;
+            dragging = false;
+            drawer.classList.remove('dragging');
+            const dy = e.clientY - startY;
+            drawer.style.transform = '';
+            if (dy > 110) closeCartDrawer();
+        }
+        handle.addEventListener('pointerup', endDrag);
+        handle.addEventListener('pointercancel', endDrag);
+    }
+
+    // ── Toggle featured tag ──
+    function toggleFeaturedTag(el) {
+        el.classList.toggle('active');
+        el.style.borderColor = el.classList.contains('active') ? 'var(--tees-yellow)' : '';
+        el.style.color = el.classList.contains('active') ? 'var(--tees-yellow)' : '';
+    }
+    </script>
+</body>
+</html>
