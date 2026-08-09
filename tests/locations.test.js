@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cities, districts, subdistricts, areas } from '../js/jordan-locations.js';
+import { JORDAN_LOCATIONS, cities, districts, subdistricts, areas } from '../js/jordan-locations.js';
 
 describe('Jordan locations data layer', () => {
   it('lists all 12 governorates', () => {
@@ -44,5 +44,15 @@ describe('Jordan locations data layer', () => {
     expect(areas('المفرق', 'لواء قصبة المفرق')).toEqual([]); // لواء بأقضية — القضاء مطلوب أولاً
     expect(areas('المفرق', 'لواء قصبة المفرق', 'قضاء غير موجود')).toEqual([]);
     expect(areas('إربد', 'لواء قصبة إربد', 'قضاء وهمي')).toEqual([]);
+  });
+
+  it('exposes the accessor functions as methods on the JORDAN_LOCATIONS array itself', () => {
+    // المتصفح يستدعي jordanLoc().cities() — الدوال يجب أن تكون خصائص على المصفوفة
+    expect(typeof JORDAN_LOCATIONS.cities).toBe('function');
+    expect(typeof JORDAN_LOCATIONS.districts).toBe('function');
+    expect(typeof JORDAN_LOCATIONS.subdistricts).toBe('function');
+    expect(typeof JORDAN_LOCATIONS.areas).toBe('function');
+    expect(JORDAN_LOCATIONS.cities()).toHaveLength(12);
+    expect(JORDAN_LOCATIONS.subdistricts('المفرق', 'لواء قصبة المفرق')).toContain('قضاء بلعما');
   });
 });

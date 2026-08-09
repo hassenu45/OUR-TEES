@@ -521,6 +521,7 @@
   }
 
   const api = { JORDAN_LOCATIONS, cities, districts, subdistricts, areas };
+  Object.assign(JORDAN_LOCATIONS, api);
   if (typeof window !== 'undefined') Object.assign(window, api);
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
