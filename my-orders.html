@@ -143,11 +143,19 @@
     .mo-select-opt:hover{background:rgba(245,200,66,.12);color:var(--tees-yellow)}
     @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 
-    /* ── Delivery editor overlay ── */
-    .mo-delivery-card{width:min(480px,92vw);max-height:88vh;overflow-y:auto;text-align:right;padding:32px}
-    .mo-delivery-card .mo-card-title{margin-bottom:18px}
-    .mo-delivery-close{position:absolute;top:14px;left:14px;background:none;border:1px solid rgba(255,255,255,.15);color:var(--tees-muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:14px;font-family:inherit;transition:all .3s var(--tees-ease)}
-    .mo-delivery-close:hover{border-color:rgba(252,165,165,.5);color:#FCA5A5}
+    /* ── Saved addresses list ── */
+    .mo-saved-addresses{display:grid;gap:8px;margin-bottom:18px}
+    .mo-saved-title{font-size:11px;color:var(--tees-muted);letter-spacing:.02em;margin:0 0 2px}
+    .mo-saved-item{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03);cursor:pointer;transition:all .3s var(--tees-ease);text-align:right}
+    .mo-saved-item:hover,.mo-saved-item.active{border-color:rgba(245,200,66,.55);background:rgba(245,200,66,.08)}
+    .mo-saved-main{flex:1;min-width:0}
+    .mo-saved-name{font-size:12.5px;font-weight:700}
+    .mo-saved-loc{font-size:11px;color:var(--tees-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mo-saved-del{width:24px;height:24px;border-radius:50%;border:1px solid rgba(252,165,165,.3);color:#FCA5A5;font-size:11px;display:flex;align-items:center;justify-content:center;flex:none;transition:all .3s var(--tees-ease)}
+    .mo-saved-del:hover{background:rgba(252,165,165,.12)}
+    .mo-saved-add{width:100%;padding:10px;border:1px dashed rgba(245,200,66,.35);border-radius:12px;background:none;color:var(--tees-yellow);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .3s var(--tees-ease)}
+    .mo-saved-add:hover{background:rgba(245,200,66,.08)}
+    .mo-saved-none{font-size:11.5px;color:var(--tees-muted);padding:4px 2px}
 
     /* ── Overlay ── */
     .mo-overlay{position:fixed;inset:0;background:rgba(5,5,5,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:50}
@@ -190,7 +198,6 @@
       <nav class="mo-menu">
         <label class="mo-menu-item active" id="tab-checkout" for="mo-toggle" onclick="switchTab('checkout')">🛒 إتمام الطلب</label>
         <label class="mo-menu-item" id="tab-orders" for="mo-toggle" onclick="switchTab('orders')">📦 طلباتي</label>
-        <label class="mo-menu-item mo-menu-delivery" id="menu-delivery" for="mo-toggle" onclick="openDeliveryEditor()" style="display:none;">📍 بيانات التوصيل</label>
       </nav>
     </div>
   </header>
@@ -213,6 +220,7 @@
     </div>
     <div class="mo-card">
       <h3 class="mo-card-title">معلومات التوصيل</h3>
+      <div class="mo-saved-addresses" id="mo-saved-addresses" style="display:none;"></div>
       <div class="mo-fields-grid">
         <div class="mo-field"><label>الاسم الكامل *</label><input id="mo-name" placeholder="محمد أحمد"></div>
         <div class="mo-field"><label>رقم الهاتف *</label><input id="mo-phone" placeholder="07XXXXXXXX" dir="ltr"></div>
@@ -259,22 +267,6 @@
     <div class="mo-overlay-card">
       <div class="spin"></div>
       <div id="mo-overlay-text">جاري معالجة الدفع...</div>
-    </div>
-  </div>
-
-  <div class="mo-overlay" id="mo-delivery-overlay">
-    <div class="mo-overlay-card mo-delivery-card">
-      <button type="button" class="mo-delivery-close" onclick="closeDeliveryEditor()">✕</button>
-      <h3 class="mo-card-title">📍 بيانات التوصيل</h3>
-      <div class="mo-field"><label>الاسم الكامل</label><input id="mo-del-name"></div>
-      <div class="mo-field"><label>رقم الهاتف</label><input id="mo-del-phone" dir="ltr"></div>
-      <div class="mo-field"><label>المحافظة</label><input type="hidden" id="mo-del-city"><div class="mo-select" id="wrap-mo-del-city" data-for="mo-del-city" data-placeholder="اختر المحافظة"></div></div>
-      <div class="mo-field"><label>اللواء</label><input type="hidden" id="mo-del-district"><div class="mo-select" id="wrap-mo-del-district" data-for="mo-del-district" data-placeholder="اختر اللواء"></div></div>
-      <div class="mo-field" id="field-mo-del-subdistrict" style="display:none"><label>القضاء</label><input type="hidden" id="mo-del-subdistrict"><div class="mo-select" id="wrap-mo-del-subdistrict" data-for="mo-del-subdistrict" data-placeholder="اختر القضاء"></div></div>
-      <div class="mo-field"><label>المنطقة</label><input type="hidden" id="mo-del-area"><div class="mo-select" id="wrap-mo-del-area" data-for="mo-del-area" data-placeholder="اختر المنطقة"></div></div>
-      <div class="mo-field"><label>الشارع</label><input id="mo-del-street"></div>
-      <div class="mo-field"><label>معلم قريب (اختياري)</label><input id="mo-del-landmark"></div>
-      <button class="mo-btn" id="mo-del-save" onclick="saveDeliveryEditor()">حفظ البيانات</button>
     </div>
   </div>
 
