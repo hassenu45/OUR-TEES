@@ -133,6 +133,8 @@ module.exports = [
         API: 'readonly',
         DB: 'readonly',
         module: 'readonly',
+        escapeHtml: 'readonly',
+        isServerMode: 'readonly',
         IndexDB: 'readonly',
         IDBRequest: 'readonly',
         IDBDatabase: 'readonly',
