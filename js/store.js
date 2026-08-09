@@ -571,9 +571,63 @@ function addChatMsg(text, sender, isTyping = false) {
 
 function removeChatMsg(id) { const el = $(id); if (el) el.remove(); }
 
+/* ── Live product sync (silent — no reload, no flicker) ── */
+let lastProductsSignature = '';
+let liveSyncRunning = false;
+
+function productsSignature(list) {
+  return (list || []).map(p =>
+    `${p.id}|${p.name}|${p.price}|${p.soldOut ? '1' : '0'}|${p.image || ''}|${(p.types || []).join(',')}`
+  ).join('~');
+}
+
+function showNewProductsToast() {
+  const existing = document.querySelector('.cart-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'cart-toast';
+  toast.textContent = '🆕 منتجات جديدة أضيفت للمتجر!';
+  toast.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;background:var(--color-foreground);color:var(--color-background);border:2px solid var(--color-border);padding:12px 24px;border-radius:12px;font-weight:700;font-size:14px;box-shadow:6px 6px 0 var(--color-border);opacity:0;transition:all 0.3s cubic-bezier(0.16,1,0.3,1);';
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateX(-50%) translateY(0)'; }, 10);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(20px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+async function syncProductsSilently() {
+  if (liveSyncRunning || document.visibilityState === 'hidden') return;
+  liveSyncRunning = true;
+  try {
+    const fresh = await API.getProducts();
+    const sig = productsSignature(fresh);
+    if (sig === lastProductsSignature) return;
+    const prevCount = products.length;
+    products = fresh;
+    lastProductsSignature = sig;
+    const q = ($('store-search')?.value || '').trim();
+    if (q) filterStoreProducts(); else sortStoreProducts();
+    if (fresh.length > prevCount) showNewProductsToast();
+  } catch {
+    /* keep current data; retry on next tick */
+  } finally {
+    liveSyncRunning = false;
+  }
+}
+
+function startLiveSync() {
+  lastProductsSignature = productsSignature(products);
+  liveSyncTimer = setInterval(syncProductsSilently, 20000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncProductsSilently();
+  });
+}
+
 /* ── Init ── */
 document.addEventListener('DOMContentLoaded', () => {
-  initStore();
+  initStore().then(startLiveSync);
   initTezChat();
   updateCartUI();
 
