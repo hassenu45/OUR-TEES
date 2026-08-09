@@ -256,6 +256,66 @@ app.get('/api/auth/check', (req, res) => {
   });
 });
 
+// Dev-only test login — simulates a logged-in Google account. Disabled unless
+// AZMA_DEV_LOGIN=1 is set in .env. Never enable on a public deployment.
+app.post('/api/dev/login', (req, res) => {
+  if (process.env.AZMA_DEV_LOGIN !== '1') return res.status(404).json({ error: 'Not Found' });
+  const email = String((req.body && req.body.email) || '').trim();
+  if (!email) return res.status(400).json({ error: 'email required' });
+  req.session.authenticated = true;
+  req.session.userEmail = email;
+  req.session.userName = String((req.body && req.body.name) || 'Test User').trim();
+  req.session.userPicture = '';
+  res.json({ success: true, email });
+});
+
+// ── Per-account delivery info (Google accounts only) ──
+const DELIVERY_FILE = path.join(__dirname, 'data', 'delivery-info.json');
+function readDeliveryFile() {
+  try {
+    return JSON.parse(fs.readFileSync(DELIVERY_FILE, 'utf8')) || {};
+  } catch (e) {
+    return {};
+  }
+}
+function writeDeliveryFile(data) {
+  fs.mkdirSync(path.dirname(DELIVERY_FILE), { recursive: true });
+  const tmp = DELIVERY_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
+  fs.renameSync(tmp, DELIVERY_FILE);
+}
+function sanitizeDelivery(body) {
+  const s = (v, max = 100) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  return {
+    name: s(body.name, 60),
+    phone: s(body.phone, 20),
+    city: s(body.city, 40),
+    district: s(body.district, 40),
+    subdistrict: s(body.subdistrict, 40),
+    area: s(body.area, 40),
+    street: s(body.street, 60),
+    landmark: s(body.landmark, 60),
+  };
+}
+app.get('/api/me/delivery', (req, res) => {
+  if (!req.session.authenticated || !req.session.userEmail) return res.status(401).json({ error: 'Unauthorized' });
+  const all = readDeliveryFile();
+  res.json(all[req.session.userEmail] || {});
+});
+app.put('/api/me/delivery', rateLimit(30, 60000), (req, res) => {
+  if (!req.session.authenticated || !req.session.userEmail) return res.status(401).json({ error: 'Unauthorized' });
+  const d = sanitizeDelivery(req.body || {});
+  if (d.phone && !/^\+?[0-9\s-]{8,15}$/.test(d.phone)) return res.status(400).json({ error: 'رقم هاتف غير صالح' });
+  const all = readDeliveryFile();
+  all[req.session.userEmail] = d;
+  try {
+    writeDeliveryFile(all);
+  } catch (e) {
+    return res.status(500).json({ error: 'تعذر الحفظ' });
+  }
+  res.json({ success: true, delivery: d });
+});
+
 app.post('/api/auth/google', rateLimit(10, 60000), async (req, res) => {
   const { idToken } = req.body;
   if (!idToken) return res.status(400).json({ error: 'رمز Google مفقود' });
