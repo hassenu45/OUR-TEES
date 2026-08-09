@@ -124,6 +124,31 @@
     .mo-empty-icon{display:flex;justify-content:center;margin-bottom:14px}
     .mo-empty a{color:var(--tees-yellow)}
 
+    /* ── Account chip ── */
+    .mo-account{display:none;align-items:center;gap:8px;border:1px solid rgba(245,200,66,.25);border-radius:100px;padding:4px 14px 4px 4px;font-size:12px;color:var(--tees-white)}
+    .mo-account img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+    .mo-account span{font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+    /* ── Custom select ── */
+    .mo-select{position:relative}
+    .mo-select-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--tees-white);font-size:13px;font-family:inherit;cursor:pointer;text-align:right;transition:border-color .3s var(--tees-ease),box-shadow .3s var(--tees-ease)}
+    .mo-select-btn:hover,.mo-select.open .mo-select-btn{border-color:rgba(245,200,66,.6);box-shadow:0 0 0 3px rgba(245,200,66,.12)}
+    .mo-select-val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mo-select-val.placeholder{color:var(--tees-muted)}
+    .mo-select-arrow{color:var(--tees-yellow);font-size:11px;transition:transform .3s var(--tees-ease)}
+    .mo-select.open .mo-select-arrow{transform:rotate(180deg)}
+    .mo-select-list{display:none;position:absolute;top:calc(100% + 6px);right:0;left:0;z-index:30;background:rgba(22,22,22,.97);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(245,200,66,.18);border-radius:12px;padding:6px;max-height:210px;overflow-y:auto;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+    .mo-select.open .mo-select-list{display:block;animation:dropIn .3s var(--tees-ease)}
+    .mo-select-opt{display:block;width:100%;text-align:right;padding:10px 12px;border:none;background:none;color:var(--tees-white);font-size:12.5px;font-family:inherit;border-radius:8px;cursor:pointer;transition:background .2s var(--tees-ease),color .2s var(--tees-ease)}
+    .mo-select-opt:hover{background:rgba(245,200,66,.12);color:var(--tees-yellow)}
+    @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+
+    /* ── Delivery editor overlay ── */
+    .mo-delivery-card{width:min(480px,92vw);max-height:88vh;overflow-y:auto;text-align:right;padding:32px}
+    .mo-delivery-card .mo-card-title{margin-bottom:18px}
+    .mo-delivery-close{position:absolute;top:14px;left:14px;background:none;border:1px solid rgba(255,255,255,.15);color:var(--tees-muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:14px;font-family:inherit;transition:all .3s var(--tees-ease)}
+    .mo-delivery-close:hover{border-color:rgba(252,165,165,.5);color:#FCA5A5}
+
     /* ── Overlay ── */
     .mo-overlay{position:fixed;inset:0;background:rgba(5,5,5,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:50}
     .mo-overlay.show{display:flex}
@@ -155,6 +180,7 @@
     <div class="mo-logo">OUR <span>TEES</span></div>
     <div class="mo-header-actions">
       <a class="mo-back" href="store.html">→ العودة للمتجر</a>
+      <div class="mo-account" id="mo-account" style="display:none;"></div>
       <input type="checkbox" id="mo-toggle" class="mo-toggle-checkbox" />
       <label class="mo-hamburger" for="mo-toggle">
         <div class="mo-bar"></div>
@@ -164,6 +190,7 @@
       <nav class="mo-menu">
         <label class="mo-menu-item active" id="tab-checkout" for="mo-toggle" onclick="switchTab('checkout')">🛒 إتمام الطلب</label>
         <label class="mo-menu-item" id="tab-orders" for="mo-toggle" onclick="switchTab('orders')">📦 طلباتي</label>
+        <label class="mo-menu-item mo-menu-delivery" id="menu-delivery" for="mo-toggle" onclick="openDeliveryEditor()" style="display:none;">📍 بيانات التوصيل</label>
       </nav>
     </div>
   </header>
@@ -189,10 +216,12 @@
       <div class="mo-fields-grid">
         <div class="mo-field"><label>الاسم الكامل *</label><input id="mo-name" placeholder="محمد أحمد"></div>
         <div class="mo-field"><label>رقم الهاتف *</label><input id="mo-phone" placeholder="07XXXXXXXX" dir="ltr"></div>
-        <div class="mo-field"><label>المدينة *</label><input id="mo-city" placeholder="عمّان"></div>
-        <div class="mo-field"><label>الحي / المنطقة</label><input id="mo-area" placeholder="الصويفية"></div>
-        <div class="mo-field"><label>الشارع</label><input id="mo-street" placeholder="شارع المدينة"></div>
+        <div class="mo-field"><label>المحافظة *</label><input type="hidden" id="mo-city"><div class="mo-select" id="wrap-mo-city" data-for="mo-city" data-placeholder="اختر المحافظة"></div></div>
+        <div class="mo-field"><label>اللواء *</label><input type="hidden" id="mo-district"><div class="mo-select" id="wrap-mo-district" data-for="mo-district" data-placeholder="اختر اللواء"></div></div>
+        <div class="mo-field" id="field-mo-subdistrict" style="display:none"><label>القضاء</label><input type="hidden" id="mo-subdistrict"><div class="mo-select" id="wrap-mo-subdistrict" data-for="mo-subdistrict" data-placeholder="اختر القضاء"></div></div>
+        <div class="mo-field"><label>المنطقة *</label><input type="hidden" id="mo-area"><div class="mo-select" id="wrap-mo-area" data-for="mo-area" data-placeholder="اختر المنطقة"></div></div>
         <div class="mo-field"><label>معلم قريب (اختياري)</label><input id="mo-landmark" placeholder="بجانب المسجد"></div>
+        <div class="mo-field mo-span2"><label>الشارع</label><input id="mo-street" placeholder="شارع المدينة"></div>
         <div class="mo-field mo-span2"><label>ملاحظات (اختياري)</label><textarea id="mo-notes" rows="2" placeholder="أي تفاصيل إضافية..."></textarea></div>
       </div>
       <h3 class="mo-card-title mo-pay-title">طريقة الدفع</h3>
@@ -233,8 +262,25 @@
     </div>
   </div>
 
+  <div class="mo-overlay" id="mo-delivery-overlay">
+    <div class="mo-overlay-card mo-delivery-card">
+      <button type="button" class="mo-delivery-close" onclick="closeDeliveryEditor()">✕</button>
+      <h3 class="mo-card-title">📍 بيانات التوصيل</h3>
+      <div class="mo-field"><label>الاسم الكامل</label><input id="mo-del-name"></div>
+      <div class="mo-field"><label>رقم الهاتف</label><input id="mo-del-phone" dir="ltr"></div>
+      <div class="mo-field"><label>المحافظة</label><input type="hidden" id="mo-del-city"><div class="mo-select" id="wrap-mo-del-city" data-for="mo-del-city" data-placeholder="اختر المحافظة"></div></div>
+      <div class="mo-field"><label>اللواء</label><input type="hidden" id="mo-del-district"><div class="mo-select" id="wrap-mo-del-district" data-for="mo-del-district" data-placeholder="اختر اللواء"></div></div>
+      <div class="mo-field" id="field-mo-del-subdistrict" style="display:none"><label>القضاء</label><input type="hidden" id="mo-del-subdistrict"><div class="mo-select" id="wrap-mo-del-subdistrict" data-for="mo-del-subdistrict" data-placeholder="اختر القضاء"></div></div>
+      <div class="mo-field"><label>المنطقة</label><input type="hidden" id="mo-del-area"><div class="mo-select" id="wrap-mo-del-area" data-for="mo-del-area" data-placeholder="اختر المنطقة"></div></div>
+      <div class="mo-field"><label>الشارع</label><input id="mo-del-street"></div>
+      <div class="mo-field"><label>معلم قريب (اختياري)</label><input id="mo-del-landmark"></div>
+      <button class="mo-btn" id="mo-del-save" onclick="saveDeliveryEditor()">حفظ البيانات</button>
+    </div>
+  </div>
+
   <script src="js/api.js"></script>
   <script src="js/db-local.js"></script>
+  <script src="js/jordan-locations.js"></script>
   <script src="js/my-orders.js"></script>
 </body>
 </html>
