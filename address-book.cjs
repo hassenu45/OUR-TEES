@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const MAX_ADDRESSES = 10;
 const MAX_ADDRESSES_ERROR = 'بلغت الحد الأقصى للعناوين المحفوظة (' + MAX_ADDRESSES + ')';
 
-const LIMITS = { name: 60, phone: 20, city: 40, district: 40, area: 40, street: 60, landmark: 60 };
+const LIMITS = { name: 60, phone: 20, city: 40, district: 40, subdistrict: 40, area: 40, street: 60, landmark: 60 };
 
 function clean(s, max) {
   return typeof s === 'string' ? s.trim().slice(0, max) : '';
@@ -16,6 +16,7 @@ function normalizeAddress(a) {
     phone: clean(a && a.phone, LIMITS.phone).replace(/[\s-]/g, ''),
     city: clean(a && a.city, LIMITS.city),
     district: clean(a && a.district, LIMITS.district),
+    subdistrict: clean(a && a.subdistrict, LIMITS.subdistrict),
     area: clean(a && a.area, LIMITS.area),
     street: clean(a && a.street, LIMITS.street),
     landmark: clean(a && a.landmark, LIMITS.landmark),
@@ -33,8 +34,9 @@ function validateAddress(a) {
 function sameAddress(a, b) {
   const na = normalizeAddress(a);
   const nb = normalizeAddress(b);
-  return ['name', 'phone', 'city', 'district', 'area', 'street', 'landmark']
-    .every((k) => na[k] === nb[k]);
+  return ['name', 'phone', 'city', 'district', 'subdistrict', 'area', 'street', 'landmark'].every(
+    (k) => na[k] === nb[k]
+  );
 }
 
 function upsertAddress(list, address) {

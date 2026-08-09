@@ -67,12 +67,6 @@ const CHECKOUT_LOC = {
   sub: 'mo-subdistrict',
   subField: 'field-mo-subdistrict',
 };
-const DELIVERY_LOC = {
-  city: 'mo-del-city',
-  district: 'mo-del-district',
-  sub: 'mo-del-subdistrict',
-  subField: 'field-mo-del-subdistrict',
-};
 
 function jordanLoc() {
   return typeof window !== 'undefined' && window.JORDAN_LOCATIONS ? window.JORDAN_LOCATIONS : null;
@@ -126,13 +120,6 @@ cascadeSelects(
   makeSelect($('wrap-mo-area')),
   CHECKOUT_LOC
 );
-cascadeSelects(
-  makeSelect($('wrap-mo-del-city')),
-  makeSelect($('wrap-mo-del-district')),
-  makeSelect($('wrap-mo-del-subdistrict')),
-  makeSelect($('wrap-mo-del-area')),
-  DELIVERY_LOC
-);
 
 function applyDelivery(d) {
   $('mo-name').value = d.name || '';
@@ -144,6 +131,77 @@ function applyDelivery(d) {
   syncSubField(CHECKOUT_LOC);
   $('wrap-mo-subdistrict')._setVal(d.subdistrict || '');
   $('wrap-mo-area')._setVal(d.area || '');
+}
+
+let savedAddresses = [];
+let activeAddressId = null;
+
+async function loadSavedAddresses() {
+  try {
+    const res = await (await fetch('api/me/addresses')).json();
+    savedAddresses = (res && res.addresses) || [];
+  } catch (e) {
+    savedAddresses = [];
+  }
+  renderSavedAddresses();
+}
+
+function renderSavedAddresses() {
+  const box = $('mo-saved-addresses');
+  if (!box) return;
+  if (!auth.authenticated) {
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+  const items = savedAddresses
+    .map(
+      (a) => `
+    <div class="mo-saved-item${activeAddressId === a.id ? ' active' : ''}" onclick="pickSavedAddress('${a.id}')">
+      <div class="mo-saved-main">
+        <div class="mo-saved-name">${escapeHtml(a.name)} · ${escapeHtml(a.phone)}</div>
+        <div class="mo-saved-loc">${escapeHtml([a.city, a.district, a.subdistrict, a.area].filter(Boolean).join(' — '))}${a.street ? ' · ' + escapeHtml(a.street) : ''}</div>
+      </div>
+      <span class="mo-saved-del" onclick="event.stopPropagation();deleteSavedAddress('${a.id}')" title="حذف">✕</span>
+    </div>`
+    )
+    .join('');
+  box.innerHTML = `
+    <div class="mo-saved-title">عناوينك المحفوظة</div>
+    ${savedAddresses.length ? items : '<div class="mo-saved-none">لا توجد عناوين محفوظة بعد</div>'}
+    <button type="button" class="mo-saved-add" onclick="newSavedAddress()">+ عنوان جديد</button>`;
+}
+
+function pickSavedAddress(id) {
+  const a = savedAddresses.find((x) => x.id === id);
+  if (!a) return;
+  activeAddressId = id;
+  applyDelivery(a);
+  renderSavedAddresses();
+  const first = $('mo-name');
+  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function newSavedAddress() {
+  activeAddressId = null;
+  applyDelivery({});
+  renderSavedAddresses();
+}
+
+async function deleteSavedAddress(id) {
+  if (!confirm('حذف هذا العنوان؟')) return;
+  try {
+    const res = await (await fetch('api/me/addresses/' + encodeURIComponent(id), { method: 'DELETE' })).json();
+    if (res.addresses) savedAddresses = res.addresses;
+    if (activeAddressId === id) {
+      activeAddressId = null;
+      applyDelivery({});
+    }
+    renderSavedAddresses();
+    showToast('تم حذف العنوان');
+  } catch (e) {
+    showToast('تعذر حذف العنوان، حاول مرة أخرى', true);
+  }
 }
 
 async function initMyOrders() {
@@ -165,13 +223,7 @@ async function initMyOrders() {
       '<span>' +
       escapeHtml(auth.name || auth.email || '') +
       '</span>';
-    $('menu-delivery').style.display = '';
-    try {
-      const d = await (await fetch('api/me/delivery')).json();
-      if (d && typeof d === 'object' && d.city) applyDelivery(d);
-    } catch (e) {
-      /* ignore */
-    }
+    await loadSavedAddresses();
   }
   renderCart();
   renderPicks();
@@ -328,11 +380,19 @@ async function submitOrderFlow() {
       }
     }
     if (auth.authenticated) {
-      fetch('api/me/delivery', {
-        method: 'PUT',
+      fetch('api/me/addresses', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, phone, city, district, subdistrict, area, street, landmark }),
-      }).catch(() => {});
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.addresses) {
+            savedAddresses = res.addresses;
+            renderSavedAddresses();
+          }
+        })
+        .catch(() => {});
     }
     cart = [];
     localStorage.setItem('azma_cart', '[]');
@@ -344,56 +404,6 @@ async function submitOrderFlow() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'تأكيد الطلب';
-  }
-}
-
-function openDeliveryEditor() {
-  if (!auth.authenticated) return showToast('سجل الدخول بحساب Google أولاً', true);
-  closeAll();
-  $('mo-del-name').value = $('mo-name').value;
-  $('mo-del-phone').value = $('mo-phone').value;
-  $('mo-del-street').value = $('mo-street').value;
-  $('mo-del-landmark').value = $('mo-landmark').value;
-  $('wrap-mo-del-city')._setVal($('mo-city').value);
-  $('wrap-mo-del-district')._setVal($('mo-district').value);
-  syncSubField(DELIVERY_LOC);
-  $('wrap-mo-del-subdistrict')._setVal($('mo-subdistrict').value);
-  $('wrap-mo-del-area')._setVal($('mo-area').value);
-  $('mo-delivery-overlay').classList.add('show');
-}
-
-function closeDeliveryEditor() {
-  $('mo-delivery-overlay').classList.remove('show');
-}
-
-async function saveDeliveryEditor() {
-  const name = $('mo-del-name').value.trim();
-  const phone = $('mo-del-phone').value.trim();
-  const city = $('mo-del-city').value.trim();
-  const district = $('mo-del-district').value.trim();
-  const subdistrict = $('mo-del-subdistrict').value.trim();
-  const area = $('mo-del-area').value.trim();
-  const street = $('mo-del-street').value.trim();
-  const landmark = $('mo-del-landmark').value.trim();
-  if (name.length < 2) return showToast('يرجى إدخال الاسم', true);
-  if (!phone || !/^\+?[0-9\s-]{8,15}$/.test(phone)) return showToast('يرجى إدخال رقم هاتف صحيح', true);
-  if (!city) return showToast('يرجى اختيار المحافظة', true);
-  const btn = $('mo-del-save');
-  btn.disabled = true;
-  try {
-    const res = await fetch('api/me/delivery', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, city, district, subdistrict, area, street, landmark }),
-    });
-    if (!res.ok) throw new Error('save failed');
-    applyDelivery({ name, phone, city, district, subdistrict, area, street, landmark });
-    closeDeliveryEditor();
-    showToast('تم حفظ بيانات التوصيل ✓');
-  } catch (e) {
-    showToast('تعذر حفظ البيانات، حاول مرة أخرى', true);
-  } finally {
-    btn.disabled = false;
   }
 }
 

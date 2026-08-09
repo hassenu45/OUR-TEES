@@ -27,6 +27,7 @@ describe('address book rules', () => {
       phone: '0791234567',
       city: 'عمّان',
       district: '',
+      subdistrict: '',
       area: '',
       street: '',
       landmark: '',
