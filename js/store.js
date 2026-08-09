@@ -619,7 +619,7 @@ async function syncProductsSilently() {
 
 function startLiveSync() {
   lastProductsSignature = productsSignature(products);
-  liveSyncTimer = setInterval(syncProductsSilently, 20000);
+  setInterval(syncProductsSilently, 20000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') syncProductsSilently();
   });
