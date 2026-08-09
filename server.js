@@ -8,6 +8,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { z } = require('zod');
 const db = require('./db.cjs');
 const { isValidPhone, canCancelOrder, composeAddress } = require('./orders-rules.cjs');
+const { validateAddress, upsertAddress, removeAddress, migrateList } = require('./address-book.cjs');
 const { safeResolve } = require('./updates-manifest.cjs');
 
 const app = express();
@@ -269,11 +270,11 @@ app.post('/api/dev/login', (req, res) => {
   res.json({ success: true, email });
 });
 
-// ── Per-account delivery info (Google accounts only) ──
+// ── Per-account saved addresses (Google accounts only) ──
 const DELIVERY_FILE = path.join(__dirname, 'data', 'delivery-info.json');
 function readDeliveryFile() {
   try {
-    return JSON.parse(fs.readFileSync(DELIVERY_FILE, 'utf8')) || {};
+    return JSON.parse(fs.readFileSync(DELIVERY_FILE, 'utf8').replace(/^\uFEFF/, '')) || {};
   } catch (e) {
     return {};
   }
@@ -284,36 +285,55 @@ function writeDeliveryFile(data) {
   fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
   fs.renameSync(tmp, DELIVERY_FILE);
 }
-function sanitizeDelivery(body) {
-  const s = (v, max = 100) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
-  return {
-    name: s(body.name, 60),
-    phone: s(body.phone, 20),
-    city: s(body.city, 40),
-    district: s(body.district, 40),
-    subdistrict: s(body.subdistrict, 40),
-    area: s(body.area, 40),
-    street: s(body.street, 60),
-    landmark: s(body.landmark, 60),
-  };
+function readAddresses(email) {
+  const all = readDeliveryFile();
+  const val = all[email];
+  if (Array.isArray(val)) return val;
+  const migrated = migrateList(val);
+  if (val && typeof val === 'object') {
+    all[email] = migrated;
+    try {
+      writeDeliveryFile(all);
+    } catch (e) {
+      /* best effort */
+    }
+  }
+  return migrated;
 }
-app.get('/api/me/delivery', (req, res) => {
+function userList(all, email) {
+  return Array.isArray(all[email]) ? all[email] : migrateList(all[email]);
+}
+app.get('/api/me/addresses', (req, res) => {
   if (!req.session.authenticated || !req.session.userEmail) return res.status(401).json({ error: 'Unauthorized' });
-  const all = readDeliveryFile();
-  res.json(all[req.session.userEmail] || {});
+  res.json({ addresses: readAddresses(req.session.userEmail) });
 });
-app.put('/api/me/delivery', rateLimit(30, 60000), (req, res) => {
+app.post('/api/me/addresses', rateLimit(30, 60000), (req, res) => {
   if (!req.session.authenticated || !req.session.userEmail) return res.status(401).json({ error: 'Unauthorized' });
-  const d = sanitizeDelivery(req.body || {});
-  if (d.phone && !/^\+?[0-9\s-]{8,15}$/.test(d.phone)) return res.status(400).json({ error: 'رقم هاتف غير صالح' });
+  const check = validateAddress(req.body || {});
+  if (!check.ok) return res.status(400).json({ error: check.error });
   const all = readDeliveryFile();
-  all[req.session.userEmail] = d;
+  const result = upsertAddress(userList(all, req.session.userEmail), check.address);
+  if (result.error) return res.status(400).json({ error: result.error });
+  all[req.session.userEmail] = result.list;
   try {
     writeDeliveryFile(all);
   } catch (e) {
     return res.status(500).json({ error: 'تعذر الحفظ' });
   }
-  res.json({ success: true, delivery: d });
+  res.json({ success: true, added: result.added, updated: result.updated, addresses: result.list });
+});
+app.delete('/api/me/addresses/:id', rateLimit(30, 60000), (req, res) => {
+  if (!req.session.authenticated || !req.session.userEmail) return res.status(401).json({ error: 'Unauthorized' });
+  const all = readDeliveryFile();
+  const result = removeAddress(userList(all, req.session.userEmail), String(req.params.id || ''));
+  if (!result.removed) return res.status(404).json({ error: 'العنوان غير موجود' });
+  all[req.session.userEmail] = result.list;
+  try {
+    writeDeliveryFile(all);
+  } catch (e) {
+    return res.status(500).json({ error: 'تعذر الحفظ' });
+  }
+  res.json({ success: true, addresses: result.list });
 });
 
 app.post('/api/auth/google', rateLimit(10, 60000), async (req, res) => {
