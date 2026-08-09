@@ -72,8 +72,12 @@ function proxy(req, res, targetPath) {
   );
   preq.on('error', (err) => {
     console.error('[proxy error]', err.message);
-    res.writeHead(502, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'تعذر الاتصال بسيرفر الإنتاج' }));
+    if (!res.headersSent) {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'تعذر الاتصال بسيرفر الإنتاج' }));
+    } else {
+      res.end();
+    }
   });
   req.pipe(preq);
 }
@@ -317,7 +321,11 @@ app.whenReady().then(() => {
       try {
         const result = await applyUpdate();
         if (result.updateAvailable) {
-          setTimeout(() => win.reload(), 1500);
+          setTimeout(() => {
+            if (win && !win.isDestroyed()) {
+              win.webContents.send('updater:applied', { version: result.version, background: true });
+            }
+          }, 800);
         }
       } catch (e) {
         console.error('[auto-update]', e.message);

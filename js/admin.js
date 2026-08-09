@@ -803,18 +803,30 @@ document.addEventListener('DOMContentLoaded', init);
   const state = document.getElementById('update-state');
   if (!btn || !state) return;
   btn.style.display = 'flex';
+  let pendingReload = false;
 
   window.azma.onUpdateProgress((p) => {
     if (p.phase === 'download') state.textContent = `${p.done}/${p.total}`;
     else if (p.phase === 'done') state.textContent = 'تم التحديث';
     else if (p.phase === 'error') state.textContent = p.error || 'خطأ';
   });
-  window.azma.onUpdateApplied(() => {
+  window.azma.onUpdateApplied((data) => {
+    if (data && data.background) {
+      pendingReload = true;
+      label.textContent = 'أعد التحميل';
+      state.textContent = 'تم تنزيل تحديث جديد ✓';
+      showToast('تم تنزيل تحديث جديد — اضغط "أعد التحميل" لتطبيقه');
+      return;
+    }
     state.textContent = 'جاري إعادة التحميل…';
     setTimeout(() => location.reload(), 1200);
   });
 
   btn.addEventListener('click', async () => {
+    if (pendingReload) {
+      location.reload();
+      return;
+    }
     btn.disabled = true;
     label.textContent = 'جارٍ الفحص…';
     try {
