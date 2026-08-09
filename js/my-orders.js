@@ -1,4 +1,5 @@
 /* AZMA - My Orders page controller (customer checkout + picked products) */
+/* global escapeHtml, isServerMode */
 let cart = (() => {
   try {
     return JSON.parse(localStorage.getItem('azma_cart') || '[]');
