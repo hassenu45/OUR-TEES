@@ -777,6 +777,29 @@ function showAppLoginGate() {
   setTimeout(() => input.focus(), 100);
 }
 
+/* ── Theme (dark/light) ── */
+function initTheme() {
+  const toggle = document.getElementById('theme-toggle-app');
+  if (!toggle) return;
+  const saved = localStorage.getItem('azma_app_theme');
+  const isLight = saved === 'light';
+  document.body.classList.toggle('light', isLight);
+  toggle.checked = isLight;
+  toggle.addEventListener('change', () => {
+    const light = toggle.checked;
+    document.body.classList.toggle('light', light);
+    try {
+      localStorage.setItem('azma_app_theme', light ? 'light' : 'dark');
+    } catch (e) {
+      /* ignore */
+    }
+    const dashboard = document.getElementById('panel-dashboard');
+    if (dashboard && dashboard.classList.contains('active') && typeof window.updateChart === 'function') {
+      window.updateChart();
+    }
+  });
+}
+
 /* ── Init ── */
 async function init() {
   const auth = await API.checkAuth();
@@ -790,6 +813,7 @@ async function init() {
   $('add-product-form')?.addEventListener('submit', handleAddProduct);
   $('edit-product-form')?.addEventListener('submit', handleSaveEditProduct);
   await loadAllData();
+  initTheme();
   checkAIStatus();
 }
 
