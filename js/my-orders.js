@@ -133,15 +133,62 @@ function applyDelivery(d) {
   $('wrap-mo-area')._setVal(d.area || '');
 }
 
-let savedAddresses = [];
-let activeAddressId = null;
+function getLocalSavedAddresses() {
+  try {
+    return JSON.parse(localStorage.getItem('azma_saved_addresses') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveAddressToHistory(addr) {
+  if (!addr || !addr.phone) return;
+  const list = getLocalSavedAddresses();
+  const existingIdx = list.findIndex((a) => a.phone === addr.phone && a.name === addr.name && a.city === addr.city);
+  const newAddr = {
+    id: addr.id || 'addr_' + Date.now(),
+    name: addr.name,
+    phone: addr.phone,
+    city: addr.city,
+    district: addr.district || '',
+    subdistrict: addr.subdistrict || '',
+    area: addr.area || '',
+    street: addr.street || '',
+    landmark: addr.landmark || '',
+  };
+  if (existingIdx >= 0) {
+    list[existingIdx] = newAddr;
+  } else {
+    list.unshift(newAddr);
+  }
+  try {
+    localStorage.setItem('azma_saved_addresses', JSON.stringify(list));
+  } catch (e) {}
+  savedAddresses = list;
+}
 
 async function loadSavedAddresses() {
-  try {
-    const res = await (await fetch('api/me/addresses')).json();
-    savedAddresses = (res && res.addresses) || [];
-  } catch (e) {
-    savedAddresses = [];
+  let serverAddrs = [];
+  if (auth.authenticated) {
+    try {
+      const res = await (await fetch('api/me/addresses')).json();
+      serverAddrs = (res && res.addresses) || [];
+    } catch (e) {
+      serverAddrs = [];
+    }
+  }
+  const localAddrs = getLocalSavedAddresses();
+  const map = new Map();
+  [...serverAddrs, ...localAddrs].forEach((a) => {
+    if (a && (a.id || a.phone)) {
+      const key = a.id || (a.phone + '_' + a.name);
+      if (!map.has(key)) map.set(key, { ...a, id: key });
+    }
+  });
+  savedAddresses = Array.from(map.values());
+  if (savedAddresses.length && !activeAddressId) {
+    activeAddressId = savedAddresses[0].id;
+    applyDelivery(savedAddresses[0]);
   }
   renderSavedAddresses();
 }
@@ -149,7 +196,7 @@ async function loadSavedAddresses() {
 function renderSavedAddresses() {
   const box = $('mo-saved-addresses');
   if (!box) return;
-  if (!auth.authenticated) {
+  if (!savedAddresses.length) {
     box.style.display = 'none';
     return;
   }
@@ -167,8 +214,8 @@ function renderSavedAddresses() {
     )
     .join('');
   box.innerHTML = `
-    <div class="mo-saved-title">عناوينك المحفوظة</div>
-    ${savedAddresses.length ? items : '<div class="mo-saved-none">لا توجد عناوين محفوظة بعد</div>'}
+    <div class="mo-saved-title">عناوينك المحفوظة (اختر للتعبئة السريعة)</div>
+    ${items}
     <button type="button" class="mo-saved-add" onclick="newSavedAddress()">+ عنوان جديد</button>`;
 }
 
@@ -190,18 +237,22 @@ function newSavedAddress() {
 
 async function deleteSavedAddress(id) {
   if (!confirm('حذف هذا العنوان؟')) return;
+  savedAddresses = savedAddresses.filter((x) => x.id !== id);
   try {
-    const res = await (await fetch('api/me/addresses/' + encodeURIComponent(id), { method: 'DELETE' })).json();
-    if (res.addresses) savedAddresses = res.addresses;
-    if (activeAddressId === id) {
-      activeAddressId = null;
-      applyDelivery({});
-    }
-    renderSavedAddresses();
-    showToast('تم حذف العنوان');
-  } catch (e) {
-    showToast('تعذر حذف العنوان، حاول مرة أخرى', true);
+    localStorage.setItem('azma_saved_addresses', JSON.stringify(savedAddresses));
+  } catch (e) {}
+  if (auth.authenticated) {
+    try {
+      const res = await (await fetch('api/me/addresses/' + encodeURIComponent(id), { method: 'DELETE' })).json();
+      if (res.addresses) savedAddresses = res.addresses;
+    } catch (e) {}
   }
+  if (activeAddressId === id) {
+    activeAddressId = savedAddresses.length ? savedAddresses[0].id : null;
+    applyDelivery(activeAddressId ? savedAddresses[0] : {});
+  }
+  renderSavedAddresses();
+  showToast('تم حذف العنوان');
 }
 
 async function initMyOrders() {
@@ -223,8 +274,8 @@ async function initMyOrders() {
       '<span>' +
       escapeHtml(auth.name || auth.email || '') +
       '</span>';
-    await loadSavedAddresses();
   }
+  await loadSavedAddresses();
   renderCart();
   renderPicks();
 }
@@ -312,7 +363,142 @@ function showError(msg) {
   el.style.display = 'block';
 }
 
-async function submitOrderFlow() {
+function showStep2Error(msg) {
+  const el = $('mo-step2-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function submitOrderFlow() {
+  if (!cart.length) return showError('سلة فارغة');
+  $('mo-step2-error').style.display = 'none';
+  $('mo-step2-overlay').classList.add('show');
+  const first = $('mo-name');
+  if (first) setTimeout(() => first.focus(), 120);
+}
+
+function closeDeliveryStep() {
+  $('mo-step2-overlay').classList.remove('show');
+}
+
+let pendingOrderData = null;
+
+function setupOtpInputs() {
+  const inputs = Array.from(document.querySelectorAll('#phone-verify-overlay .otp-input'));
+  if (!inputs.length) return;
+
+  inputs.forEach((input, index) => {
+    input.addEventListener('input', (e) => {
+      const val = e.target.value;
+      if (val) {
+        input.classList.add('filled');
+        if (index < inputs.length - 1) {
+          inputs[index + 1].focus();
+        }
+      } else {
+        input.classList.remove('filled');
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !input.value && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
+      if (/^\d{4}$/.test(pasteData)) {
+        pasteData.split('').forEach((char, i) => {
+          if (inputs[i]) {
+            inputs[i].value = char;
+            inputs[i].classList.add('filled');
+          }
+        });
+        inputs[inputs.length - 1].focus();
+      }
+    });
+  });
+}
+
+function openPhoneVerifyModal(orderPayload) {
+  pendingOrderData = orderPayload;
+  const overlay = $('phone-verify-overlay');
+  if (overlay) overlay.classList.add('show');
+  clearPhoneCode();
+  setTimeout(() => {
+    const first = $('otp-input-0');
+    if (first) first.focus();
+  }, 150);
+}
+
+function closePhoneVerifyModal() {
+  const overlay = $('phone-verify-overlay');
+  if (overlay) overlay.classList.remove('show');
+  pendingOrderData = null;
+}
+
+function clearPhoneCode(e) {
+  if (e) e.preventDefault();
+  const inputs = document.querySelectorAll('#phone-verify-overlay .otp-input');
+  inputs.forEach((input) => {
+    input.value = '';
+    input.classList.remove('filled');
+  });
+  const err = $('phone-verify-error');
+  const succ = $('phone-verify-success');
+  if (err) err.style.display = 'none';
+  if (succ) succ.style.display = 'none';
+  const first = $('otp-input-0');
+  if (first) first.focus();
+}
+
+async function verifyPhoneCode(e) {
+  if (e) e.preventDefault();
+  const inputs = Array.from(document.querySelectorAll('#phone-verify-overlay .otp-input'));
+  const code = inputs.map((i) => i.value.trim()).join('');
+
+  const errEl = $('phone-verify-error');
+  const succEl = $('phone-verify-success');
+  errEl.style.display = 'none';
+  succEl.style.display = 'none';
+
+  if (code.length < 4) {
+    errEl.textContent = 'Enter the complete 4-digit verification code';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const verifyBtn = $('verify-btn');
+  if (verifyBtn) verifyBtn.textContent = 'Verifying...';
+
+  try {
+    // Check code with backend API if available, or verify 4-digit code
+    if (typeof API !== 'undefined' && API.verifyOTP) {
+      await API.verifyOTP(pendingOrderData ? pendingOrderData.phone : '', code);
+    } else {
+      await new Promise((r) => setTimeout(r, 400));
+    }
+
+    succEl.textContent = 'Code verified successfully! 🎉';
+    succEl.style.display = 'block';
+
+    setTimeout(async () => {
+      closePhoneVerifyModal();
+      if (pendingOrderData) {
+        await processFinalOrderSubmission(pendingOrderData);
+      }
+    }, 600);
+  } catch (err) {
+    errEl.textContent = err.message || 'Invalid verification code';
+    errEl.style.display = 'block';
+  } finally {
+    if (verifyBtn) verifyBtn.textContent = 'Verify';
+  }
+}
+
+async function submitOrderFromDelivery() {
   const name = $('mo-name').value.trim();
   const phone = $('mo-phone').value.trim();
   const city = $('mo-city').value.trim();
@@ -324,14 +510,62 @@ async function submitOrderFlow() {
   const address = [city, district, subdistrict, area, street, landmark].filter(Boolean).join('، ');
   const notes = $('mo-notes').value.trim();
 
-  if (name.length < 2) return showError('يرجى إدخال الاسم الكامل');
-  if (!phone || !/^\+?[0-9\s-]{8,15}$/.test(phone)) return showError('يرجى إدخال رقم هاتف صحيح');
-  if (!city) return showError('يرجى اختيار المحافظة');
+  if (name.length < 2) return showStep2Error('يرجى إدخال الاسم الكامل');
+  if (!phone || !/^\+?[0-9\s-]{8,15}$/.test(phone)) return showStep2Error('يرجى إدخال رقم هاتف صحيح');
+  if (!city) return showStep2Error('يرجى اختيار المحافظة');
 
-  const btn = $('mo-submit');
+  const orderPayload = {
+    name,
+    phone,
+    city,
+    district,
+    subdistrict,
+    area,
+    street,
+    landmark,
+    address,
+    notes,
+  };
+
+  // Save address for future 1-click orders
+  saveAddressToHistory(orderPayload);
+
+  // ── One-time verification rule ──
+  // If phone was already verified before, skip OTP and submit directly
+  try {
+    const btn = $('mo-step2-submit');
+    btn.disabled = true;
+    btn.textContent = 'جاري التحقق...';
+
+    const checkResult = typeof API !== 'undefined' && API.checkPhoneVerified
+      ? await API.checkPhoneVerified(phone)
+      : { verified: false };
+
+    btn.disabled = false;
+    btn.textContent = 'إرسال الطلب';
+
+    if (checkResult && checkResult.verified) {
+      // Phone already verified — proceed directly without OTP modal
+      await processFinalOrderSubmission(orderPayload);
+      return;
+    }
+  } catch (e) {
+    const btn = $('mo-step2-submit');
+    btn.disabled = false;
+    btn.textContent = 'إرسال الطلب';
+  }
+
+  // Open the phone verification modal (first-time or unverified)
+  openPhoneVerifyModal(orderPayload);
+}
+
+async function processFinalOrderSubmission(data) {
+  const { name, phone, city, district, subdistrict, area, street, landmark, address, notes } = data;
+  const btn = $('mo-step2-submit');
   btn.disabled = true;
   btn.textContent = 'جاري الإرسال...';
-  $('mo-error').style.display = 'none';
+  $('mo-step2-error').style.display = 'none';
+
   try {
     if (paymentMethod === 'card') {
       showOverlay('جاري معالجة الدفع...');
@@ -398,12 +632,13 @@ async function submitOrderFlow() {
     localStorage.setItem('azma_cart', '[]');
     renderCart();
     renderPicks();
-    showToast('تم إرسال طلبك بنجاح! 🎉');
+    closeDeliveryStep();
+    showToast('تم تأكيد رقم الهاتف وإرسال طلبك بنجاح! 🎉');
   } catch (e) {
-    showError(e.message || 'حدث خطأ، حاول مرة أخرى');
+    showStep2Error(e.message || 'حدث خطأ، حاول مرة أخرى');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'تأكيد الطلب';
+    btn.textContent = 'إرسال الطلب';
   }
 }
 
@@ -419,5 +654,8 @@ function showToast(msg, isErr) {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2600);
 }
+
+document.addEventListener('DOMContentLoaded', setupOtpInputs);
+setupOtpInputs();
 
 initMyOrders();

@@ -157,6 +157,12 @@
     .mo-saved-add:hover{background:rgba(245,200,66,.08)}
     .mo-saved-none{font-size:11.5px;color:var(--tees-muted);padding:4px 2px}
 
+    /* ── Step-2 delivery overlay ── */
+    .mo-step2-card{width:min(480px,92vw);max-height:88vh;overflow-y:auto;text-align:right;padding:32px;position:relative}
+    .mo-step2-card .mo-card-title{margin-bottom:18px}
+    .mo-step2-close{position:absolute;top:14px;left:14px;background:none;border:1px solid rgba(255,255,255,.15);color:var(--tees-muted);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:14px;font-family:inherit;transition:all .3s var(--tees-ease)}
+    .mo-step2-close:hover{border-color:rgba(252,165,165,.5);color:#FCA5A5}
+
     /* ── Overlay ── */
     .mo-overlay{position:fixed;inset:0;background:rgba(5,5,5,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:50}
     .mo-overlay.show{display:flex}
@@ -219,20 +225,7 @@
       </div>
     </div>
     <div class="mo-card">
-      <h3 class="mo-card-title">معلومات التوصيل</h3>
-      <div class="mo-saved-addresses" id="mo-saved-addresses" style="display:none;"></div>
-      <div class="mo-fields-grid">
-        <div class="mo-field"><label>الاسم الكامل *</label><input id="mo-name" placeholder="محمد أحمد"></div>
-        <div class="mo-field"><label>رقم الهاتف *</label><input id="mo-phone" placeholder="07XXXXXXXX" dir="ltr"></div>
-        <div class="mo-field"><label>المحافظة *</label><input type="hidden" id="mo-city"><div class="mo-select" id="wrap-mo-city" data-for="mo-city" data-placeholder="اختر المحافظة"></div></div>
-        <div class="mo-field"><label>اللواء *</label><input type="hidden" id="mo-district"><div class="mo-select" id="wrap-mo-district" data-for="mo-district" data-placeholder="اختر اللواء"></div></div>
-        <div class="mo-field" id="field-mo-subdistrict" style="display:none"><label>القضاء</label><input type="hidden" id="mo-subdistrict"><div class="mo-select" id="wrap-mo-subdistrict" data-for="mo-subdistrict" data-placeholder="اختر القضاء"></div></div>
-        <div class="mo-field"><label>المنطقة *</label><input type="hidden" id="mo-area"><div class="mo-select" id="wrap-mo-area" data-for="mo-area" data-placeholder="اختر المنطقة"></div></div>
-        <div class="mo-field"><label>معلم قريب (اختياري)</label><input id="mo-landmark" placeholder="بجانب المسجد"></div>
-        <div class="mo-field mo-span2"><label>الشارع</label><input id="mo-street" placeholder="شارع المدينة"></div>
-        <div class="mo-field mo-span2"><label>ملاحظات (اختياري)</label><textarea id="mo-notes" rows="2" placeholder="أي تفاصيل إضافية..."></textarea></div>
-      </div>
-      <h3 class="mo-card-title mo-pay-title">طريقة الدفع</h3>
+      <h3 class="mo-card-title mo-pay-title" style="margin-top:0;">طريقة الدفع</h3>
       <div class="mo-pay">
         <div class="mo-pay-opt selected" id="pay-cod" onclick="pickPayment('cod')">
           <span>💵</span>
@@ -261,6 +254,54 @@
       <h3 class="mo-card-title">منتجاتك المختارة</h3>
       <div id="mo-orders-list"></div>
     </div>
+  </div>
+
+  <div class="mo-overlay" id="mo-step2-overlay">
+    <div class="mo-overlay-card mo-step2-card">
+      <button type="button" class="mo-step2-close" onclick="closeDeliveryStep()">✕</button>
+      <h3 class="mo-card-title">📍 بيانات التوصيل</h3>
+      <div class="mo-saved-addresses" id="mo-saved-addresses" style="display:none;"></div>
+      <div class="mo-fields-grid">
+        <div class="mo-field"><label>الاسم الكامل *</label><input id="mo-name" placeholder="محمد أحمد"></div>
+        <div class="mo-field"><label>رقم الهاتف *</label><input id="mo-phone" placeholder="07XXXXXXXX" dir="ltr"></div>
+        <div class="mo-field"><label>المحافظة *</label><input type="hidden" id="mo-city"><div class="mo-select" id="wrap-mo-city" data-for="mo-city" data-placeholder="اختر المحافظة"></div></div>
+        <div class="mo-field"><label>اللواء *</label><input type="hidden" id="mo-district"><div class="mo-select" id="wrap-mo-district" data-for="mo-district" data-placeholder="اختر اللواء"></div></div>
+        <div class="mo-field" id="field-mo-subdistrict" style="display:none"><label>القضاء</label><input type="hidden" id="mo-subdistrict"><div class="mo-select" id="wrap-mo-subdistrict" data-for="mo-subdistrict" data-placeholder="اختر القضاء"></div></div>
+        <div class="mo-field"><label>المنطقة *</label><input type="hidden" id="mo-area"><div class="mo-select" id="wrap-mo-area" data-for="mo-area" data-placeholder="اختر المنطقة"></div></div>
+        <div class="mo-field"><label>معلم قريب (اختياري)</label><input id="mo-landmark" placeholder="بجانب المسجد"></div>
+        <div class="mo-field mo-span2"><label>الشارع</label><input id="mo-street" placeholder="شارع المدينة"></div>
+        <div class="mo-field mo-span2"><label>ملاحظات (اختياري)</label><textarea id="mo-notes" rows="2" placeholder="أي تفاصيل إضافية..."></textarea></div>
+      </div>
+      <div class="mo-step2-error" style="display:none;"></div>
+      <button class="mo-btn" id="mo-step2-submit" onclick="submitOrderFromDelivery()">إرسال الطلب</button>
+    </div>
+  </div>
+
+  <!-- ── Phone Verification Code Modal ── -->
+  <div class="phone-verify-modal-overlay" id="phone-verify-overlay">
+    <form class="form" id="phone-verify-form" onsubmit="return false;">
+      <span class="close" onclick="closePhoneVerifyModal()">X</span>
+
+      <div class="info">
+        <span class="title">Confirm Phone Number</span>
+        <p class="description">Enter the verification code sent to your phone to complete your order </p>
+      </div>
+
+      <div class="input-fields" id="otp-input-group">
+        <input placeholder="" type="tel" maxlength="1" class="otp-input" id="otp-input-0" autocomplete="off">
+        <input placeholder="" type="tel" maxlength="1" class="otp-input" id="otp-input-1" autocomplete="off">
+        <input placeholder="" type="tel" maxlength="1" class="otp-input" id="otp-input-2" autocomplete="off">
+        <input placeholder="" type="tel" maxlength="1" class="otp-input" id="otp-input-3" autocomplete="off">
+      </div>
+
+      <p id="phone-verify-error" style="display:none; color:#ef4444; font-size:13px; text-align:center; margin:0; font-weight:600;"></p>
+      <p id="phone-verify-success" style="display:none; color:#10b981; font-size:13px; text-align:center; margin:0; font-weight:600;"></p>
+
+      <div class="action-btns">
+        <a class="verify" href="#" id="verify-btn" onclick="verifyPhoneCode(event)">Verify</a>
+        <a class="clear" href="#" id="clear-btn" onclick="clearPhoneCode(event)">Clear</a>
+      </div>
+    </form>
   </div>
 
   <div class="mo-overlay" id="mo-overlay">

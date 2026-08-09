@@ -172,6 +172,60 @@ const API = {
     );
   },
 
+  async verifyOTP(phone, code) {
+    return fallbackTo(
+      async () => {
+        const res = await serverFetch('/api/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, code }),
+        });
+        // Also mark in localStorage so offline mode remembers it
+        if (res && res.verified) {
+          try {
+            const stored = JSON.parse(localStorage.getItem('azma_verified_phones') || '[]');
+            const norm = phone.replace(/\s+/g, '').replace(/^00/, '+');
+            if (!stored.includes(norm)) stored.push(norm);
+            localStorage.setItem('azma_verified_phones', JSON.stringify(stored));
+          } catch (e) {}
+        }
+        return res;
+      },
+      () => {
+        if (code === '1234') {
+          // Save to localStorage in offline mode too
+          try {
+            const stored = JSON.parse(localStorage.getItem('azma_verified_phones') || '[]');
+            const norm = phone.replace(/\s+/g, '').replace(/^00/, '+');
+            if (!stored.includes(norm)) stored.push(norm);
+            localStorage.setItem('azma_verified_phones', JSON.stringify(stored));
+          } catch (e) {}
+          return { ok: true, verified: true };
+        }
+        throw new Error('رمز التحقق غير صحيح (الكود التجريبي: 1234)');
+      }
+    );
+  },
+
+  // Check if a phone number was already verified (one-time rule)
+  async checkPhoneVerified(phone) {
+    return fallbackTo(
+      async () => {
+        const norm = encodeURIComponent(phone.trim());
+        return serverFetch(`/api/check-phone-verified?phone=${norm}`);
+      },
+      () => {
+        try {
+          const stored = JSON.parse(localStorage.getItem('azma_verified_phones') || '[]');
+          const norm = phone.replace(/\s+/g, '').replace(/^00/, '+');
+          return { verified: stored.includes(norm) };
+        } catch (e) {
+          return { verified: false };
+        }
+      }
+    );
+  },
+
   async updateOrderStatus(id, status) {
     return fallbackTo(
       () => serverFetch('/api/orders/' + encodeURIComponent(id) + '/status', {
