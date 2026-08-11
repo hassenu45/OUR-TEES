@@ -103,6 +103,7 @@ function setupPanelObserver() {
     if (!active || id === current) return;
     current = id;
     animatePanelEnter(active);
+    if (id === 'panel-dashboard') replayGrowthChart();
   });
   mo.observe(main, { attributes: true, attributeFilter: ['class'], subtree: true });
 }
@@ -117,6 +118,15 @@ function animatePanelEnter(panel) {
     { opacity: 0, y: 16 },
     { opacity: 1, y: 0, duration: DUR.card, ease: 'power2.out', stagger: 0.08, clearProps: 'opacity,transform' }
   );
+}
+
+/* إعادة تشغيل رسم الطلبات عند دخول لوحة التحكم (Chart.js reset + update يعيدان الأنميشن) */
+function replayGrowthChart() {
+  if (typeof growthChart === 'undefined' || !growthChart) return;
+  gsap.delayedCall(0.15, () => {
+    growthChart.reset();
+    growthChart.update();
+  });
 }
 
 /* ── Dynamic rows (منتجات/طلبات/لايكات/آخر الطلبات/الأكثر مبيعاً) ── */

@@ -441,4 +441,18 @@ module.exports = [
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
+  {
+    files: ['js/admin-animations.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        MutationObserver: 'readonly',
+        WeakMap: 'readonly',
+        WeakSet: 'readonly',
+        matchMedia: 'readonly',
+        growthChart: 'readonly',
+      },
+    },
+  },
 ];
