@@ -34,7 +34,7 @@ export function buildChartAnimationConfig(reducedMotion) {
       delay: (ctx) => (ctx.type === 'point' ? (ctx.dataIndex || 0) * 60 : 0),
     },
     animations: {
-      y: { from: (ctx) => (ctx.chartArea ? ctx.chartArea.bottom : 0) },
+      y: { from: (ctx) => (ctx.chart && ctx.chart.chartArea ? ctx.chart.chartArea.bottom : 0) },
     },
   };
 }

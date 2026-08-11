@@ -67,7 +67,7 @@ describe('buildChartAnimationConfig', () => {
 
   it('يرسم من أسفل المحور عبر animations.y.from', () => {
     const cfg = buildChartAnimationConfig(false);
-    const from = cfg.animations.y.from({ chartArea: { bottom: 420 } });
+    const from = cfg.animations.y.from({ chart: { chartArea: { bottom: 420 } } });
     expect(from).toBe(420);
     expect(cfg.animations.y.from({})).toBe(0);
   });
