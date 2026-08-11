@@ -1578,6 +1578,7 @@
           }]
         },
         options: {
+          ...(window.adminAnimations?.buildChartAnimationConfig?.(window.matchMedia('(prefers-reduced-motion: reduce)').matches) ?? {}),
           responsive: true,
           maintainAspectRatio: true,
           aspectRatio: 3,
