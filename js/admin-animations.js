@@ -120,13 +120,36 @@ function setupPanelObserver() {
 
 function animatePanelEnter(panel) {
   const cards = Array.from(panel.querySelectorAll(PANEL_CARD_SELECTOR));
-  if (!cards.length) return;
-  cards.forEach((c) => c.removeAttribute('data-aos'));
-  gsap.killTweensOf(cards);
+  if (cards.length) {
+    cards.forEach((c) => c.removeAttribute('data-aos'));
+    gsap.killTweensOf(cards);
+    gsap.fromTo(
+      cards,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: DUR.card, ease: 'power2.out', stagger: 0.08, clearProps: 'opacity,transform' }
+    );
+  }
+  const cfg = buildButtonEntranceConfig(
+    shouldSkipAnimations(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  );
+  if (!cfg) return;
+  const buttons = Array.from(panel.querySelectorAll('.btn, button[type="submit"], .app-login-box button')).filter(
+    (b) => b.offsetParent !== null
+  );
+  if (!buttons.length) return;
+  gsap.killTweensOf(buttons);
   gsap.fromTo(
-    cards,
-    { opacity: 0, y: 16 },
-    { opacity: 1, y: 0, duration: DUR.card, ease: 'power2.out', stagger: 0.08, clearProps: 'opacity,transform' }
+    buttons,
+    { opacity: 0, y: cfg.y },
+    {
+      opacity: 1,
+      y: 0,
+      duration: cfg.duration,
+      ease: cfg.ease,
+      stagger: cfg.stagger,
+      delay: 0.18,
+      clearProps: 'opacity,transform',
+    }
   );
 }
 
@@ -288,6 +311,36 @@ function setupTitleObserver() {
   mo.observe(title, { childList: true });
 }
 
+function setupRipple() {
+  const cfg = buildRippleConfig(shouldSkipAnimations(window.matchMedia('(prefers-reduced-motion: reduce)').matches));
+  if (!cfg) return;
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn, .app-login-box button');
+    if (!btn || btn.disabled) return;
+    const rect = btn.getBoundingClientRect();
+    const span = document.createElement('span');
+    span.className = 'btn-ripple';
+    const size = Math.max(rect.width, rect.height);
+    span.style.width = span.style.height = size + 'px';
+    span.style.left = e.clientX - rect.left - size / 2 + 'px';
+    span.style.top = e.clientY - rect.top - size / 2 + 'px';
+    btn.appendChild(span);
+    gsap.fromTo(
+      span,
+      { scale: 0.25, opacity: 0.5 },
+      {
+        scale: 1,
+        opacity: 0,
+        duration: cfg.duration,
+        ease: cfg.ease,
+        onComplete() {
+          span.remove();
+        },
+      }
+    );
+  });
+}
+
 /* ── Init ── */
 
 export function initAdminAnimations() {
@@ -300,6 +353,7 @@ export function initAdminAnimations() {
   setupCounterObservers();
   setupToastObserver();
   setupToastPulse();
+  setupRipple();
   setupTitleObserver();
   return { active: true };
 }
