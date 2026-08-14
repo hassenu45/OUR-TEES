@@ -39,6 +39,16 @@ export function buildChartAnimationConfig(reducedMotion) {
   };
 }
 
+export function buildButtonEntranceConfig(reducedMotion) {
+  if (reducedMotion) return null;
+  return { y: 10, duration: 0.3, ease: 'power2.out', stagger: 0.03 };
+}
+
+export function buildRippleConfig(reducedMotion) {
+  if (reducedMotion) return null;
+  return { duration: 0.55, ease: 'power2.out' };
+}
+
 /* ── Config ── */
 
 const DUR = { card: 0.45, row: 0.35, counter: 0.8, toast: 0.22, entrance: 0.5 };

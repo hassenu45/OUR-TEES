@@ -4,6 +4,8 @@ import {
   shouldSkipAnimations,
   getDecimalPlaces,
   buildChartAnimationConfig,
+  buildButtonEntranceConfig,
+  buildRippleConfig,
 } from '../js/admin-animations.js';
 
 describe('parseCounterHTML', () => {
@@ -74,5 +76,26 @@ describe('buildChartAnimationConfig', () => {
 
   it('مع reduced motion: يلغي الأنميشن تماماً', () => {
     expect(buildChartAnimationConfig(true)).toEqual({ animation: false });
+  });
+});
+
+describe('buildButtonEntranceConfig', () => {
+  it('يعيد إعدادات دخول الأزرار: y=10, stagger 0.03', () => {
+    const cfg = buildButtonEntranceConfig(false);
+    expect(cfg).toEqual({ y: 10, duration: 0.3, ease: 'power2.out', stagger: 0.03 });
+  });
+
+  it('يلغي دخول الأزرار مع reduced motion', () => {
+    expect(buildButtonEntranceConfig(true)).toBeNull();
+  });
+});
+
+describe('buildRippleConfig', () => {
+  it('يعيد مدة 0.55s مع ease power2.out', () => {
+    expect(buildRippleConfig(false)).toEqual({ duration: 0.55, ease: 'power2.out' });
+  });
+
+  it('يلغي الريبل مع reduced motion', () => {
+    expect(buildRippleConfig(true)).toBeNull();
   });
 });
