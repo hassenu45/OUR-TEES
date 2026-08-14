@@ -289,7 +289,8 @@ function renderEditImages() {
   const grid = $('edit-images-grid');
   if (!grid) return;
   if (!editImages.length) {
-    grid.innerHTML = '<div style="font-size:12px;color:var(--muted,#8a8a8a);">لا توجد صور — أضف صوراً من الزر أدناه</div>';
+    grid.innerHTML =
+      '<div style="font-size:12px;color:var(--muted,#8a8a8a);">لا توجد صور — أضف صوراً من الزر أدناه</div>';
     return;
   }
   grid.innerHTML = editImages
@@ -403,7 +404,10 @@ function getOrderRegion(order) {
     }
   }
   // Fallback: extract from address string
-  const parts = address.split('،').map(p => p.trim()).filter(Boolean);
+  const parts = address
+    .split('،')
+    .map((p) => p.trim())
+    .filter(Boolean);
   return { city: parts[0] || 'غير محدد', district: parts[1] || '', subdistrict: parts[2] || '', area: parts[3] || '' };
 }
 
@@ -417,7 +421,11 @@ function generatePhoneQR(phone) {
 // Generate WhatsApp URL
 function generateWhatsAppURL(phone, message = '') {
   const cleanPhone = phone.replace(/\D/g, '');
-  const waPhone = cleanPhone.startsWith('0') ? '962' + cleanPhone.slice(1) : (cleanPhone.startsWith('962') ? cleanPhone : '962' + cleanPhone);
+  const waPhone = cleanPhone.startsWith('0')
+    ? '962' + cleanPhone.slice(1)
+    : cleanPhone.startsWith('962')
+      ? cleanPhone
+      : '962' + cleanPhone;
   const text = encodeURIComponent(message || `مرحباً، هذا بخصوص طلبك من متجر AZMA`);
   return `https://wa.me/${waPhone}?text=${text}`;
 }
@@ -428,7 +436,7 @@ function renderOrdersList() {
   const filter = $('orders-filter')?.value || 'all';
   const groupByRegion = $('orders-group-by-region')?.checked || false;
   const filtered = filter === 'all' ? appState.orders : appState.orders.filter((o) => o.status === filter);
-  
+
   if (!filtered.length) {
     container.innerHTML = '<p class="empty-state">لا توجد طلبات' + (filter !== 'all' ? ' بهذه الحالة' : '') + '.</p>';
     return;
@@ -444,7 +452,7 @@ function renderOrdersList() {
 function renderOrdersTable(container, orders) {
   let html =
     '<div class="table-wrap"><table><thead><tr><th>العميل/المنتج</th><th>الهاتف</th><th>المنطقة</th><th>المقاس</th><th>السعر</th><th>التاريخ</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>';
-  
+
   orders.forEach((o) => {
     const nextStatus = STATUS_NEXT[o.status] || 'completed';
     const nextLabel = o.status === 'completed' ? 'إعادة' : o.status === 'cancelled' ? 'إعادة' : 'تسليم';
@@ -452,7 +460,7 @@ function renderOrdersTable(container, orders) {
     const telUrl = generatePhoneQR(o.phone);
     const waUrl = generateWhatsAppURL(o.phone, `مرحباً ${o.customerName}، بخصوص طلبك: ${o.productName} (${o.size})`);
     const qrId = `qr-${o.id}`;
-    
+
     html += `<tr>
       <td>
         <strong>${esc(o.customerName)}</strong>
@@ -485,7 +493,7 @@ function renderOrdersTable(container, orders) {
     </tr>`;
   });
   html += '</tbody></table></div>';
-  
+
   // Add QR code modals
   orders.forEach((o) => {
     const qrId = `qr-${o.id}`;
@@ -504,9 +512,9 @@ function renderOrdersTable(container, orders) {
       </div>
     `;
   });
-  
+
   container.innerHTML = html;
-  
+
   // Initialize QR codes after DOM update
   setTimeout(() => {
     orders.forEach((o) => {
@@ -519,7 +527,7 @@ function renderOrdersTable(container, orders) {
           height: 180,
           colorDark: '#0C0A09',
           colorLight: '#FAFAF9',
-          correctLevel: QRCode.CorrectLevel.M
+          correctLevel: QRCode.CorrectLevel.M,
         });
       }
     });
@@ -529,29 +537,35 @@ function renderOrdersTable(container, orders) {
 function renderOrdersGroupedByRegion(container, orders) {
   // Group orders by city > district > area
   const groups = {};
-  
+
   orders.forEach((o) => {
     const region = getOrderRegion(o);
     const cityKey = region.city || 'غير محدد';
     const districtKey = region.district || 'غير محدد';
     const areaKey = region.area || 'غير محدد';
-    
+
     if (!groups[cityKey]) groups[cityKey] = {};
     if (!groups[cityKey][districtKey]) groups[cityKey][districtKey] = {};
     if (!groups[cityKey][districtKey][areaKey]) groups[cityKey][districtKey][areaKey] = [];
-    
+
     groups[cityKey][districtKey][areaKey].push(o);
   });
-  
+
   let html = '<div style="display:flex;flex-direction:column;gap:16px;">';
-  
-  Object.keys(groups).sort().forEach(city => {
-    const cityOrders = [];
-    Object.values(groups[city]).forEach(district => Object.values(district).forEach(area => cityOrders.push(...area)));
-    const cityCount = cityOrders.length;
-    const cityRevenue = cityOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + parseFloat(o.productPrice), 0);
-    
-    html += `
+
+  Object.keys(groups)
+    .sort()
+    .forEach((city) => {
+      const cityOrders = [];
+      Object.values(groups[city]).forEach((district) =>
+        Object.values(district).forEach((area) => cityOrders.push(...area))
+      );
+      const cityCount = cityOrders.length;
+      const cityRevenue = cityOrders
+        .filter((o) => o.status !== 'cancelled')
+        .reduce((s, o) => s + parseFloat(o.productPrice), 0);
+
+      html += `
       <details class="region-group" open style="border:1px solid rgba(255,255,255,0.04);border-radius:12px;background:rgba(255,255,255,0.015);overflow:hidden;">
         <summary style="padding:16px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;user-select:none;">
           <div style="display:flex;align-items:center;gap:10px;">
@@ -565,14 +579,18 @@ function renderOrdersGroupedByRegion(container, orders) {
         </summary>
         <div style="padding:0 20px 20px;">
     `;
-    
-    Object.keys(groups[city]).sort().forEach(district => {
-      const districtOrders = [];
-      Object.values(groups[city][district]).forEach(area => districtOrders.push(...area));
-      const districtCount = districtOrders.length;
-      const districtRevenue = districtOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + parseFloat(o.productPrice), 0);
-      
-      html += `
+
+      Object.keys(groups[city])
+        .sort()
+        .forEach((district) => {
+          const districtOrders = [];
+          Object.values(groups[city][district]).forEach((area) => districtOrders.push(...area));
+          const districtCount = districtOrders.length;
+          const districtRevenue = districtOrders
+            .filter((o) => o.status !== 'cancelled')
+            .reduce((s, o) => s + parseFloat(o.productPrice), 0);
+
+          html += `
         <details class="region-group" open style="margin-top:12px;border:1px solid rgba(255,255,255,0.03);border-radius:10px;background:rgba(255,255,255,0.01);">
           <summary style="padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;user-select:none;">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -586,13 +604,17 @@ function renderOrdersGroupedByRegion(container, orders) {
           </summary>
           <div style="padding:0 16px 16px;">
       `;
-      
-      Object.keys(groups[city][district]).sort().forEach(area => {
-        const areaOrders = groups[city][district][area];
-        const areaCount = areaOrders.length;
-        const areaRevenue = areaOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + parseFloat(o.productPrice), 0);
-        
-        html += `
+
+          Object.keys(groups[city][district])
+            .sort()
+            .forEach((area) => {
+              const areaOrders = groups[city][district][area];
+              const areaCount = areaOrders.length;
+              const areaRevenue = areaOrders
+                .filter((o) => o.status !== 'cancelled')
+                .reduce((s, o) => s + parseFloat(o.productPrice), 0);
+
+              html += `
           <details class="region-group" open style="margin-top:10px;border:1px solid rgba(255,255,255,0.02);border-radius:8px;background:rgba(255,255,255,0.005);">
             <summary style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;user-select:none;">
               <div style="display:flex;align-items:center;gap:6px;">
@@ -607,18 +629,21 @@ function renderOrdersGroupedByRegion(container, orders) {
             <div style="padding:0 14px 12px;">
               <div style="display:flex;flex-direction:column;gap:6px;">
         `;
-        
-        // Sort orders by date (newest first)
-        areaOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        areaOrders.forEach((o) => {
-          const nextStatus = STATUS_NEXT[o.status] || 'completed';
-          const nextLabel = o.status === 'completed' ? 'إعادة' : o.status === 'cancelled' ? 'إعادة' : 'تسليم';
-          const telUrl = generatePhoneQR(o.phone);
-          const waUrl = generateWhatsAppURL(o.phone, `مرحباً ${o.customerName}، بخصوص طلبك: ${o.productName} (${o.size})`);
-          const qrId = `qr-${o.id}`;
-          
-          html += `
+
+              // Sort orders by date (newest first)
+              areaOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+              areaOrders.forEach((o) => {
+                const nextStatus = STATUS_NEXT[o.status] || 'completed';
+                const nextLabel = o.status === 'completed' ? 'إعادة' : o.status === 'cancelled' ? 'إعادة' : 'تسليم';
+                const telUrl = generatePhoneQR(o.phone);
+                const waUrl = generateWhatsAppURL(
+                  o.phone,
+                  `مرحباً ${o.customerName}، بخصوص طلبك: ${o.productName} (${o.size})`
+                );
+                const qrId = `qr-${o.id}`;
+
+                html += `
             <div class="order-item" style="padding:10px 12px;background:rgba(255,255,255,0.01);border-radius:8px;border:1px solid rgba(255,255,255,0.02);">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                 <div style="flex:1;min-width:200px;">
@@ -646,29 +671,29 @@ function renderOrdersGroupedByRegion(container, orders) {
               </div>
             </div>
           `;
-        });
-        
-        html += `
+              });
+
+              html += `
               </div>
             </div>
           </details>
         `;
-      });
-      
-      html += `
+            });
+
+          html += `
             </div>
           </details>
       `;
-    });
-    
-    html += `
+        });
+
+      html += `
         </div>
       </details>
     `;
-  });
-  
+    });
+
   html += '</div>';
-  
+
   // Add QR code modals
   orders.forEach((o) => {
     const qrId = `qr-${o.id}`;
@@ -687,9 +712,9 @@ function renderOrdersGroupedByRegion(container, orders) {
       </div>
     `;
   });
-  
+
   container.innerHTML = html;
-  
+
   // Initialize QR codes after DOM update
   setTimeout(() => {
     orders.forEach((o) => {
@@ -702,7 +727,7 @@ function renderOrdersGroupedByRegion(container, orders) {
           height: 180,
           colorDark: '#0C0A09',
           colorLight: '#FAFAF9',
-          correctLevel: QRCode.CorrectLevel.M
+          correctLevel: QRCode.CorrectLevel.M,
         });
       }
     });
@@ -727,7 +752,7 @@ function showPhoneQR(qrId, telUrl, phone, customerName) {
         height: 180,
         colorDark: '#0C0A09',
         colorLight: '#FAFAF9',
-        correctLevel: QRCode.CorrectLevel.M
+        correctLevel: QRCode.CorrectLevel.M,
       });
     }
   }
@@ -871,26 +896,41 @@ function copyAIReply() {
 function exportOrdersCSV() {
   const filter = $('orders-filter')?.value || 'all';
   const orders = filter === 'all' ? appState.orders : appState.orders.filter((o) => o.status === filter);
-  
+
   if (!orders.length) {
     showToast('لا توجد طلبات للتصدير', true);
     return;
   }
-  
+
   // CSV headers
   const headers = [
-    'رقم الطلب', 'العميل', 'الهاتف', 'المنتج', 'النوع', 'المقاس', 
-    'السعر', 'العملة', 'طريقة الدفع', 'الحالة', 'المدينة', 'اللواء', 'القضاء', 'المنطقة',
-    'الشارع', 'معلم', 'ملاحظات', 'تاريخ الإنشاء'
+    'رقم الطلب',
+    'العميل',
+    'الهاتف',
+    'المنتج',
+    'النوع',
+    'المقاس',
+    'السعر',
+    'العملة',
+    'طريقة الدفع',
+    'الحالة',
+    'المدينة',
+    'اللواء',
+    'القضاء',
+    'المنطقة',
+    'الشارع',
+    'معلم',
+    'ملاحظات',
+    'تاريخ الإنشاء',
   ];
-  
+
   // Map orders to CSV rows
   const rows = orders.map((o) => {
     const region = getOrderRegion(o);
-    const addressParts = (o.address || '').split('،').map(p => p.trim());
+    const addressParts = (o.address || '').split('،').map((p) => p.trim());
     const street = addressParts[4] || '';
     const landmark = addressParts[5] || '';
-    
+
     return [
       o.id,
       `"${o.customerName}"`,
@@ -909,12 +949,12 @@ function exportOrdersCSV() {
       `"${street}"`,
       `"${landmark}"`,
       `"${(o.notes || '').replace(/"/g, '""')}"`,
-      new Date(o.createdAt).toLocaleString('ar-SA')
+      new Date(o.createdAt).toLocaleString('ar-SA'),
     ].join(',');
   });
-  
+
   const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
-  
+
   // Download
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
@@ -925,7 +965,7 @@ function exportOrdersCSV() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   showToast(`تم تصدير ${orders.length} طلب إلى CSV`);
 }
 
@@ -946,12 +986,14 @@ function exportOrdersPDF() {
 
   const currency = appState.settings.currencySymbol || 'ر.س';
   const siteName = appState.settings.siteName || 'AZMA.COM';
-  const statusLabel = filter === 'all' ? 'جميع الطلبات' : (STATUS_LABELS[filter] || filter);
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
-  const dateLabel = now.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const manifestNo = 'MN-' + dateStr.replace(/-/g, '') + '-' +
-    String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+  const dateLabel = now.toLocaleDateString('ar-SA', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   // Group orders by city/area so the courier can follow one region at a time
   const groups = new Map();
@@ -962,21 +1004,21 @@ function exportOrdersPDF() {
     groups.get(key).push({ o, region });
   });
 
-  const grandTotal = orders.reduce((s, x) => s + (parseFloat(x.productPrice) || 0), 0);
-  const groupCount = groups.size;
+  // رتب أسماء العملاء أبجدياً (أ→ي) داخل كل منطقة، والمناطق نفسها أبجدياً
+  groups.forEach((items) => items.sort((x, y) => window.ManifestUtils.sortByName(x.o.customerName, y.o.customerName)));
+  const sortedGroups = window.ManifestUtils.sortRegionGroups(Array.from(groups.entries()));
 
   const manifestAddress = (o, region) => {
     const parts = (o.address || '').split('،').map((p) => p.trim());
-    return [
-      region.city, region.district, region.subdistrict, region.area,
-      parts[4], parts[5]
-    ].filter(Boolean).join('، ');
+    return [region.city, region.district, region.subdistrict, region.area, parts[4], parts[5]]
+      .filter(Boolean)
+      .join('، ');
   };
 
   // Build page blocks: section headers + data rows
   const blocks = [];
   let seq = 0;
-  groups.forEach((items, key) => {
+  sortedGroups.forEach(([key, items]) => {
     const sub = items.reduce((s, it) => s + (parseFloat(it.o.productPrice) || 0), 0);
     blocks.push({ type: 'section', label: key, count: items.length, sub });
     items.forEach(({ o, region }) => {
@@ -986,7 +1028,11 @@ function exportOrdersPDF() {
         seq,
         id: String(o.id).substring(0, 8),
         name: o.customerName || '-',
-        phone: '<span style="direction:ltr;unicode-bidi:embed;font-weight:700;font-size:12.5px;">' + (o.phone || '-') + '</span>',
+        phoneText: o.phone || '-',
+        telQr: o.phone ? window.ManifestUtils.buildTelQrText(o.phone) : '',
+        waQr: o.phone
+          ? window.ManifestUtils.buildWaQrText(o.phone, 'مرحباً ' + (o.customerName || '') + '، بخصوص طلبك')
+          : '',
         product: o.productName || '-',
         prodType: o.type || '-',
         size: o.size || '-',
@@ -1002,7 +1048,7 @@ function exportOrdersPDF() {
   const PAGES = [];
   let page = [];
   let used = 0;
-  const capFor = (isFirst) => (isFirst ? 11 : 16);
+  const capFor = (isFirst) => (isFirst ? 8 : 11);
   blocks.forEach((b) => {
     const cost = b.type === 'section' ? 1.4 : 1;
     const isFirst = page.length === 0;
@@ -1021,72 +1067,136 @@ function exportOrdersPDF() {
 
   const secBar = (b) =>
     '<tr><td colspan="11" style="background:#1C1917;color:#FFFFFF;padding:7px 10px;border-radius:6px;">' +
-    '<span style="font-weight:800;font-size:13px;">📍 ' + b.label + '</span>' +
-    '<span style="float:left;font-size:12px;color:#E7E5E4;">عدد الطلبات: ' + b.count + ' &nbsp;|&nbsp; مجموع المنطقة: <b style="color:#FCD34D;">' + b.sub.toFixed(2) + ' ' + currency + '</b></span></td></tr>';
+    '<span style="font-weight:800;font-size:13px;">📍 ' +
+    b.label +
+    '</span>' +
+    '<span style="float:left;font-size:12px;color:#E7E5E4;">عدد الطلبات: ' +
+    b.count +
+    '</span></td></tr>';
 
-  const rowHTML = (b) =>
-    '<tr style="' + (b.seq % 2 === 0 ? 'background:#F9F6F0;' : '') + '">' +
-    '<td style="text-align:center;font-weight:800;color:#A16207;">' + b.seq + '</td>' +
-    '<td style="text-align:center;direction:ltr;font-size:10.5px;color:#78716C;">' + b.id + '</td>' +
-    '<td style="font-weight:700;">' + b.name + '</td>' +
-    '<td style="text-align:center;">' + b.phone + '</td>' +
-    '<td style="font-size:11.5px;">' + b.product + '</td>' +
-    '<td style="text-align:center;font-size:11px;">' + b.prodType + '</td>' +
-    '<td style="text-align:center;font-size:11px;">' + b.size + '</td>' +
-    '<td style="text-align:center;font-weight:700;white-space:nowrap;">' + b.price + '</td>' +
-    '<td style="text-align:center;font-size:11px;">' + b.payment + '</td>' +
-    '<td style="font-size:10.5px;color:#57534E;white-space:normal;line-height:1.5;">' + b.address + '</td>' +
-    '<td style="font-size:10px;color:#78716C;white-space:normal;line-height:1.5;">' + b.notes + '</td></tr>';
+  const rowHTML = (b) => {
+    const hasPhone = !!b.phoneText && b.phoneText !== '-';
+    const qrCell = hasPhone
+      ? '<div style="display:flex;gap:8px;margin-top:5px;justify-content:flex-start;">' +
+        '<div style="text-align:center;"><canvas data-qr-text="' +
+        b.telQr +
+        '" data-qr-size="38"></canvas>' +
+        '<div style="font-size:8.5px;color:#78716C;font-weight:700;margin-top:2px;">اتصال</div></div>' +
+        '<div style="text-align:center;"><canvas data-qr-text="' +
+        b.waQr +
+        '" data-qr-size="38"></canvas>' +
+        '<div style="font-size:8.5px;color:#78716C;font-weight:700;margin-top:2px;">واتساب</div></div></div>'
+      : '';
+    return (
+      '<tr style="' +
+      (b.seq % 2 === 0 ? 'background:#F9F6F0;' : '') +
+      '">' +
+      '<td style="text-align:center;font-weight:800;color:#A16207;">' +
+      b.seq +
+      '</td>' +
+      '<td style="text-align:center;direction:ltr;font-size:10.5px;color:#78716C;">' +
+      b.id +
+      '</td>' +
+      '<td style="font-weight:700;vertical-align:middle;">' +
+      b.name +
+      qrCell +
+      '</td>' +
+      '<td style="text-align:center;direction:ltr;unicode-bidi:embed;font-weight:700;font-size:12.5px;">' +
+      b.phoneText +
+      '</td>' +
+      '<td style="font-size:11.5px;">' +
+      b.product +
+      '</td>' +
+      '<td style="text-align:center;font-size:11px;">' +
+      b.prodType +
+      '</td>' +
+      '<td style="text-align:center;font-size:11px;">' +
+      b.size +
+      '</td>' +
+      '<td style="text-align:center;font-weight:700;white-space:nowrap;">' +
+      b.price +
+      '</td>' +
+      '<td style="text-align:center;font-size:11px;">' +
+      b.payment +
+      '</td>' +
+      '<td style="font-size:10.5px;color:#57534E;white-space:normal;line-height:1.5;">' +
+      b.address +
+      '</td>' +
+      '<td style="font-size:10px;color:#78716C;white-space:normal;line-height:1.5;">' +
+      b.notes +
+      '</td></tr>'
+    );
+  };
 
   const tableHTML = (pageBlocks) => {
-    const head = '<tr style="background:#A16207;color:#FFFFFF;">' +
+    const head =
+      '<tr style="background:#A16207;color:#FFFFFF;">' +
       ['م', 'رقم الطلب', 'العميل', 'الهاتف', 'المنتج', 'النوع', 'المقاس', 'السعر', 'الدفع', 'العنوان', 'ملاحظات']
-        .map((h, i) => '<th style="padding:7px 5px;font-size:11.5px;font-weight:800;text-align:center;white-space:nowrap;">' + h + '</th>').join('') + '</tr>';
+        .map(
+          (h, i) =>
+            '<th style="padding:7px 5px;font-size:11.5px;font-weight:800;text-align:center;white-space:nowrap;">' +
+            h +
+            '</th>'
+        )
+        .join('') +
+      '</tr>';
     const widths = ['3%', '7%', '10%', '9%', '13%', '6%', '5%', '8%', '6%', '22%', '11%'];
-    return '<table style="width:100%;border-collapse:collapse;table-layout:fixed;" cellspacing="0">' +
-      '<colgroup>' + widths.map((w) => '<col style="width:' + w + ';">').join('') + '</colgroup>' +
+    return (
+      '<table style="width:100%;border-collapse:collapse;table-layout:fixed;" cellspacing="0">' +
+      '<colgroup>' +
+      widths.map((w) => '<col style="width:' + w + ';">').join('') +
+      '</colgroup>' +
       head +
       pageBlocks.map((b) => (b.type === 'section' ? secBar(b) : rowHTML(b))).join('') +
-      '</table>';
+      '</table>'
+    );
   };
 
-  const footerHTML = (pageNum, totalPages, isLast) => {
-    let sig = '';
-    if (isLast) {
-      sig = '<div style="margin-top:26px;display:flex;gap:40px;">' +
-        '<div style="flex:1;border-top:1.5px solid #1C1917;padding-top:6px;text-align:center;font-size:11px;color:#57534E;font-weight:700;">توقيع مندوب شركة التوصيل</div>' +
-        '<div style="flex:1;border-top:1.5px solid #1C1917;padding-top:6px;text-align:center;font-size:11px;color:#57534E;font-weight:700;">توقيع المستلم</div></div>';
-    }
-    return '<div style="position:absolute;bottom:14px;right:32px;left:32px;display:flex;justify-content:space-between;align-items:center;border-top:2px solid #A16207;padding-top:8px;">' +
-      '<span style="font-family:Cormorant,serif;font-weight:700;font-size:14px;color:#A16207;">' + siteName + '</span>' +
-      '<span style="font-size:11px;color:#78716C;">صفحة ' + pageNum + ' من ' + totalPages + '</span></div>' + sig;
-  };
+  const footerHTML = (pageNum, totalPages) =>
+    '<div style="position:absolute;bottom:14px;right:32px;left:32px;display:flex;justify-content:center;align-items:center;border-top:2px solid #A16207;padding-top:8px;">' +
+    '<span style="font-size:11px;color:#78716C;">صفحة ' +
+    pageNum +
+    ' من ' +
+    totalPages +
+    '</span></div>';
 
   const headerHTML = () =>
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
-    '<div><div style="font-family:Cormorant,serif;font-size:34px;font-weight:700;color:#A16207;line-height:1;">' + siteName + '<span style="color:#1C1917;"> — كشف توصيل</span></div>' +
-    '<div style="font-size:12px;color:#78716C;margin-top:4px;font-weight:700;">تسليم الطلبات إلى شركة التوصيل — يُطبع ويُرفق مع الطرود</div></div>' +
-    '<div style="text-align:left;"><div style="font-size:14px;font-weight:800;color:#1C1917;">' + statusLabel + '</div>' +
-    '<div style="font-size:11.5px;color:#78716C;margin-top:2px;">' + dateLabel + '</div>' +
-    '<div style="font-size:11.5px;color:#78716C;margin-top:2px;direction:ltr;text-align:left;">' + manifestNo + '</div></div></div>' +
-    '<div style="height:3px;background:#A16207;border-radius:2px;margin-top:12px;"></div>';
-
-  const summaryHTML = () =>
-    '<div style="display:flex;gap:10px;margin:12px 0 14px;">' +
-    [
-      ['إجمالي الطلبات', orders.length, '#1C1917', '#F5F5F4'],
-      ['إجمالي المبلغ', grandTotal.toFixed(2) + ' ' + currency, '#A16207', '#FEF3C7'],
-      ['عدد المناطق', groupCount, '#1C1917', '#F5F5F4'],
-    ].map((s) => '<div style="flex:1;background:' + s[3] + ';border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:8px 12px;text-align:center;">' +
-      '<div style="font-size:10.5px;color:#57534E;margin-bottom:2px;">' + s[0] + '</div>' +
-      '<div style="font-size:16px;font-weight:800;color:' + s[2] + ';">' + s[1] + '</div></div>').join('') + '</div>';
+    '<div style="display:flex;justify-content:space-between;align-items:flex-end;">' +
+    '<div><div style="font-family:Cormorant,serif;font-size:38px;font-weight:700;color:#A16207;line-height:1;">' +
+    siteName +
+    '</div></div>' +
+    '<div style="text-align:left;font-size:13px;color:#57534E;font-weight:700;padding-bottom:2px;">' +
+    dateLabel +
+    '</div></div>' +
+    '<div style="height:3px;background:#A16207;border-radius:2px;margin-top:14px;"></div>';
 
   const pageHTML = (pageBlocks, pageNum, totalPages) => {
-    const content = pageNum === 1
-      ? headerHTML() + summaryHTML() + tableHTML(pageBlocks)
-      : tableHTML(pageBlocks);
-    return '<div style="position:relative;width:' + PAGE_W + 'px;height:' + PAGE_H + 'px;background:#FFFFFF;color:#1C1917;direction:rtl;font-family:Tajawal,Montserrat,sans-serif;padding:24px 32px 64px;box-sizing:border-box;overflow:hidden;">' +
-      content + footerHTML(pageNum, totalPages, pageNum === totalPages) + '</div>';
+    const content = pageNum === 1 ? headerHTML() + tableHTML(pageBlocks) : tableHTML(pageBlocks);
+    return (
+      '<div style="position:relative;width:' +
+      PAGE_W +
+      'px;height:' +
+      PAGE_H +
+      'px;background:#FFFFFF;color:#1C1917;direction:rtl;font-family:Tajawal,Montserrat,sans-serif;padding:24px 32px 64px;box-sizing:border-box;overflow:hidden;">' +
+      content +
+      footerHTML(pageNum, totalPages) +
+      '</div>'
+    );
+  };
+
+  const renderPageQRs = (root) => {
+    if (typeof QRCode === 'undefined') return;
+    root.querySelectorAll('canvas[data-qr-text]').forEach((c) => {
+      const size = parseInt(c.dataset.qrSize || '38', 10);
+      new QRCode(c, {
+        text: c.dataset.qrText,
+        width: size,
+        height: size,
+        colorDark: '#0C0A09',
+        colorLight: '#FFFFFF',
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    });
   };
 
   const btn = document.querySelector('[onclick="exportOrdersPDF()"]');
@@ -1106,7 +1216,13 @@ function exportOrdersPDF() {
       const doc = new window.jspdf.jsPDF('landscape', 'mm', 'a4');
       for (let p = 0; p < PAGES.length; p++) {
         wrap.innerHTML = pageHTML(PAGES[p], p + 1, PAGES.length);
-        const canvas = await window.html2canvas(wrap.firstElementChild, { scale: 2, backgroundColor: '#FFFFFF', useCORS: true, logging: false });
+        renderPageQRs(wrap);
+        const canvas = await window.html2canvas(wrap.firstElementChild, {
+          scale: 2,
+          backgroundColor: '#FFFFFF',
+          useCORS: true,
+          logging: false,
+        });
         const img = canvas.toDataURL('image/jpeg', 0.95);
         if (p > 0) doc.addPage('a4', 'landscape');
         doc.addImage(img, 'JPEG', 0, 0, 297, 210);
