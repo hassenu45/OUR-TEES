@@ -153,6 +153,16 @@ const API = {
     return DB.updateProduct(id, { image: dataUrl, images: [dataUrl] });
   },
 
+  async uploadImages(files) {
+    if (await isServerMode()) {
+      const fd = new FormData();
+      files.forEach((f) => fd.append('images', f));
+      const res = await serverFetch('/api/uploads/images', { method: 'POST', body: fd });
+      return (res && res.urls) || [];
+    }
+    return Promise.all(files.map(fileToDataUrl));
+  },
+
   /* ── Orders ── */
   async getOrders() {
     return fallbackTo(

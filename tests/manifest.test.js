@@ -56,6 +56,6 @@ describe('safeResolve', () => {
 describe('readVersion', () => {
   it('reads the VERSION file from root', () => {
     const { readVersion } = require('../server-version.cjs');
-    expect(readVersion()).toBe('1.0.2');
+    expect(readVersion()).toBe('1.0.6');
   });
 });

@@ -97,7 +97,7 @@ async function updateProduct(id, data) {
   if (data.images) updateData.images = JSON.stringify(data.images);
   if (data.types) updateData.types = JSON.stringify(data.types);
   if (data.sizes) updateData.sizes = JSON.stringify(data.sizes);
-  if (data.price) updateData.price = parseFloat(data.price);
+  if ('price' in data) updateData.price = parseFloat(data.price);
   const product = await p.product.update({ where: { id }, data: updateData });
   return parseProduct(product);
 }
