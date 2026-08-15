@@ -13,12 +13,15 @@ function isServerMode() {
   }
   if (!_serverCheck) {
     _serverCheck = fetch('/api/settings', { method: 'GET', headers: { Accept: 'application/json' } })
-      .then(r => {
+      .then((r) => {
         const ct = (r.headers.get('content-type') || '').toLowerCase();
         _serverMode = r.ok && ct.includes('application/json');
         return _serverMode;
       })
-      .catch(() => { _serverMode = false; return false; });
+      .catch(() => {
+        _serverMode = false;
+        return false;
+      });
   }
   return _serverCheck;
 }
@@ -31,7 +34,9 @@ async function serverFetch(url, options) {
     try {
       const j = await res.json();
       if (j && j.error) msg = typeof j.error === 'string' ? j.error : 'خطأ في الخادم';
-    } catch {}
+    } catch {
+      /* ignore */
+    }
     const err = new Error(msg);
     err.status = res.status;
     throw err;
@@ -48,6 +53,7 @@ async function fallbackTo(fn, fallback) {
   return fallback();
 }
 
+/* eslint-disable no-redeclare -- API is also declared as a global in eslint.config.js */
 const API = {
   /* ── Settings ── */
   async getSettings() {
@@ -66,11 +72,12 @@ const API = {
 
   async updateSettings(data) {
     return fallbackTo(
-      () => serverFetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }),
+      () =>
+        serverFetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }),
       () => DB.updateSettings(data)
     );
   },
@@ -85,27 +92,29 @@ const API = {
 
   async getProduct(id) {
     const list = await this.getProducts();
-    return list.find(p => p.id === id) || null;
+    return list.find((p) => p.id === id) || null;
   },
 
   async createProduct(data) {
     return fallbackTo(
-      () => serverFetch('/api/products', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }),
+      () =>
+        serverFetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }),
       () => DB.createProduct(data)
     );
   },
 
   async updateProduct(id, data) {
     return fallbackTo(
-      () => serverFetch('/api/products/' + encodeURIComponent(id), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }),
+      () =>
+        serverFetch('/api/products/' + encodeURIComponent(id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }),
       () => DB.updateProduct(id, data)
     );
   },
@@ -122,7 +131,12 @@ const API = {
       const res = await fetch('/api/products/with-images', { method: 'POST', body: formData });
       if (!res.ok) {
         let msg = 'خطأ في إنشاء المنتج';
-        try { const j = await res.json(); if (j && j.error) msg = j.error; } catch {}
+        try {
+          const j = await res.json();
+          if (j && j.error) msg = j.error;
+        } catch {
+          /* ignore */
+        }
         throw new Error(msg);
       }
       return res.json();
@@ -132,7 +146,7 @@ const API = {
       if (key === 'images') return;
       data[key] = value;
     });
-    const images = formData.getAll('images').filter(f => f instanceof File);
+    const images = formData.getAll('images').filter((f) => f instanceof File);
     if (images.length) {
       data.images = await Promise.all(images.map(fileToDataUrl));
       data.image = data.images[0];
@@ -163,6 +177,16 @@ const API = {
     return Promise.all(files.map(fileToDataUrl));
   },
 
+  async deleteUploadedImage(url) {
+    if (await isServerMode()) {
+      const m = String(url || '').match(/^\/uploads\/([^/?#]+)$/);
+      if (!m) return true;
+      await serverFetch('/api/uploads/' + encodeURIComponent(m[1]), { method: 'DELETE' });
+      return true;
+    }
+    return true;
+  },
+
   /* ── Orders ── */
   async getOrders() {
     return fallbackTo(
@@ -173,11 +197,12 @@ const API = {
 
   async submitOrder(data) {
     return fallbackTo(
-      () => serverFetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }),
+      () =>
+        serverFetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }),
       () => DB.createOrder(data)
     );
   },
@@ -197,7 +222,9 @@ const API = {
             const norm = phone.replace(/\s+/g, '').replace(/^00/, '+');
             if (!stored.includes(norm)) stored.push(norm);
             localStorage.setItem('azma_verified_phones', JSON.stringify(stored));
-          } catch (e) {}
+          } catch (e) {
+            /* ignore */
+          }
         }
         return res;
       },
@@ -209,7 +236,9 @@ const API = {
             const norm = phone.replace(/\s+/g, '').replace(/^00/, '+');
             if (!stored.includes(norm)) stored.push(norm);
             localStorage.setItem('azma_verified_phones', JSON.stringify(stored));
-          } catch (e) {}
+          } catch (e) {
+            /* ignore */
+          }
           return { ok: true, verified: true };
         }
         throw new Error('رمز التحقق غير صحيح (الكود التجريبي: 1234)');
@@ -238,11 +267,12 @@ const API = {
 
   async updateOrderStatus(id, status) {
     return fallbackTo(
-      () => serverFetch('/api/orders/' + encodeURIComponent(id) + '/status', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      }),
+      () =>
+        serverFetch('/api/orders/' + encodeURIComponent(id) + '/status', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        }),
       () => DB.updateOrderStatus(id, status)
     );
   },
@@ -263,11 +293,12 @@ const API = {
 
   async cancelOrder(id, phone) {
     return fallbackTo(
-      () => serverFetch('/api/orders/' + encodeURIComponent(id) + '/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      }),
+      () =>
+        serverFetch('/api/orders/' + encodeURIComponent(id) + '/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        }),
       () => DB.cancelOrder(id, phone)
     );
   },
@@ -392,7 +423,7 @@ const API = {
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = e => resolve(e.target.result);
+    r.onload = (e) => resolve(e.target.result);
     r.onerror = reject;
     r.readAsDataURL(file);
   });

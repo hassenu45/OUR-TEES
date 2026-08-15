@@ -61,3 +61,16 @@ describe('uploads-manager + in-use logic (pure)', () => {
     expect(inUse('other.png')).toBe(false);
   });
 });
+
+describe('image url → name extraction', () => {
+  const nameFromUrl = (url) => {
+    const m = String(url || '').match(/^\/uploads\/([^/?#]+)$/);
+    return m ? m[1] : null;
+  };
+  it('extracts the filename from /uploads urls', () => {
+    expect(nameFromUrl('/uploads/1786-a.png')).toBe('1786-a.png');
+    expect(nameFromUrl('https://x.com/uploads/a.png')).toBe(null);
+    expect(nameFromUrl('/uploads/a.png?x=1')).toBe(null);
+    expect(nameFromUrl('data:image/png;base64,xx')).toBe(null);
+  });
+});

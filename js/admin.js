@@ -180,6 +180,7 @@ async function saveAISettings(e) {
 
 /* ── Image Preview ── */
 const MAX_PRODUCT_IMAGES = 20;
+let previewFiles = [];
 function previewProductImages(input) {
   const container = $('images-preview');
   const text = container?.previousElementSibling;
@@ -192,21 +193,48 @@ function previewProductImages(input) {
     input.files = dt.files;
     showToast(`يمكنك اختيار ${MAX_PRODUCT_IMAGES} صورة كحد أقصى`, true);
   }
+  previewFiles = Array.from(input.files || []);
+  renderPreviewImages(container, text);
+}
+
+function renderPreviewImages(container, text) {
   container.innerHTML = '';
-  if (input.files && input.files.length) {
-    if (text) text.textContent = `✅ تم اختيار (${input.files.length}) من ${MAX_PRODUCT_IMAGES} صورة`;
-    Array.from(input.files).forEach((f) => {
-      const r = new FileReader();
-      r.onload = (e) => {
-        const img = document.createElement('img');
-        img.src = e.target.result;
-        container.appendChild(img);
-      };
-      r.readAsDataURL(f);
-    });
-  } else {
+  if (!previewFiles.length) {
     if (text) text.textContent = `📷 اضغط لاختيار صور المنتج (حتى ${MAX_PRODUCT_IMAGES} صورة)`;
+    return;
   }
+  if (text) text.textContent = `✅ تم اختيار (${previewFiles.length}) من ${MAX_PRODUCT_IMAGES} صورة`;
+  previewFiles.forEach((f, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;display:inline-block;margin:6px;';
+    const r = new FileReader();
+    r.onload = (e) => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText =
+        'width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid var(--border,#333);';
+      wrap.appendChild(img);
+    };
+    r.readAsDataURL(f);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '✕';
+    btn.style.cssText =
+      'position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:12px;line-height:1;';
+    btn.title = 'إزالة الصورة';
+    btn.addEventListener('click', () => {
+      previewFiles.splice(i, 1);
+      const input = document.getElementById('product-images-input');
+      if (input) {
+        const dt = new DataTransfer();
+        previewFiles.forEach((x) => dt.items.add(x));
+        input.files = dt.files;
+      }
+      renderPreviewImages(container, text);
+    });
+    wrap.appendChild(btn);
+    container.appendChild(wrap);
+  });
 }
 
 /* ── Add Product ── */
@@ -221,7 +249,9 @@ async function handleAddProduct(e) {
     await API.createProductWithFormData(fd);
     showToast('تمت إضافة المنتج بنجاح!');
     form.reset();
-    if ($('images-preview')) $('images-preview').innerHTML = '';
+    previewFiles = [];
+    const previewBox = $('images-preview');
+    if (previewBox) renderPreviewImages(previewBox, previewBox.previousElementSibling);
     await loadAllData();
     switchPanel('products');
   } catch (err) {
@@ -324,7 +354,14 @@ function previewEditImages(input) {
 
 function editRemoveImage(i) {
   const removed = editImages.splice(i, 1)[0];
-  if (removed && removed.file && removed.src.startsWith('blob:')) URL.revokeObjectURL(removed.src);
+  if (!removed) {
+    renderEditImages();
+    return;
+  }
+  if (removed.file && removed.src.startsWith('blob:')) URL.revokeObjectURL(removed.src);
+  if (removed.src.startsWith('/uploads/')) {
+    API.deleteUploadedImage(removed.src).catch(() => showToast('تعذر حذف الملف من السيرفر', true));
+  }
   renderEditImages();
 }
 
