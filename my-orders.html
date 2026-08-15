@@ -47,10 +47,9 @@
     .mo-hamburger{width:38px;height:38px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;cursor:pointer;border:1px solid rgba(245,200,66,.25);border-radius:50%;background:rgba(255,255,255,.03);transition:border-color .3s var(--tees-ease),box-shadow .3s var(--tees-ease)}
     .mo-hamburger:hover{border-color:rgba(245,200,66,.6);box-shadow:0 0 18px rgba(245,200,66,.12)}
     .mo-hamburger .mo-bar{width:16px;height:2px;background:var(--tees-yellow);border-radius:10px;position:relative;transition:transform .3s ease,opacity .3s ease}
-    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(2){transform:translate(0,7px);opacity:0;transition-delay:.3s}
-    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(3){transform:translate(0,-7px);transition-delay:0s}
-    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(1){transform:rotate(-45deg) scale(.8);transition-delay:.6s}
-    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(3){transform:rotate(45deg) scale(.8);transition-delay:.6s}
+    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(1){transform:translate(0,-7px) rotate(-45deg);transition-delay:.2s}
+    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(2){opacity:0;transition-delay:.1s}
+    .mo-toggle-checkbox:checked + .mo-hamburger .mo-bar:nth-child(3){transform:translate(0,7px) rotate(45deg);transition-delay:.2s}
     .mo-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:220px;display:none;flex-direction:column;gap:4px;padding:8px;background:rgba(22,22,22,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(245,200,66,.18);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,.5);transform-origin:top;animation:menuIn .3s var(--tees-ease)}
     .mo-toggle-checkbox:checked ~ .mo-menu{display:flex}
     .mo-menu-item{padding:11px 14px;border-radius:10px;font-size:13px;font-weight:600;color:var(--tees-muted);cursor:pointer;font-family:inherit;transition:all .3s var(--tees-ease)}
@@ -187,6 +186,27 @@
       .mo-header{padding:14px 18px}
       .mo-card{padding:18px}
     }
+
+    /* ── Phone Verification Modal (self-contained; styles.css is not loaded here) ── */
+    .phone-verify-modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(5,5,5,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s ease}
+    .phone-verify-modal-overlay.show{opacity:1;visibility:visible}
+    .phone-verify-modal-overlay .form{background:#ffffff;display:flex;flex-direction:column;align-items:center;gap:16px;padding:32px 28px 26px;border-radius:24px;position:relative;width:100%;max-width:360px;box-shadow:0 24px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.1);box-sizing:border-box;font-family:'Montserrat','Tajawal',system-ui,sans-serif;transform:translateY(20px) scale(.95);transition:transform .3s cubic-bezier(.16,1,.3,1)}
+    .phone-verify-modal-overlay.show .form{transform:translateY(0) scale(1)}
+    .phone-verify-modal-overlay .form .close{position:absolute;right:16px;top:16px;background:#f1f5f9;color:#64748b;height:32px;width:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:700;font-size:14px;cursor:pointer;transition:background-color .2s,color .2s,transform .2s;user-select:none;line-height:1;border:none;font-family:inherit}
+    .phone-verify-modal-overlay .form .close:hover{background:#e2e8f0;color:#0f172a;transform:scale(1.1)}
+    .phone-verify-modal-overlay .form .info{text-align:center;display:flex;flex-direction:column;gap:6px;width:100%;padding:0 8px}
+    .phone-verify-modal-overlay .form .title{font-weight:700;font-size:20px;color:#0f172a;letter-spacing:-.3px;display:block}
+    .phone-verify-modal-overlay .form .description{color:#64748b;font-size:13px;line-height:1.5;margin:0}
+    .phone-verify-modal-overlay .form .input-fields{display:flex;justify-content:center;gap:10px;margin:6px 0;width:100%;direction:ltr}
+    .phone-verify-modal-overlay .form .input-fields input{height:52px;width:52px;outline:none;text-align:center;font-size:1.4rem;font-weight:700;border-radius:14px;border:1.5px solid #e2e8f0;background-color:#f8fafc;color:#0f172a;transition:border-color .2s,box-shadow .2s,background-color .2s,transform .15s;box-sizing:border-box}
+    .phone-verify-modal-overlay .form .input-fields input:focus{border-color:#0f172a;background-color:#ffffff;box-shadow:0 0 0 4px rgba(15,23,42,.08);transform:translateY(-2px)}
+    .phone-verify-modal-overlay .form .input-fields input.filled{border-color:#0f172a;background-color:#f1f5f9}
+    .phone-verify-modal-overlay .form .action-btns{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:4px}
+    .phone-verify-modal-overlay .form .action-btns .verify{padding:13px;text-decoration:none;background-color:#0f172a;color:#ffffff;text-align:center;border-radius:12px;font-weight:700;font-size:14px;transition:background-color .2s,transform .2s,box-shadow .2s;display:block;font-family:inherit}
+    .phone-verify-modal-overlay .form .action-btns .verify:hover{background-color:#1e293b;transform:translateY(-1px);box-shadow:0 4px 14px rgba(15,23,42,.25)}
+    .phone-verify-modal-overlay .form .action-btns .verify:active{transform:translateY(0)}
+    .phone-verify-modal-overlay .form .action-btns .clear{padding:11px;text-decoration:none;background-color:transparent;color:#64748b;text-align:center;border-radius:12px;border:1.5px solid #e2e8f0;font-weight:600;font-size:13.5px;transition:background-color .2s,border-color .2s,color .2s;display:block;font-family:inherit}
+    .phone-verify-modal-overlay .form .action-btns .clear:hover{background-color:#f8fafc;border-color:#cbd5e1;color:#0f172a}
   </style>
 </head>
 <body>
@@ -272,7 +292,7 @@
         <div class="mo-field mo-span2"><label>الشارع</label><input id="mo-street" placeholder="شارع المدينة"></div>
         <div class="mo-field mo-span2"><label>ملاحظات (اختياري)</label><textarea id="mo-notes" rows="2" placeholder="أي تفاصيل إضافية..."></textarea></div>
       </div>
-      <div class="mo-step2-error" style="display:none;"></div>
+      <div class="mo-step2-error" id="mo-step2-error" style="display:none;"></div>
       <button class="mo-btn" id="mo-step2-submit" onclick="submitOrderFromDelivery()">إرسال الطلب</button>
     </div>
   </div>
@@ -284,7 +304,7 @@
 
       <div class="info">
         <span class="title">Confirm Phone Number</span>
-        <p class="description">Enter the verification code sent to your phone to complete your order </p>
+        <p class="description">أدخل رمز التحقق المكوّن من 4 أرقام المرسل إلى هاتفك لإكمال الطلب (رمز التجربة: 1234)</p>
       </div>
 
       <div class="input-fields" id="otp-input-group">

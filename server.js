@@ -7,7 +7,7 @@ const fs = require('fs');
 const { OAuth2Client } = require('google-auth-library');
 const { z } = require('zod');
 const db = require('./db.cjs');
-const { isValidPhone, canCancelOrder, composeAddress } = require('./orders-rules.cjs');
+const { isValidPhone, canCancelOrder, composeAddress, normalizePhone } = require('./orders-rules.cjs');
 const { validateAddress, upsertAddress, removeAddress, migrateList } = require('./address-book.cjs');
 const { safeResolve } = require('./updates-manifest.cjs');
 
@@ -46,7 +46,7 @@ const productUpdateSchema = z.object({
 const orderSchema = z.object({
   productId: z.string().min(1).max(50),
   type: z.string().max(50).optional().default(''),
-  size: z.string().min(1).max(20),
+  size: z.string().max(20).optional().default(''),
   customerName: z
     .string()
     .min(1)
@@ -71,6 +71,8 @@ const orderSchema = z.object({
     .transform((s) => s.trim()),
   paymentMethod: z.enum(['cod', 'card']).optional().default('cod'),
   city: z.string().max(100).optional().default(''),
+  district: z.string().max(100).optional().default(''),
+  subdistrict: z.string().max(100).optional().default(''),
   area: z.string().max(100).optional().default(''),
   street: z.string().max(100).optional().default(''),
   landmark: z.string().max(100).optional().default(''),
@@ -861,7 +863,9 @@ function loadVerifiedPhones() {
     if (fs.existsSync(VERIFIED_PHONES_FILE)) {
       return new Set(JSON.parse(fs.readFileSync(VERIFIED_PHONES_FILE, 'utf8')));
     }
-  } catch (e) {}
+  } catch (e) {
+    /* corrupted file — start empty */
+  }
   return new Set();
 }
 
@@ -870,7 +874,9 @@ function saveVerifiedPhones(set) {
     const dir = path.dirname(VERIFIED_PHONES_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(VERIFIED_PHONES_FILE, JSON.stringify([...set]), 'utf8');
-  } catch (e) {}
+  } catch (e) {
+    /* best effort — verification still works for this process */
+  }
 }
 
 const verifiedPhones = loadVerifiedPhones();

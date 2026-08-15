@@ -1,7 +1,7 @@
 {
   "name": "azma-settings",
   "productName": "AZMA Settings",
-  "version": "1.0.2",
+  "version": "1.0.6",
   "description": "AZMA — تطبيق إعدادات المتجر (سطح المكتب)",
   "author": "AZMA",
   "license": "UNLICENSED",
@@ -23,6 +23,8 @@
     "files": [
       "main.js",
       "preload.js",
+      "updater.cjs",
+      "config.json",
       "web/**/*"
     ],
     "win": {

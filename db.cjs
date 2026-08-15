@@ -116,7 +116,11 @@ async function getOrders() {
 
 async function createOrder(data) {
   const p = await getPrisma();
-  return p.order.create({ data });
+  const clean = {};
+  for (const key of ['productId', 'productName', 'productPrice', 'type', 'size', 'customerName', 'phone', 'address', 'notes', 'status', 'paymentMethod']) {
+    if (data[key] !== undefined && data[key] !== null) clean[key] = data[key];
+  }
+  return p.order.create({ data: clean });
 }
 
 async function updateOrderStatus(id, status) {

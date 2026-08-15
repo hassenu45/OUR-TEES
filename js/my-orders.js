@@ -10,6 +10,8 @@ let cart = (() => {
 let settings = {};
 let paymentMethod = 'cod';
 let auth = { authenticated: false };
+let savedAddresses = [];
+let activeAddressId = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -163,7 +165,9 @@ function saveAddressToHistory(addr) {
   }
   try {
     localStorage.setItem('azma_saved_addresses', JSON.stringify(list));
-  } catch (e) {}
+  } catch (e) {
+    /* storage may be full/blocked — best effort */
+  }
   savedAddresses = list;
 }
 
@@ -181,7 +185,7 @@ async function loadSavedAddresses() {
   const map = new Map();
   [...serverAddrs, ...localAddrs].forEach((a) => {
     if (a && (a.id || a.phone)) {
-      const key = a.id || (a.phone + '_' + a.name);
+      const key = a.id || a.phone + '_' + a.name;
       if (!map.has(key)) map.set(key, { ...a, id: key });
     }
   });
@@ -204,12 +208,12 @@ function renderSavedAddresses() {
   const items = savedAddresses
     .map(
       (a) => `
-    <div class="mo-saved-item${activeAddressId === a.id ? ' active' : ''}" onclick="pickSavedAddress('${a.id}')">
+    <div class="mo-saved-item${activeAddressId === a.id ? ' active' : ''}" onclick="pickSavedAddress(decodeURIComponent('${encodeURIComponent(a.id)}'))">
       <div class="mo-saved-main">
         <div class="mo-saved-name">${escapeHtml(a.name)} · ${escapeHtml(a.phone)}</div>
         <div class="mo-saved-loc">${escapeHtml([a.city, a.district, a.subdistrict, a.area].filter(Boolean).join(' — '))}${a.street ? ' · ' + escapeHtml(a.street) : ''}</div>
       </div>
-      <span class="mo-saved-del" onclick="event.stopPropagation();deleteSavedAddress('${a.id}')" title="حذف">✕</span>
+      <span class="mo-saved-del" onclick="event.stopPropagation();deleteSavedAddress(decodeURIComponent('${encodeURIComponent(a.id)}'))" title="حذف">✕</span>
     </div>`
     )
     .join('');
@@ -240,12 +244,16 @@ async function deleteSavedAddress(id) {
   savedAddresses = savedAddresses.filter((x) => x.id !== id);
   try {
     localStorage.setItem('azma_saved_addresses', JSON.stringify(savedAddresses));
-  } catch (e) {}
+  } catch (e) {
+    /* storage may be full/blocked — best effort */
+  }
   if (auth.authenticated) {
     try {
       const res = await (await fetch('api/me/addresses/' + encodeURIComponent(id), { method: 'DELETE' })).json();
       if (res.addresses) savedAddresses = res.addresses;
-    } catch (e) {}
+    } catch (e) {
+      /* offline/network failure — local copy already updated */
+    }
   }
   if (activeAddressId === id) {
     activeAddressId = savedAddresses.length ? savedAddresses[0].id : null;
@@ -537,9 +545,8 @@ async function submitOrderFromDelivery() {
     btn.disabled = true;
     btn.textContent = 'جاري التحقق...';
 
-    const checkResult = typeof API !== 'undefined' && API.checkPhoneVerified
-      ? await API.checkPhoneVerified(phone)
-      : { verified: false };
+    const checkResult =
+      typeof API !== 'undefined' && API.checkPhoneVerified ? await API.checkPhoneVerified(phone) : { verified: false };
 
     btn.disabled = false;
     btn.textContent = 'إرسال الطلب';
@@ -556,6 +563,17 @@ async function submitOrderFromDelivery() {
   }
 
   // Open the phone verification modal (first-time or unverified)
+  try {
+    if (typeof API !== 'undefined' && typeof isServerMode === 'function' && (await isServerMode())) {
+      await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+    }
+  } catch (e) {
+    /* OTP send is best-effort — verification modal still opens */
+  }
   openPhoneVerifyModal(orderPayload);
 }
 
@@ -626,7 +644,9 @@ async function processFinalOrderSubmission(data) {
             renderSavedAddresses();
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          /* address sync is best-effort */
+        });
     }
     cart = [];
     localStorage.setItem('azma_cart', '[]');

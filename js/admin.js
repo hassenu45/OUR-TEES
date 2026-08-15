@@ -1078,14 +1078,14 @@ function exportOrdersPDF() {
     const hasPhone = !!b.phoneText && b.phoneText !== '-';
     const qrCell = hasPhone
       ? '<div style="display:flex;gap:8px;margin-top:5px;justify-content:flex-start;">' +
-        '<div style="text-align:center;"><canvas data-qr-text="' +
+        '<div style="text-align:center;"><img data-qr-text="' +
         b.telQr +
-        '" data-qr-size="38"></canvas>' +
-        '<div style="font-size:8.5px;color:#78716C;font-weight:700;margin-top:2px;">اتصال</div></div>' +
-        '<div style="text-align:center;"><canvas data-qr-text="' +
+        '" data-qr-size="38" width="38" height="38" alt="">' +
+        '<div style="font-size:8.5px;color:#57534E;font-weight:700;margin-top:2px;">اتصال</div></div>' +
+        '<div style="text-align:center;"><img data-qr-text="' +
         b.waQr +
-        '" data-qr-size="38"></canvas>' +
-        '<div style="font-size:8.5px;color:#78716C;font-weight:700;margin-top:2px;">واتساب</div></div></div>'
+        '" data-qr-size="38" width="38" height="38" alt="">' +
+        '<div style="font-size:8.5px;color:#57534E;font-weight:700;margin-top:2px;">واتساب</div></div></div>'
       : '';
     return (
       '<tr style="' +
@@ -1097,7 +1097,7 @@ function exportOrdersPDF() {
       '<td style="text-align:center;direction:ltr;font-size:10.5px;color:#78716C;">' +
       b.id +
       '</td>' +
-      '<td style="font-weight:700;vertical-align:middle;">' +
+      '<td style="font-weight:700;vertical-align:middle;color:#000000;">' +
       b.name +
       qrCell +
       '</td>' +
@@ -1184,19 +1184,32 @@ function exportOrdersPDF() {
     );
   };
 
-  const renderPageQRs = (root) => {
+  const renderPageQRs = async (root) => {
     if (typeof QRCode === 'undefined') return;
-    root.querySelectorAll('canvas[data-qr-text]').forEach((c) => {
-      const size = parseInt(c.dataset.qrSize || '38', 10);
-      new QRCode(c, {
-        text: c.dataset.qrText,
-        width: size,
-        height: size,
-        colorDark: '#0C0A09',
-        colorLight: '#FFFFFF',
-        correctLevel: QRCode.CorrectLevel.M,
-      });
-    });
+    const imgs = [...root.querySelectorAll('img[data-qr-text]')];
+    await Promise.all(
+      imgs.map(async (im) => {
+        const size = parseInt(im.dataset.qrSize || '38', 10);
+        const tmp = document.createElement('canvas');
+        tmp.width = tmp.height = size;
+        new QRCode(tmp, {
+          text: im.dataset.qrText,
+          width: size,
+          height: size,
+          colorDark: '#0C0A09',
+          colorLight: '#FFFFFF',
+          correctLevel: QRCode.CorrectLevel.M,
+        });
+        im.src = tmp.toDataURL('image/png');
+        if (im.decode) {
+          try {
+            await im.decode();
+          } catch (e) {
+            /* ignore decode failures */
+          }
+        }
+      })
+    );
   };
 
   const btn = document.querySelector('[onclick="exportOrdersPDF()"]');
@@ -1216,7 +1229,7 @@ function exportOrdersPDF() {
       const doc = new window.jspdf.jsPDF('landscape', 'mm', 'a4');
       for (let p = 0; p < PAGES.length; p++) {
         wrap.innerHTML = pageHTML(PAGES[p], p + 1, PAGES.length);
-        renderPageQRs(wrap);
+        await renderPageQRs(wrap);
         const canvas = await window.html2canvas(wrap.firstElementChild, {
           scale: 2,
           backgroundColor: '#FFFFFF',
