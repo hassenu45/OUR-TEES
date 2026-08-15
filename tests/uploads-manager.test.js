@@ -62,6 +62,22 @@ describe('uploads-manager + in-use logic (pure)', () => {
   });
 });
 
+describe('print sizing (pure)', () => {
+  // نفس الحساب الموجود في 21.html: ws ثابتة + aspect من الصورة
+  const computePrintSize = (imgW, imgH, baseWorldSize) => {
+    const aspect = imgW && imgH ? imgW / imgH : 1;
+    const ws = baseWorldSize;
+    return { width: ws, height: ws / aspect };
+  };
+  it('keeps aspect ratio of the source image', () => {
+    expect(computePrintSize(800, 400, 0.42)).toEqual({ width: 0.42, height: 0.21 });
+    expect(computePrintSize(400, 800, 0.42).height).toBeCloseTo(0.84);
+  });
+  it('falls back to square for missing dimensions', () => {
+    expect(computePrintSize(0, 0, 0.42)).toEqual({ width: 0.42, height: 0.42 });
+  });
+});
+
 describe('image url → name extraction', () => {
   const nameFromUrl = (url) => {
     const m = String(url || '').match(/^\/uploads\/([^/?#]+)$/);
