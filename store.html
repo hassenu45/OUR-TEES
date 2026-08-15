@@ -769,6 +769,11 @@
             <div class="quickview-layout">
                 <div class="quickview-gallery">
                     <div class="quickview-main-img">
+                        <div class="quickview-view-toggle">
+                            <button type="button" id="view-btn-photos" class="qv-toggle-btn active" onclick="setQuickViewMode('photos')">📷 صور</button>
+                            <button type="button" id="view-btn-3d" class="qv-toggle-btn" onclick="setQuickViewMode('3d')">🧊 3D</button>
+                        </div>
+                        <div id="tee3d-stage" style="display:none;position:absolute;inset:0;"></div>
                         <img id="modal-product-img" src="" alt="صورة المنتج">
                         <button id="gallery-prev-btn" class="gallery-arrow prev" aria-label="السابق">&#10094;</button>
                         <button id="gallery-next-btn" class="gallery-arrow next" aria-label="التالي">&#10095;</button>

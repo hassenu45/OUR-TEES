@@ -356,6 +356,7 @@ function openOrderModal(productId) {
     modal.classList.add('active');
   }
   document.body.style.overflow = 'hidden';
+  setQuickViewMode('photos');
 }
 
 function selectSize(el, size) {
@@ -373,6 +374,46 @@ function closeOrderModal() {
   }
   document.body.style.overflow = '';
   selectedProduct = null;
+  if (teeViewer) { teeViewer.dispose(); teeViewer = null; }
+  teeViewerLoading = null;
+  setQuickViewMode('photos');
+}
+
+let teeViewer = null;
+let teeViewerLoading = null;
+let quickViewMode = 'photos';
+
+function setQuickViewMode(mode) {
+  if (mode !== '3d' && mode !== 'photos') mode = 'photos';
+  quickViewMode = mode;
+  const mainImg = $('modal-product-img');
+  const stage = $('tee3d-stage');
+  const btnPhotos = $('view-btn-photos');
+  const btn3d = $('view-btn-3d');
+  const show3d = mode === '3d' && !!selectedProduct;
+  if (mainImg) mainImg.style.display = show3d ? 'none' : '';
+  if (stage) stage.style.display = show3d ? 'block' : 'none';
+  if (btnPhotos) btnPhotos.classList.toggle('active', !show3d);
+  if (btn3d) btn3d.classList.toggle('active', show3d);
+  if (!show3d) return;
+  if (!teeViewerLoading) {
+    teeViewerLoading = import('./tee3d.js')
+      .then((m) => new m.TeeViewer(stage))
+      .then(async (v) => {
+        teeViewer = v;
+        try { await v.init(); } catch { v.dispose(); teeViewer = null; showCartNotification('تعذر تحميل المجسم'); setQuickViewMode('photos'); return; }
+        if (quickViewMode === '3d') v.setImage(getCurrentProductImage());
+      })
+      .catch(() => { teeViewerLoading = null; showCartNotification('تعذر تحميل المجسم'); setQuickViewMode('photos'); });
+  } else if (teeViewer) {
+    teeViewer.setImage(getCurrentProductImage());
+  }
+}
+
+function getCurrentProductImage() {
+  if (!selectedProduct) return '';
+  if (Array.isArray(selectedProduct.images) && selectedProduct.images.length) return selectedProduct.images[0];
+  return selectedProduct.image || '';
 }
 
 function updateModalGallery() {
