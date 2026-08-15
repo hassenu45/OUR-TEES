@@ -46,3 +46,18 @@ describe('deleteUploadedFile', () => {
     expect(deleteUploadedFile(tmp, '../evil')).toEqual({ deleted: false, reason: 'invalid-name' });
   });
 });
+
+describe('uploads-manager + in-use logic (pure)', () => {
+  it('flags names matching a product image URL', () => {
+    const products = [{ images: ['/uploads/keep.png'], image: '/uploads/keep.png' }];
+    const inUse = (name) => {
+      const url = `/uploads/${name}`;
+      return products.some((p) => {
+        const all = Array.isArray(p.images) && p.images.length ? p.images : p.image ? [p.image] : [];
+        return all.some((im) => typeof im === 'string' && im === url);
+      });
+    };
+    expect(inUse('keep.png')).toBe(true);
+    expect(inUse('other.png')).toBe(false);
+  });
+});

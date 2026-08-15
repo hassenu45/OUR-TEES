@@ -567,6 +567,27 @@ app.post('/api/uploads/images', requireAuth, upload.array('images', 20), (req, r
   }
 });
 
+const { isSafeUploadName, deleteUploadedFile } = require('./uploads-manager.cjs');
+
+app.delete('/api/uploads/:name', requireAuth, async (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    if (!isSafeUploadName(name)) return res.status(400).json({ error: 'اسم ملف غير صالح' });
+    const url = `/uploads/${name}`;
+    const products = await db.getProducts();
+    const inUse = products.some((p) => {
+      const all = Array.isArray(p.images) && p.images.length ? p.images : p.image ? [p.image] : [];
+      return all.some((im) => typeof im === 'string' && im === url);
+    });
+    if (inUse) return res.status(409).json({ error: 'الصورة مستخدمة في منتج — لا يمكن حذفها' });
+    const result = deleteUploadedFile(UPLOADS_DIR, name);
+    if (!result.deleted) return res.status(404).json({ error: 'الملف غير موجود' });
+    res.json({ deleted: true });
+  } catch (e) {
+    res.status(500).json({ error: 'خطأ في حذف الصورة' });
+  }
+});
+
 app.post('/api/products/:id/image', requireAuth, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
