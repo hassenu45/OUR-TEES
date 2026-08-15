@@ -455,4 +455,11 @@ module.exports = [
       },
     },
   },
+  {
+    files: ['js/tee3d.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+    },
+  },
 ];
