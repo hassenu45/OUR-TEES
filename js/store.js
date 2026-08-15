@@ -318,6 +318,9 @@ function openOrderModal(productId) {
   currentGalleryIndex = 0;
   updateModalGallery();
 
+  const view3dBtn = $('view-btn-3d');
+  if (view3dBtn) view3dBtn.hidden = !getCurrentProductImage();
+
   $('modal-product-name').textContent = selectedProduct.name || '';
   $('modal-product-desc').textContent = selectedProduct.description || '';
   $('modal-product-price').textContent = fmtLocalPrice(selectedProduct.price);
@@ -374,6 +377,7 @@ function closeOrderModal() {
   }
   document.body.style.overflow = '';
   selectedProduct = null;
+  quickViewGen++;
   if (teeViewer) { teeViewer.dispose(); teeViewer = null; }
   teeViewerLoading = null;
   setQuickViewMode('photos');
@@ -382,9 +386,11 @@ function closeOrderModal() {
 let teeViewer = null;
 let teeViewerLoading = null;
 let quickViewMode = 'photos';
+let quickViewGen = 0;
 
 function setQuickViewMode(mode) {
   if (mode !== '3d' && mode !== 'photos') mode = 'photos';
+  if (mode === '3d' && !getCurrentProductImage()) return;
   quickViewMode = mode;
   const mainImg = $('modal-product-img');
   const stage = $('tee3d-stage');
@@ -397,14 +403,32 @@ function setQuickViewMode(mode) {
   if (btn3d) btn3d.classList.toggle('active', show3d);
   if (!show3d) return;
   if (!teeViewerLoading) {
+    const gen = quickViewGen;
     teeViewerLoading = import('./tee3d.js')
       .then((m) => new m.TeeViewer(stage))
       .then(async (v) => {
+        if (gen !== quickViewGen) { v.dispose(); return; }
         teeViewer = v;
-        try { await v.init(); } catch { v.dispose(); teeViewer = null; showCartNotification('تعذر تحميل المجسم'); setQuickViewMode('photos'); return; }
+        try { await v.init(); }
+        catch {
+          if (gen !== quickViewGen) { v.dispose(); if (teeViewer === v) teeViewer = null; return; }
+          teeViewerLoading = null;
+          v.dispose();
+          if (teeViewer === v) teeViewer = null;
+          stage.querySelectorAll('canvas').forEach((c) => c.remove());
+          showCartNotification('تعذر تحميل المجسم');
+          setQuickViewMode('photos');
+          return;
+        }
+        if (gen !== quickViewGen) { v.dispose(); if (teeViewer === v) teeViewer = null; return; }
         if (quickViewMode === '3d') v.setImage(getCurrentProductImage());
       })
-      .catch(() => { teeViewerLoading = null; showCartNotification('تعذر تحميل المجسم'); setQuickViewMode('photos'); });
+      .catch(() => {
+        if (gen !== quickViewGen) return;
+        teeViewerLoading = null;
+        showCartNotification('تعذر تحميل المجسم');
+        setQuickViewMode('photos');
+      });
   } else if (teeViewer) {
     teeViewer.setImage(getCurrentProductImage());
   }
