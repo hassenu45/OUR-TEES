@@ -319,7 +319,7 @@ function openOrderModal(productId) {
   updateModalGallery();
 
   const view3dBtn = $('view-btn-3d');
-  if (view3dBtn) view3dBtn.hidden = !getCurrentProductImage();
+  if (view3dBtn) view3dBtn.style.display = getCurrentProductImage() ? '' : 'none';
 
   $('modal-product-name').textContent = selectedProduct.name || '';
   $('modal-product-desc').textContent = selectedProduct.description || '';

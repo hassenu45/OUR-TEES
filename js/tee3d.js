@@ -103,6 +103,7 @@ export class TeeViewer {
     });
 
     renderer.setAnimationLoop(() => {
+      if (this._disposed) return;
       controls.update();
       renderer.render(scene, camera);
     });
