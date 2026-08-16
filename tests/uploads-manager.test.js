@@ -1,8 +1,9 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { createRequire } from 'node:module';
-import { mkdtempSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, existsSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createContext, runInContext } from 'node:vm';
 
 const require = createRequire(import.meta.url);
 const { isSafeUploadName, resolveUploadPath, deleteUploadedFile } = require('../uploads-manager.cjs');
@@ -88,5 +89,27 @@ describe('image url → name extraction', () => {
     expect(nameFromUrl('https://x.com/uploads/a.png')).toBe(null);
     expect(nameFromUrl('/uploads/a.png?x=1')).toBe(null);
     expect(nameFromUrl('data:image/png;base64,xx')).toBe(null);
+  });
+});
+
+describe('image-compress pure helpers', () => {
+  // تحميل js/image-compress.js (سكربت كلاسيكي) في sandbox يحاكي window
+  function loadImageCompressPure() {
+    const sandbox = { window: {} };
+    createContext(sandbox);
+    runInContext(readFileSync(require.resolve('../js/image-compress.js'), 'utf8'), sandbox);
+    return sandbox.window.imageCompressPure;
+  }
+
+  const { pickOutputFormat, targetSize } = loadImageCompressPure();
+
+  it('prefers webp when supported', () => {
+    expect(pickOutputFormat(true, 'image/jpeg')).toBe('image/webp');
+    expect(pickOutputFormat(false, 'image/jpeg')).toBe('image/jpeg');
+    expect(pickOutputFormat(false, 'image/png')).toBe('image/png');
+  });
+  it('downscales only when larger than max', () => {
+    expect(targetSize(3000, 1500, 1600)).toEqual({ width: 1600, height: 800 });
+    expect(targetSize(800, 600, 1600)).toEqual({ width: 800, height: 600 });
   });
 });

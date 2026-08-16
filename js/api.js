@@ -128,7 +128,21 @@ const API = {
 
   async createProductWithFormData(formData) {
     if (await isServerMode()) {
-      const res = await fetch('/api/products/with-images', { method: 'POST', body: formData });
+      const hasCompress = typeof window !== 'undefined' && typeof window.compressFiles === 'function';
+      const files = hasCompress
+        ? await window.compressFiles(formData.getAll('images').filter((f) => f instanceof File))
+        : [];
+      const fd = new FormData();
+      formData.forEach((value, key) => {
+        if (key === 'images') return;
+        fd.append(key, value);
+      });
+      if (hasCompress && files.length) {
+        files.forEach((f) => fd.append('images', f, f.name));
+      } else {
+        formData.getAll('images').forEach((f) => fd.append('images', f));
+      }
+      const res = await fetch('/api/products/with-images', { method: 'POST', body: fd });
       if (!res.ok) {
         let msg = 'خطأ في إنشاء المنتج';
         try {
@@ -169,8 +183,10 @@ const API = {
 
   async uploadImages(files) {
     if (await isServerMode()) {
+      const hasCompress = typeof window !== 'undefined' && typeof window.compressFiles === 'function';
+      const toUpload = hasCompress ? await window.compressFiles(files) : files;
       const fd = new FormData();
-      files.forEach((f) => fd.append('images', f));
+      toUpload.forEach((f) => fd.append('images', f, f.name));
       const res = await serverFetch('/api/uploads/images', { method: 'POST', body: fd });
       return (res && res.urls) || [];
     }
