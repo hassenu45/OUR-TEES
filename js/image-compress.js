@@ -1,4 +1,5 @@
 /* AZMA — ضغط ذكي للصور قبل الرفع (canvas client-side، بدون مكتبات) */
+/* global createImageBitmap */
 (function (global) {
   const MAX_UPLOAD_WIDTH = 1600;
   const JPEG_QUALITY = 0.85;
@@ -23,41 +24,61 @@
     }
   }
 
+  function decodeWithImage(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
+  }
+
+  function decodeImage(file) {
+    if (typeof createImageBitmap === 'function') {
+      try {
+        return createImageBitmap(file, { imageOrientation: 'from-image' }).catch(() => decodeWithImage(file));
+      } catch {
+        return decodeWithImage(file);
+      }
+    }
+    return decodeWithImage(file);
+  }
+
   function compressImage(file, opts) {
     opts = opts || {};
     const maxWidth = opts.maxWidth || MAX_UPLOAD_WIDTH;
     const quality = opts.quality || JPEG_QUALITY;
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const { width, height } = targetSize(img.width, img.height, maxWidth);
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          const fmt = pickOutputFormat(webpSupported(), file.type);
+    return decodeImage(file).then((source) => {
+      if (!source) return file;
+      try {
+        const { width, height } = targetSize(source.width, source.height, maxWidth);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(source, 0, 0, width, height);
+        if (typeof source.close === 'function') source.close();
+        const fmt = pickOutputFormat(webpSupported(), file.type);
+        return new Promise((resolve) => {
           canvas.toBlob(
             (blob) => {
-              URL.revokeObjectURL(url);
               if (blob && blob.size < file.size) resolve(blob);
               else resolve(file);
             },
             fmt,
             quality
           );
-        } catch (e) {
-          URL.revokeObjectURL(url);
-          resolve(file);
-        }
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        resolve(file);
-      };
-      img.src = url;
+        });
+      } catch {
+        return file;
+      }
     });
   }
 
