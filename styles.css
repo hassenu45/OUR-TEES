@@ -2069,3 +2069,13 @@ a {
 .qv-toggle-btn.active{background:var(--color-accent,#f5c842);color:#0d0d0d;border-color:transparent}
 #tee3d-stage canvas{display:block;width:100%;height:100%;touch-action:none}
 
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

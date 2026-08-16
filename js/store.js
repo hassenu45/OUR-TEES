@@ -212,7 +212,7 @@ function renderProducts(list) {
       <div class="ot-card${soldCls}" data-id="${p.id}" ${catAttr} ${visibility}>
         ${badgeHtml}
         <div class="ot-card-img">
-          ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name || 'Our Tee')}" loading="lazy">` : `<div class="ot-tee-mock" style="background:var(--tees-card);color:var(--tees-yellow)">OT</div>`}
+          ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(p.name || 'Our Tee')}" loading="lazy" decoding="async">` : `<div class="ot-tee-mock" style="background:var(--tees-card);color:var(--tees-yellow)">OT</div>`}
           ${p.soldOut ? '' : `
           <div class="ot-card-actions">
             <button class="ot-card-act" data-act="view" data-id="${p.id}" aria-label="عرض سريع" title="عرض سريع">
@@ -460,7 +460,7 @@ function updateModalGallery() {
     if (thumbsContainer) {
       thumbsContainer.style.display = 'flex';
       thumbsContainer.innerHTML = galleryImages.map((img, idx) =>
-        `<img src="${escapeHtml(img)}" class="gallery-thumb-item ${idx === currentGalleryIndex ? 'active' : ''}" onclick="setGalleryIdx(${idx})">`
+        `<img src="${escapeHtml(img)}" class="gallery-thumb-item ${idx === currentGalleryIndex ? 'active' : ''}" loading="lazy" decoding="async" onclick="setGalleryIdx(${idx})">`
       ).join('');
     }
   } else {
