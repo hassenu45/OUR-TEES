@@ -222,7 +222,12 @@ app.get('/updates/manifest.json', (_req, res) => {
 });
 
 app.get('/updates/file/*', (req, res) => {
-  const rel = decodeURIComponent(req.params[0] || '');
+  let rel;
+  try {
+    rel = decodeURIComponent(req.params[0] || '');
+  } catch (_e) {
+    return res.status(400).json({ error: 'Bad request' });
+  }
   const file = safeResolve(__dirname, rel);
   if (!file) return res.status(404).json({ error: 'Not found' });
   res.sendFile(file);
@@ -571,7 +576,12 @@ const { isSafeUploadName, deleteUploadedFile } = require('./uploads-manager.cjs'
 
 app.delete('/api/uploads/:name', requireAuth, async (req, res) => {
   try {
-    const name = decodeURIComponent(req.params.name);
+    let name;
+    try {
+      name = decodeURIComponent(req.params.name);
+    } catch (_e) {
+      return res.status(400).json({ error: 'اسم ملف غير صالح' });
+    }
     if (!isSafeUploadName(name)) return res.status(400).json({ error: 'اسم ملف غير صالح' });
     const url = `/uploads/${name}`;
     const products = await db.getProducts();

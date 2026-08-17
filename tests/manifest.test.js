@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { expandWebFiles, buildManifest, hashFile, safeResolve } = require('../updates-manifest.cjs');
@@ -56,6 +57,9 @@ describe('safeResolve', () => {
 describe('readVersion', () => {
   it('reads the VERSION file from root', () => {
     const { readVersion } = require('../server-version.cjs');
-    expect(readVersion()).toBe('1.0.6');
+    const expected = fs
+      .readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'VERSION'), 'utf8')
+      .trim();
+    expect(readVersion()).toBe(expected);
   });
 });

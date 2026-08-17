@@ -5,7 +5,15 @@ module.exports = [
   js.configs.recommended,
   prettier,
   {
-    ignores: ['node_modules/**', 'dist/**', 'generated/**', 'prisma/**', '**/*.mjs', 'eslint.config.js'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'generated/**',
+      'prisma/**',
+      '**/*.mjs',
+      'eslint.config.js',
+      'assets/vendor/**',
+    ],
   },
   {
     files: [

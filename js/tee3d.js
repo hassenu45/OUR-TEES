@@ -70,6 +70,7 @@ export class TeeViewer {
       roughness: 0.72,
       metalness: 0.02,
     });
+    this._shirtMat = shirtMat;
 
     await new Promise((resolve, reject) => {
       new OBJLoader().load(
@@ -194,11 +195,16 @@ export class TeeViewer {
     }
     if (this._printMat) this._printMat.dispose();
     if (this._printTex) this._printTex.dispose();
+    for (const m of this._shirtMeshes) {
+      m.geometry.dispose();
+    }
+    if (this._shirtMat) this._shirtMat.dispose();
     this._renderer = null;
     this._canvas = null;
     this._controls = null;
     this._group = null;
     this._shirtMeshes = [];
+    this._shirtMat = null;
     this._printMesh = null;
     this._printMat = null;
     this._printTex = null;
