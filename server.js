@@ -12,7 +12,7 @@ const { validateAddress, upsertAddress, removeAddress, migrateList } = require('
 const { safeResolve } = require('./updates-manifest.cjs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
@@ -162,7 +162,6 @@ const PROTECTED_PAGES = new Set(['/store.html']);
 // صفحات الإدارة (admin.html / hub.html / orders.html / designer.html / 21.html) متاحة فقط عبر تطبيق الديستوب — غير موجودة على الويب إطلاقاً
 const ADMIN_ONLY_PAGES = new Set([
   '/admin.html',
-  '/hub.html',
   '/orders.html',
   '/designer.html',
   '/designer_debug.html',
