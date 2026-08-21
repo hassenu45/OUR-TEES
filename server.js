@@ -951,7 +951,7 @@ app.get('/api/check-phone-verified', (req, res) => {
 // or Telegram will reject the second polling session with a 409 conflict).
 require('./telegram-bot.js');
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`AZMA running at http://localhost:${PORT}`);
   console.log(`Store:  http://localhost:${PORT}/store.html`);
   console.log(`Admin:  http://localhost:${PORT}/login.html`);

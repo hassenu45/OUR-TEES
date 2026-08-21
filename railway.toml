@@ -1,0 +1,15 @@
+[build]
+builder = "docker"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+# Runtime environment variables (set in Railway dashboard)
+# PORT - automatically set by Railway
+# DATABASE_URL - automatically set by Railway PostgreSQL
+# ADMIN_PASSWORD - set in Railway variables
+# NODE_ENV=production
