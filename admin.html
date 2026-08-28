@@ -461,6 +461,17 @@
     }
     .btn-accent:active { transform: scale(0.96); }
     .btn-accent.settings-save { animation: goldPulse 2.2s ease-in-out infinite; }
+
+    /* ── Campaign / funding settings ── */
+    .campaign-radio { display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer;font-size:13px;transition:border-color .2s, background .2s; }
+    .campaign-radio:hover { border-color: rgba(245,200,66,.4); }
+    .campaign-radio input { accent-color:#F5C842; width:16px; height:16px; }
+    .channel-card { border:1px solid #2a2a2a; border-radius:10px; padding:14px; background:rgba(255,255,255,.02); }
+    .channel-card.channel-enabled { border-color: rgba(34,197,94,.45); background:rgba(34,197,94,.06); }
+    .channel-card.channel-disabled { opacity:.55; }
+    .channel-status { font-size:10px; padding:3px 9px; border-radius:12px; font-weight:700; }
+    .channel-status.on { background:rgba(34,197,94,.18); color:#4ade80; border:1px solid rgba(34,197,94,.4); }
+    .channel-status.off { background:rgba(255,255,255,.06); color:#888; border:1px solid #2a2a2a; }
     @keyframes goldPulse {
       0%, 100% { box-shadow: 0 8px 24px -8px rgba(245,200,66,0.45); }
       50% { box-shadow: 0 10px 36px -6px rgba(245,200,66,0.8); }
@@ -1042,6 +1053,10 @@
             البوت الخارجي
             <span class="sidebar-badge" id="sidebar-integrations-badge" style="display:none;">1</span>
           </a>
+          <a class="sidebar-item" onclick="switchPanel('campaigns')" data-panel="campaigns">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            إعدادات الحملات والتمويل
+          </a>
         </div>
         <div class="sidebar-group">
           <div class="sidebar-group-title">المتجر</div>
@@ -1405,6 +1420,81 @@
           </div>
         </section>
 
+        <!-- ═══ CAMPAIGNS / FUNDING PANEL ═══ -->
+        <section id="panel-campaigns" class="panel">
+          <div class="card" data-aos="fade-up">
+            <div class="card-header"><div class="card-title">📣 إعدادات الحملات والتمويل (تسويق وعروض)</div></div>
+            <div class="card-body" style="padding:22px;">
+              <form id="campaign-form">
+                <!-- Target group -->
+                <div class="form-group">
+                  <label style="font-weight:700;margin-bottom:10px;display:block;">🎯 الفئة المستهدفة (Target Group)</label>
+                  <div style="display:flex;flex-direction:column;gap:10px;">
+                    <label class="campaign-radio"><input type="radio" name="targetGroup" value="all_registered" checked> جميع العملاء المسجلين</label>
+                    <label class="campaign-radio"><input type="radio" name="targetGroup" value="bought_last_month"> العملاء الذين اشتروا آخر الشهر</label>
+                    <label class="campaign-radio"><input type="radio" name="targetGroup" value="previous_customers"> العملاء السابقون (من اشترى سابقاً)</label>
+                  </div>
+                </div>
+
+                <!-- Communication channels -->
+                <div class="form-group" style="margin-top:18px;">
+                  <label style="font-weight:700;margin-bottom:10px;display:block;">📡 قناة التواصل (Communication Channels)</label>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+                    <div class="channel-card channel-enabled">
+                      <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-weight:800;">✉️ البريد الإلكتروني</span>
+                        <span class="channel-status on">مفعل</span>
+                      </div>
+                      <div style="font-size:11px;opacity:.75;margin-top:6px;">Email — جاهز للإرسال</div>
+                    </div>
+                    <div class="channel-card channel-disabled">
+                      <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-weight:800;">💬 واتساب</span>
+                        <span class="channel-status off">معطّل</span>
+                      </div>
+                      <div style="font-size:11px;opacity:.7;margin-top:6px;">قيد الربط لاحقاً</div>
+                    </div>
+                    <div class="channel-card channel-disabled">
+                      <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-weight:800;">📸 انستغرام</span>
+                        <span class="channel-status off">معطّل</span>
+                      </div>
+                      <div style="font-size:11px;opacity:.7;margin-top:6px;">قيد الربط لاحقاً</div>
+                    </div>
+                    <div class="channel-card channel-disabled">
+                      <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-weight:800;">📨 مسنجر</span>
+                        <span class="channel-status off">معطّل</span>
+                      </div>
+                      <div style="font-size:11px;opacity:.7;margin-top:6px;">قيد الربط لاحقاً</div>
+                    </div>
+                    <div class="channel-card channel-disabled">
+                      <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span style="font-weight:800;">📱 SMS</span>
+                        <span class="channel-status off">معطّل</span>
+                      </div>
+                      <div style="font-size:11px;opacity:.7;margin-top:6px;">قيد الربط لاحقاً</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Campaign content -->
+                <div class="form-group" style="margin-top:18px;">
+                  <label>عنوان البريد الإلكتروني (Subject)</label>
+                  <input type="text" id="campaign-subject" class="form-input" maxlength="200" placeholder="مثال: عرض خاص لفترة محدودة ✨" required>
+                </div>
+                <div class="form-group" style="margin-top:14px;">
+                  <label>محتوى الرسالة / العروض / أكواد الخصم</label>
+                  <textarea id="campaign-content" class="form-input" rows="8" maxlength="5000" style="resize:vertical;line-height:1.7;" placeholder="اكتب محتوى الحملة، العروض، وأكواد الخصم هنا..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-accent btn-full" style="margin-top:16px;">📤 إرسال الحملة</button>
+                <div id="campaign-result" style="margin-top:14px;font-size:13px;"></div>
+              </form>
+            </div>
+          </div>
+        </section>
+
         <!-- ═══ ADD PRODUCT PANEL ═══ -->
         <section id="panel-add-product" class="panel">
           <div class="card" data-aos="fade-up">
@@ -1554,7 +1644,7 @@
       document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
       document.getElementById('panel-' + name)?.classList.add('active');
       document.querySelector(`.sidebar-item[data-panel="${name}"]`)?.classList.add('active');
-      const titles = { dashboard: 'لوحة التحكم', settings: 'إعدادات الموقع', 'ai-settings': 'الذكاء الاصطناعي', integrations: 'البوت الخارجي', 'add-product': 'إضافة منتج', products: 'إدارة المنتجات', orders: 'الطلبات' };
+      const titles = { dashboard: 'لوحة التحكم', settings: 'إعدادات الموقع', 'ai-settings': 'الذكاء الاصطناعي', integrations: 'البوت الخارجي', campaigns: 'إعدادات الحملات والتمويل', 'add-product': 'إضافة منتج', products: 'إدارة المنتجات', orders: 'الطلبات' };
       document.getElementById('page-title').innerHTML = (titles[name] || name) + ' <span>| Dashboard</span>';
       if (name === 'products' && typeof renderProductsList === 'function') renderProductsList();
       if (name === 'orders' && typeof renderOrdersList === 'function') renderOrdersList();
@@ -1562,6 +1652,7 @@
         if (typeof loadIntegrations === 'function') loadIntegrations();
         if (typeof loadConversations === 'function') loadConversations();
       }
+      if (name === 'campaigns' && typeof resetCampaignResult === 'function') resetCampaignResult();
     }
 
     /* ── Clock ── */

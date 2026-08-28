@@ -60,6 +60,7 @@ model Order {
   size          String
   customerName  String
   phone         String
+  email         String   @default("") // customer email captured at order time (for campaigns)
   address       String   @default("")
   notes         String   @default("")
   status        String   @default("new") // new | completed | cancelled

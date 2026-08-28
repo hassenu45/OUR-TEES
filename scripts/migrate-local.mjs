@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS "Customer" (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "Customer_phone_key" ON "Customer"("phone");
 ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT NOT NULL DEFAULT 'cod';
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "email" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "email" TEXT NOT NULL DEFAULT '';
 `;
 await prisma.$executeRawUnsafe(sql);
 await prisma.$disconnect();

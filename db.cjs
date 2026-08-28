@@ -117,7 +117,7 @@ async function getOrders() {
 async function createOrder(data) {
   const p = await getPrisma();
   const clean = {};
-  for (const key of ['productId', 'productName', 'productPrice', 'type', 'size', 'customerName', 'phone', 'address', 'notes', 'status', 'paymentMethod']) {
+  for (const key of ['productId', 'productName', 'productPrice', 'type', 'size', 'customerName', 'phone', 'email', 'address', 'notes', 'status', 'paymentMethod']) {
     if (data[key] !== undefined && data[key] !== null) clean[key] = data[key];
   }
   return p.order.create({ data: clean });
@@ -141,6 +141,7 @@ async function upsertCustomer(data) {
     where: { phone: data.phone },
     update: {
       name: data.name,
+      email: data.email || '',
       city: data.city || '',
       area: data.area || '',
       street: data.street || '',
@@ -152,6 +153,7 @@ async function upsertCustomer(data) {
     create: {
       phone: data.phone,
       name: data.name,
+      email: data.email || '',
       city: data.city || '',
       area: data.area || '',
       street: data.street || '',
@@ -176,6 +178,37 @@ async function getOrdersByPhone(phone) {
 async function getOrderById(id) {
   const p = await getPrisma();
   return p.order.findUnique({ where: { id } });
+}
+
+// ── Campaign recipients ──
+// Returns distinct, non-empty customer emails for the given target group.
+//   all_registered     → registered UserSession records with an email
+//   bought_last_month  → orders placed in the last 30 days with an email
+//   previous_customers → any order (regardless of date) with an email
+async function getCampaignEmails(targetGroup) {
+  const p = await getPrisma();
+  let rows = [];
+  if (targetGroup === 'all_registered') {
+    rows = await p.userSession.findMany({ where: { email: { not: '' } }, select: { email: true } });
+  } else if (targetGroup === 'bought_last_month') {
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    rows = await p.order.findMany({
+      where: { email: { not: '' }, createdAt: { gte: since } },
+      select: { email: true },
+    });
+  } else if (targetGroup === 'previous_customers') {
+    rows = await p.order.findMany({ where: { email: { not: '' } }, select: { email: true } });
+  }
+  const seen = new Set();
+  const emails = [];
+  for (const r of rows) {
+    const e = String(r.email || '').trim().toLowerCase();
+    if (e && !seen.has(e)) {
+      seen.add(e);
+      emails.push(e);
+    }
+  }
+  return emails;
 }
 
 // ── Integration Settings (WhatsApp + Instagram) ──
@@ -324,6 +357,7 @@ module.exports = {
   getCustomerByPhone,
   getOrdersByPhone,
   getOrderById,
+  getCampaignEmails,
   getIntegrationSettings,
   updateIntegrationSettings,
   getConversations,

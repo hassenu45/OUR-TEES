@@ -1624,9 +1624,53 @@ async function init() {
   $('integrations-form')?.addEventListener('submit', saveIntegrations);
   $('add-product-form')?.addEventListener('submit', handleAddProduct);
   $('edit-product-form')?.addEventListener('submit', handleSaveEditProduct);
+  $('campaign-form')?.addEventListener('submit', sendCampaign);
   await loadAllData();
   initTheme();
   checkAIStatus();
+}
+
+/* ── Campaign / funding settings ── */
+function resetCampaignResult() {
+  const el = $('campaign-result');
+  if (el) el.innerHTML = '';
+}
+
+async function sendCampaign(e) {
+  e.preventDefault();
+  const el = $('campaign-result');
+  const subject = $('campaign-subject').value.trim();
+  const content = $('campaign-content').value.trim();
+  const targetGroup = (document.querySelector('input[name="targetGroup"]:checked') || {}).value;
+  if (!subject || !content || !targetGroup) {
+    if (el) el.innerHTML = '<span style="color:#FCA5A5;">⚠️ يرجى تعبئة العنوان والمحتوى واختيار الفئة.</span>';
+    return;
+  }
+  if (el) el.innerHTML = '<span style="opacity:.8;">⏳ جارٍ إرسال الحملة...</span>';
+  try {
+    const res = await fetch('/api/send-campaign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetGroup, channel: 'email', subject, content }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      if (el) el.innerHTML = '<span style="color:#FCA5A5;">❌ ' + (data.error || 'فشل الإرسال') + '</span>';
+      return;
+    }
+    const sim = data.simulated ? ' (محاكاة — لم يتم ضبط SMTP)' : '';
+    if (el)
+      el.innerHTML =
+        '<span style="color:#4ade80;">✅ تم بدء الإرسال إلى ' +
+        data.recipients +
+        ' مستلِم' +
+        sim +
+        '.</span><br><span style="font-size:11px;opacity:.7;">ستُطبع نتيجة الإرسال في سجل الخادم (console).</span>';
+    $('campaign-subject').value = '';
+    $('campaign-content').value = '';
+  } catch (err) {
+    if (el) el.innerHTML = '<span style="color:#FCA5A5;">❌ خطأ في الاتصال بالخادم.</span>';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

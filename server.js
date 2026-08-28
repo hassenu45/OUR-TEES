@@ -7,6 +7,7 @@ const fs = require('fs');
 const { OAuth2Client } = require('google-auth-library');
 const { z } = require('zod');
 const db = require('./db.cjs');
+const mailer = require('./mailer.cjs');
 const { isValidPhone, canCancelOrder, composeAddress, normalizePhone } = require('./orders-rules.cjs');
 const { validateAddress, upsertAddress, removeAddress, migrateList } = require('./address-book.cjs');
 const { safeResolve } = require('./updates-manifest.cjs');
@@ -70,12 +71,25 @@ const orderSchema = z.object({
     .default('')
     .transform((s) => s.trim()),
   paymentMethod: z.enum(['cod', 'card']).optional().default('cod'),
+  email: z
+    .string()
+    .max(200)
+    .optional()
+    .default('')
+    .transform((s) => String(s || '').trim()),
   city: z.string().max(100).optional().default(''),
   district: z.string().max(100).optional().default(''),
   subdistrict: z.string().max(100).optional().default(''),
   area: z.string().max(100).optional().default(''),
   street: z.string().max(100).optional().default(''),
   landmark: z.string().max(100).optional().default(''),
+});
+
+const campaignSchema = z.object({
+  targetGroup: z.enum(['all_registered', 'bought_last_month', 'previous_customers']),
+  channel: z.literal('email'),
+  subject: z.string().min(1).max(200),
+  content: z.string().min(1).max(5000),
 });
 
 const settingsSchema = z.object({
@@ -160,13 +174,7 @@ app.use((req, res, next) => {
 // صفحة الهبوط (index.html) عامة للجميع — المتجر خلف تسجيل الدخول
 const PROTECTED_PAGES = new Set(['/store.html']);
 // صفحات الإدارة (admin.html / hub.html / orders.html / designer.html / 21.html) متاحة فقط عبر تطبيق الديستوب — غير موجودة على الويب إطلاقاً
-const ADMIN_ONLY_PAGES = new Set([
-  '/admin.html',
-  '/orders.html',
-  '/designer.html',
-  '/designer_debug.html',
-  '/21.html',
-]);
+const ADMIN_ONLY_PAGES = new Set(['/admin.html', '/orders.html', '/designer.html', '/designer_debug.html', '/21.html']);
 app.use((req, res, next) => {
   if (ADMIN_ONLY_PAGES.has(req.path)) {
     return res.status(404).send('Not Found');
@@ -800,6 +808,7 @@ app.post('/api/orders', rateLimit(15, 60000), async (req, res) => {
     const address =
       data.address ||
       composeAddress({ city: data.city, area: data.area, street: data.street, landmark: data.landmark });
+    const orderEmail = data.email || req.session.userEmail || '';
 
     const order = await db.createOrder({
       productId: rest.productId,
@@ -809,6 +818,7 @@ app.post('/api/orders', rateLimit(15, 60000), async (req, res) => {
       size: rest.size,
       customerName: rest.customerName,
       phone: rest.phone,
+      email: orderEmail,
       address,
       notes: rest.notes,
       status: 'new',
@@ -817,6 +827,7 @@ app.post('/api/orders', rateLimit(15, 60000), async (req, res) => {
     await db.upsertCustomer({
       phone: rest.phone,
       name: rest.customerName,
+      email: orderEmail,
       city: data.city,
       area: data.area,
       street: data.street,
@@ -832,6 +843,47 @@ app.post('/api/orders', rateLimit(15, 60000), async (req, res) => {
   } catch (e) {
     if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
     res.status(500).json({ error: 'خطأ في إنشاء الطلب' });
+  }
+});
+
+// ── Campaign / bulk email ──
+app.post('/api/send-campaign', requireAuth, rateLimit(10, 60000), async (req, res) => {
+  try {
+    const data = campaignSchema.parse(req.body);
+    const recipients = await db.getCampaignEmails(data.targetGroup);
+    if (!recipients.length) {
+      return res.status(400).json({ error: 'لا يوجد عملاء ببريد إلكتروني في هذه الفئة' });
+    }
+
+    const html = data.content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+
+    // Send in the background so the request returns immediately even for large lists.
+    const startedAt = new Date().toISOString();
+    const simulated = !mailer.isConfigured();
+    (async () => {
+      let sent = 0;
+      let failed = 0;
+      const CONCURRENCY = 10;
+      for (let i = 0; i < recipients.length; i += CONCURRENCY) {
+        const batch = recipients.slice(i, i + CONCURRENCY);
+        const results = await Promise.allSettled(
+          batch.map((to) => mailer.sendCampaignEmail({ to, subject: data.subject, html }))
+        );
+        results.forEach((r) => {
+          if (r.status === 'fulfilled' && r.value.ok) sent++;
+          else failed++;
+        });
+      }
+      console.log(
+        `[CAMPAIGN] target=${data.targetGroup} sent=${sent} failed=${failed} simulated=${simulated} startedAt=${startedAt}`
+      );
+    })();
+
+    res.json({ accepted: true, recipients: recipients.length, simulated, startedAt });
+  } catch (e) {
+    if (e instanceof z.ZodError) return res.status(400).json({ error: e.errors });
+    console.error('send-campaign error:', e.message);
+    res.status(500).json({ error: 'خطأ في إرسال الحملة' });
   }
 });
 
