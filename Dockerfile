@@ -2,7 +2,7 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++
+RUN echo "FORCE-REBUILD-$(date +%s)" && apk add --no-cache python3 make g++
 
 COPY package*.json ./
 COPY prisma ./prisma/
