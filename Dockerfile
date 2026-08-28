@@ -7,7 +7,7 @@ RUN echo "FORCE-REBUILD-$(date +%s)" && apk add --no-cache python3 make g++
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm install --no-audit --no-fund
+RUN npm install --ignore-scripts --no-audit --no-fund
 
 RUN npx prisma generate
 
