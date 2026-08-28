@@ -3,9 +3,12 @@
 // configured, emails are "simulated" (logged to console) so the flow can be
 // developed/tested without a live mail server. The other channels (WhatsApp,
 // Instagram, Messenger, SMS) are intentionally not implemented yet.
-const nodemailer = require('nodemailer');
-
 let cachedTransporter = null;
+
+function loadNodemailer() {
+  // Lazy require so the server never crashes at startup if nodemailer is absent.
+  return require('nodemailer');
+}
 
 function getConfig() {
   return {
@@ -25,6 +28,7 @@ function isConfigured() {
 function getTransporter() {
   if (cachedTransporter) return cachedTransporter;
   const c = getConfig();
+  const nodemailer = loadNodemailer();
   cachedTransporter = nodemailer.createTransport({
     host: c.host,
     port: c.port,
