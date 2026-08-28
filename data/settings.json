@@ -1,0 +1,29 @@
+{
+  "siteName": "AZMA.COM",
+  "currency": "JOD",
+  "currencySymbol": "د.أ",
+  "googleClientId": "399722296678-4a24emue51l15p1jutugm8pieh62417r.apps.googleusercontent.com",
+  "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+  ],
+  "types": [
+    "قطن كلاسيك",
+    "فينتاج",
+    "بريميوم",
+    "oversized"
+  ],
+  "heroBadge": "NEW DROP",
+  "heroDrop": "DROP 01 — SPRING 2026",
+  "heroTitle": "WEAR YOUR ATTITUDE.",
+  "heroSubtitle": "Premium tees crafted for those who refuse to blend in. Limited runs. Bold designs. Zero compromise.",
+  "aboutTitle": "BUILT DIFFERENT.",
+  "aboutText": "Our Tees started in a garage with one screen printer and a refusal to make boring clothes. Every drop is designed in-house, printed in small batches, and built to last.",
+  "aiName": "Tez",
+  "aiWelcome": "أهلاً بك! أنا Tez، المساعد الذكي لمتاجر Our Tees. كيف يمكنني مساعدتك اليوم؟",
+  "aiPrompt": "أنت Tez، مساعد الذكاء الاصطناعي الخاص بمتجر الملابس والأزياء العصرية Our Tees. تجيب على استفسارات العملاء بلغة عربية عصرية ولطيفة ومباشرة، وتساعدهم في اختيار المقاسات والتصاميم والإجابة عن الأسئلة المتعلقة بالمنتجات والطلب والشحن.",
+  "aiApiKey": ""
+}
