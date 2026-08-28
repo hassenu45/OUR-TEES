@@ -1,0 +1,1 @@
+﻿const { Telegraf } = require('telegraf'); const b = new Telegraf('8724412911:AAGQB7R_c3p5E-rjmeAp2FgvqTh5gDLfWXQ'); b.launch().then(()=>{ console.log('BOT_LAUNCHED_OK'); setTimeout(()=>process.exit(0), 2000); }).catch(e=>{ console.log('BOT_LAUNCH_FAIL:', e.message); process.exit(1); });

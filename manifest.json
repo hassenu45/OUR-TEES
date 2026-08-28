@@ -1,0 +1,38 @@
+{
+  "name": "AZMA - متجر التيشيرتات العصرية",
+  "short_name": "AZMA",
+  "description": "تيشيرتات عصرية بجودة بريميوم. تشكيلات حصرية بتصاميم فريدة.",
+  "start_url": "/store.html",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait",
+  "background_color": "#F5F5F0",
+  "theme_color": "#FF5E5B",
+  "scope": "/",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "assets/images/logo.png",
+      "sizes": "1664x928",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["shopping", "fashion", "lifestyle"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "تصفح المنتجات",
+      "short_name": "المتجر",
+      "description": "تصفح جميع التيشيرتات",
+      "url": "/store.html#products"
+    },
+    {
+      "name": "لوحة التحكم",
+      "short_name": "الإدارة",
+      "description": "إدارة المتجر والطلبات",
+      "url": "/admin.html"
+    }
+  ]
+}

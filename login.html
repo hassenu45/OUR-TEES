@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>تسجيل الدخول — AZMA.COM</title>
+    <meta name="description" content="صفحة دخول متجر AZMA — سجّل دخولك للوصول إلى المتجر.">
+    <meta name="theme-color" content="#0D0D0D">
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cairo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --tees-black:#0D0D0D;
+            --tees-surface:#161616;
+            --tees-card:#1E1E1E;
+            --tees-yellow:#F5C842;
+            --tees-yellow-dim:#c9a42e;
+            --tees-white:#F5F5F0;
+            --tees-muted:#888884;
+            --tees-border:#2a2a2a;
+            --tees-font:'Cairo',sans-serif;
+            --tees-display:'Bebas Neue',sans-serif;
+            --tees-radius:8px;
+            --tees-transition:0.25s cubic-bezier(0.16,1,0.3,1);
+        }
+        body{background:var(--tees-black);font-family:var(--tees-font);color:var(--tees-white);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+        a{color:inherit;text-decoration:none}
+        img{display:block;max-width:100%}
+        ::selection{background:var(--tees-yellow);color:var(--tees-black)}
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:var(--tees-surface)}
+        ::-webkit-scrollbar-thumb{background:var(--tees-border);border-radius:3px}
+
+        .auth-layout{display:grid;grid-template-columns:1.05fr .95fr;min-height:100vh}
+        @media(max-width:960px){.auth-layout{grid-template-columns:1fr}.auth-brand{display:none}}
+
+        /* ── BRAND PANEL ── */
+        .auth-brand{position:relative;display:flex;flex-direction:column;justify-content:center;padding:64px;overflow:hidden;background:var(--tees-black)}
+        .auth-brand-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(245,200,66,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(245,200,66,.05) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 90% 90% at 30% 40%,#000 40%,transparent 80%);-webkit-mask-image:radial-gradient(ellipse 90% 90% at 30% 40%,#000 40%,transparent 80%);pointer-events:none}
+        .auth-brand-glow{position:absolute;top:-140px;right:-120px;width:560px;height:560px;background:radial-gradient(circle,rgba(245,200,66,.13),transparent 70%);pointer-events:none;filter:blur(30px)}
+        .auth-brand-shape{position:absolute;bottom:-60px;left:-60px;width:260px;height:260px;border:20px solid rgba(245,200,66,.08);transform:rotate(30deg);border-radius:30px;pointer-events:none}
+        .auth-brand-inner{position:relative;z-index:1;max-width:520px}
+        .auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:48px}
+        .auth-logo img{width:46px;height:46px;object-fit:contain;border-radius:10px}
+        .auth-logo-text{font-family:var(--tees-display);font-size:34px;letter-spacing:4px}
+        .auth-logo-text span{color:var(--tees-yellow)}
+        .auth-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--tees-border);padding:6px 14px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--tees-muted);margin-bottom:22px}
+        .auth-badge i{width:7px;height:7px;border-radius:50%;background:var(--tees-yellow);animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+        .auth-title{font-family:var(--tees-display);font-size:clamp(56px,6vw,92px);line-height:.95;letter-spacing:2px}
+        .auth-title span{color:var(--tees-yellow)}
+        .auth-sub{color:var(--tees-muted);font-size:14.5px;line-height:1.9;max-width:420px;margin:20px 0 40px}
+        .auth-stats{display:flex;gap:0;border:1px solid var(--tees-border);border-radius:12px;overflow:hidden;background:var(--tees-surface);max-width:440px}
+        .stat{flex:1;padding:18px 14px;text-align:center;border-left:1px solid var(--tees-border)}
+        .stat:last-child{border-left:none}
+        .stat b{font-family:var(--tees-display);font-size:30px;letter-spacing:1px;color:var(--tees-yellow);display:block}
+        .stat span{font-size:11px;color:var(--tees-muted);font-weight:600}
+
+        /* ── LOGIN PANEL ── */
+        .auth-login{position:relative;display:flex;align-items:center;justify-content:center;padding:48px 24px;background:var(--tees-surface);border-left:1px solid var(--tees-border)}
+        @media(max-width:960px){.auth-login{border-left:none;border-top:1px solid var(--tees-border)}}
+        .login-card{width:100%;max-width:400px}
+        .login-icon{width:56px;height:56px;border-radius:14px;background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:24px}
+        .login-card h1{font-family:var(--tees-display);font-size:40px;letter-spacing:1px;line-height:1;margin-bottom:8px}
+        .login-card > p{color:var(--tees-muted);font-size:13.5px;line-height:1.8;margin-bottom:26px}
+        .btn-google{position:relative;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#ffffff;color:#000;border:2px solid #ffffff;padding:12px 20px;border-radius:35px;font-family:var(--tees-font);font-weight:700;font-size:14px;cursor:pointer;overflow:hidden;outline:none;transition:transform .2s,box-shadow .2s}
+        .btn-google:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,255,255,.08)}
+        .btn-google:disabled{opacity:.7;cursor:not-allowed;transform:none;box-shadow:none}
+        .btn-google svg{flex-shrink:0;height:25px;z-index:6;position:relative}
+        .btn-google .text{z-index:10}
+        .btn-google.hidden{display:none}
+        .btn-google:hover .text{animation:textwave .3s forwards;color:#fff}
+        @keyframes textwave{from{color:#000}to{color:#fff}}
+        .btn-google:hover::before{content:"";display:block;position:absolute;top:50%;left:9%;transform:translate(-50%,-50%);width:0;height:0;opacity:0;border-radius:300px;animation:wave1 2.5s ease-in-out forwards;pointer-events:none}
+        .btn-google:hover::after{content:"";display:block;position:absolute;top:50%;left:9%;transform:translate(-50%,-50%);width:0;height:0;opacity:0;border-radius:300px;animation:wave2 2.5s ease-in-out forwards;pointer-events:none}
+        @keyframes wave1{0%{z-index:1;background:#EB4335;width:0;height:0;opacity:1}1%{z-index:1;background:#EB4335;width:0;height:0;opacity:1}25%{z-index:1;background:#EB4335;width:800px;height:800px;opacity:1}26%{z-index:3;background:#34A853;width:0;height:0;opacity:1}50%{z-index:3;background:#34A853;width:800px;height:800px;opacity:1}70%{z-index:3;background:#34A853;width:800px;height:800px;opacity:1}100%{z-index:3;background:#34A853;width:800px;height:800px;opacity:1}}
+        @keyframes wave2{0%{z-index:2;background:#FBBC05;width:0;height:0;opacity:1}11%{z-index:2;background:#FBBC05;width:0;height:0;opacity:1}35%{z-index:2;background:#FBBC05;width:800px;height:800px;opacity:1}39%{z-index:2;background:#FBBC05;width:800px;height:800px;opacity:1}40%{z-index:4;background:#4285F4;width:0;height:0;opacity:1}64%{z-index:4;background:#4285F4;width:800px;height:800px;opacity:1}100%{z-index:4;background:#4285F4;width:800px;height:800px;opacity:1}}
+        .btn-google:hover .red{animation:disappear .1s forwards;animation-delay:.1s}
+        .btn-google:hover .yellow{animation:disappear .1s forwards;animation-delay:.3s}
+        .btn-google:hover .green{animation:disappear .1s forwards;animation-delay:.7s}
+        .btn-google:hover .blue{animation:disappear .1s forwards;animation-delay:1.1s}
+        @keyframes disappear{from{filter:brightness(1)}to{filter:brightness(100)}}
+        .login-secure{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:18px;font-size:11.5px;color:var(--tees-muted)}
+        .login-secure svg{flex-shrink:0}
+        .login-error{display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:#fca5a5;font-size:13px;padding:11px 14px;border-radius:8px;margin-bottom:18px;text-align:center;line-height:1.6}
+        .login-error.show{display:block}
+        .login-footer{display:flex;align-items:center;justify-content:space-between;margin-top:34px;padding-top:20px;border-top:1px solid var(--tees-border)}
+        .login-footer a{font-size:12px;font-weight:700;color:var(--tees-muted);transition:color .2s;display:flex;align-items:center;gap:6px}
+        .login-footer a:hover{color:var(--tees-yellow)}
+        .login-status{margin-top:18px;text-align:center;font-size:12px;color:var(--tees-muted);opacity:.0}
+
+        @media(max-width:960px){.auth-brand{display:none}}
+    </style>
+</head>
+<body class="dark">
+    <div class="auth-layout">
+
+        <!-- Brand Panel -->
+        <aside class="auth-brand">
+            <div class="auth-brand-grid"></div>
+            <div class="auth-brand-glow"></div>
+            <div class="auth-brand-shape"></div>
+            <div class="auth-brand-inner">
+                <div class="auth-logo">
+                    <img src="assets/images/logo.png" alt="AZMA">
+                    <div class="auth-logo-text">AZ<span>MA</span></div>
+                </div>
+                <div class="auth-badge"><i></i> WEAR YOUR ATTITUDE</div>
+                <h1 class="auth-title">متجر<br>AZMA<span>.</span></h1>
+                <p class="auth-sub">سجّل دخولك للوصول إلى المتجر، تصفّح أحدث التشكيلات، اطلب تيشيرتاتك المفضلة، وتابع طلباتك.</p>
+                <div class="auth-stats">
+                    <div class="stat"><b>04</b><span>دروبات حصرية</span></div>
+                    <div class="stat"><b>3x</b><span>سرعة الطلب</span></div>
+                    <div class="stat"><b>24/7</b><span>رد آلي</span></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Login Panel -->
+        <main class="auth-login">
+            <div class="login-card">
+                <div class="login-card-head">🔐</div>
+                <h1>تسجيل الدخول</h1>
+                <p>سجّل دخولك بحساب Google للوصول إلى متجر AZMA وتصفح أحدث التشكيلات.</p>
+
+                <button type="button" id="google-btn" class="btn-google hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid" viewBox="0 0 256 262" aria-hidden="true">
+                        <path fill="#4285F4" d="M255.878 133.451c0-10.734-.871-18.567-2.756-26.69H130.55v48.448h71.947c-1.45 12.04-9.283 30.172-26.69 42.356l-.244 1.622 38.755 30.023 2.685.268c24.659-22.774 38.875-56.282 38.875-96.027" class="blue"></path>
+                        <path fill="#34A853" d="M130.55 261.1c35.248 0 64.839-11.605 86.453-31.622l-41.196-31.913c-11.024 7.688-25.82 13.055-45.257 13.055-34.523 0-63.824-22.773-74.269-54.25l-1.531.13-40.298 31.187-.527 1.465C35.393 231.798 79.49 261.1 130.55 261.1" class="green"></path>
+                        <path fill="#FBBC05" d="M56.281 156.37c-2.756-8.123-4.351-16.827-4.351-25.82 0-8.994 1.595-17.697 4.206-25.82l-.073-1.73L15.26 71.312l-1.335.635C5.077 89.644 0 109.517 0 130.55s5.077 40.905 13.925 58.602l42.356-32.782" class="yellow"></path>
+                        <path fill="#EB4335" d="M130.55 50.479c24.514 0 41.05 10.589 50.479 19.438l36.844-35.974C195.245 12.91 165.798 0 130.55 0 79.49 0 35.393 29.301 13.925 71.947l42.211 32.783c10.59-31.477 39.891-54.251 74.414-54.251" class="red"></path>
+                    </svg>
+                    <span class="text">المتابعة عبر Google</span>
+                </button>
+
+                <div id="login-error" class="login-error"></div>
+
+                <div class="login-secure">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    دخول آمن وموثّق — نحمي بياناتك
+                </div>
+
+                <div class="login-footer">
+                    <a href="index.html">← الصفحة الرئيسية</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function () {
+            var errorBox = document.getElementById('login-error');
+            var googleBtn = document.getElementById('google-btn');
+            var clientId = null;
+            var codeClient = null;
+
+            function showError(msg) {
+                errorBox.textContent = msg || 'حدث خطأ، حاول مرة أخرى';
+                errorBox.classList.add('show');
+            }
+
+            function clearError() {
+                errorBox.textContent = '';
+                errorBox.classList.remove('show');
+            }
+
+            function go() {
+                window.location.href = 'store.html';
+            }
+
+            // ── تسجيل الدخول عبر Google (نافذة منبثقة موثوقة) ──
+            function handleCredentialResponse(response) {
+                if (!response || !response.credential) return;
+                googleBtn.disabled = true;
+                googleBtn.textContent = 'جارٍ الدخول…';
+                fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken: response.credential }),
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (d.success) { go(); return; }
+                        showError(d.error || 'تعذر تسجيل الدخول عبر Google');
+                        googleBtn.disabled = false;
+                        googleBtn.textContent = 'المتابعة عبر Google';
+                    })
+                    .catch(function () {
+                        showError('تعذر الاتصال بالخادم');
+                        googleBtn.disabled = false;
+                        googleBtn.textContent = 'المتابعة عبر Google';
+                    });
+            }
+            window.handleCredentialResponse = handleCredentialResponse;
+
+            function startGooglePopup() {
+                if (codeClient) { codeClient.requestCode(); return; }
+                if (!window.google || !google.accounts || !google.accounts.oauth2) {
+                    showError('خدمة Google لم تُحمّل بعد — أعد تحميل الصفحة وحاول مرة أخرى');
+                    return;
+                }
+                codeClient = google.accounts.oauth2.initCodeClient({
+                    client_id: clientId,
+                    scope: 'openid email profile',
+                    ux_mode: 'popup',
+                    callback: function (resp) {
+                        if (!resp || !resp.code) {
+                            showError('لم نحصل على رمز الدخول من Google');
+                            return;
+                        }
+                        googleBtn.disabled = true;
+                        googleBtn.textContent = 'جارٍ الدخول…';
+                        fetch('/api/auth/google-code', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code: resp.code }),
+                        })
+                            .then(function (r) { return r.json(); })
+                            .then(function (d) {
+                                if (d.success) { go(); return; }
+                                showError(d.error || 'تعذر تسجيل الدخول عبر Google');
+                                googleBtn.disabled = false;
+                                googleBtn.textContent = 'المتابعة عبر Google';
+                            })
+                            .catch(function () {
+                                showError('تعذر الاتصال بالخادم');
+                                googleBtn.disabled = false;
+                                googleBtn.textContent = 'المتابعة عبر Google';
+                            });
+                    },
+                    error_callback: function (err) {
+                        googleBtn.disabled = false;
+                        googleBtn.textContent = 'المتابعة عبر Google';
+                        if (err && err.type === 'popup_closed') {
+                            showError('أغلقت نافذة الدخول — حاول مرة أخرى');
+                        } else {
+                            showError('تعذر تسجيل الدخول عبر Google — أعد المحاولة أو تأكد من إعدادات Google Cloud Console');
+                        }
+                    },
+                });
+                codeClient.requestCode();
+            }
+
+            googleBtn.addEventListener('click', function () {
+                clearError();
+                if (!clientId) {
+                    showError('لم تصل إعدادات Google بعد — أعد تحميل الصفحة وحاول مرة أخرى');
+                    return;
+                }
+                startGooglePopup();
+            });
+
+            function initGoogle() {
+                try {
+                    fetch('/api/settings')
+                        .then(function (r) { return r.json(); })
+                        .then(function (settings) {
+                            clientId = (settings && settings.googleClientId) || localStorage.getItem('azma_google_client');
+                            if (!clientId) return;
+                            localStorage.setItem('azma_google_client', clientId);
+                            googleBtn.classList.remove('hidden');
+                            if (window.google && google.accounts && google.accounts.id) {
+                                google.accounts.id.initialize({ client_id: clientId, callback: handleCredentialResponse });
+                            }
+                        })
+                        .catch(function () {});
+                } catch (e) {}
+            }
+
+            fetch('/api/auth/check')
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d && d.authenticated) go();
+                    else initGoogle();
+                })
+                .catch(function () { initGoogle(); });
+        })();
+    </script>
+</body>
+</html>

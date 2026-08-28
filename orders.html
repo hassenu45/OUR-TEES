@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الطلبات — AZMA</title>
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
+  <link rel="stylesheet" href="assets/css/design-tokens.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: #0C0A09;
+      color: #FAFAF9;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(12,10,9,0.6);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-logo {
+      font-family: 'Cormorant', serif;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .header-logo span { color: #A16207; }
+    .header-badge {
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      background: rgba(161,98,7,0.15);
+      border: 1px solid rgba(161,98,7,0.15);
+      color: rgba(250,250,249,0.6);
+    }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .header-actions a {
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .header-actions a:first-child {
+      background: linear-gradient(135deg, #A16207, #854D0E);
+      color: #FAFAF9;
+    }
+    .header-actions a:last-child {
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(250,250,249,0.5);
+    }
+    .header-actions a:first-child:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px -4px rgba(161,98,7,0.3);
+    }
+    .header-actions a:last-child:hover {
+      border-color: rgba(161,98,7,0.3);
+      color: #A16207;
+    }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 28px 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .stat-card {
+      padding: 24px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.02);
+      text-align: center;
+      transition: border-color 0.3s ease, transform 0.3s ease;
+    }
+    .stat-card:hover {
+      border-color: rgba(161,98,7,0.12);
+      transform: translateY(-2px);
+    }
+    .stat-card .num {
+      font-family: 'Cormorant', serif;
+      font-size: 32px;
+      font-weight: 600;
+      color: #A16207;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-card .lbl {
+      font-size: 11px;
+      color: rgba(250,250,249,0.35);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── CONTROLS ── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      padding: 0 32px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-box svg {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: rgba(250,250,249,0.2);
+      pointer-events: none;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 12px 40px 12px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      color: #FAFAF9;
+      font-size: 13px;
+      font-family: 'Montserrat', sans-serif;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    .search-box input::placeholder { color: rgba(250,250,249,0.15); }
+    .search-box input:focus { border-color: rgba(161,98,7,0.3); }
+    .filter-select {
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      color: rgba(250,250,249,0.7);
+      font-size: 13px;
+      font-family: 'Montserrat', sans-serif;
+      outline: none;
+      cursor: pointer;
+      min-width: 130px;
+    }
+    .filter-select:focus { border-color: rgba(161,98,7,0.3); }
+    .filter-select option { background: #1C1917; color: #FAFAF9; }
+
+    /* ── ORDERS LIST ── */
+    .orders-list {
+      padding: 0 32px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .order-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      margin-bottom: 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.015);
+      transition: border-color 0.3s ease, background 0.3s ease;
+      animation: fadeIn 0.4s ease both;
+    }
+    .order-card:hover {
+      border-color: rgba(161,98,7,0.1);
+      background: rgba(161,98,7,0.02);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .order-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex: 1;
+      min-width: 0;
+    }
+    .order-id {
+      font-family: 'Cormorant', serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: rgba(250,250,249,0.2);
+      min-width: 50px;
+    }
+    .order-details {
+      flex: 1;
+      min-width: 0;
+    }
+    .order-details h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .order-details .meta {
+      font-size: 12px;
+      color: rgba(250,250,249,0.35);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .order-details .meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .order-details .meta strong { color: rgba(250,250,249,0.5); font-weight: 500; }
+
+    .order-status {
+      font-size: 11px;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .status-new {
+      background: rgba(161,98,7,0.15);
+      color: #D4A04A;
+      border: 1px solid rgba(161,98,7,0.15);
+    }
+    .status-completed {
+      background: rgba(34,197,94,0.1);
+      color: #86EFAC;
+      border: 1px solid rgba(34,197,94,0.1);
+    }
+    .status-cancelled {
+      background: rgba(220,38,38,0.1);
+      color: #FCA5A5;
+      border: 1px solid rgba(220,38,38,0.1);
+    }
+
+    .order-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-right: 16px;
+    }
+    .order-actions button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: 'Montserrat', sans-serif;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .btn-pdf {
+      background: rgba(161,98,7,0.12);
+      color: #D4A04A;
+      border: 1px solid rgba(161,98,7,0.1);
+    }
+    .btn-pdf:hover {
+      background: rgba(161,98,7,0.2);
+      transform: translateY(-1px);
+    }
+    .btn-complete {
+      background: rgba(34,197,94,0.1);
+      color: #86EFAC;
+      border: 1px solid rgba(34,197,94,0.08);
+    }
+    .btn-complete:hover {
+      background: rgba(34,197,94,0.18);
+      transform: translateY(-1px);
+    }
+    .btn-cancel {
+      background: rgba(220,38,38,0.08);
+      color: #FCA5A5;
+      border: 1px solid rgba(220,38,38,0.06);
+    }
+    .btn-cancel:hover {
+      background: rgba(220,38,38,0.15);
+      transform: translateY(-1px);
+    }
+    .btn-report {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #A16207, #854D0E);
+      color: #FAFAF9;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+    .btn-report:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px -4px rgba(161,98,7,0.35);
+    }
+    .btn-report svg { flex-shrink: 0; }
+    .btn-delete {
+      background: rgba(220,38,38,0.05);
+      color: rgba(250,250,249,0.25);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .btn-delete:hover {
+      background: rgba(220,38,38,0.12);
+      color: #FCA5A5;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: rgba(250,250,249,0.2);
+    }
+    .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.3; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── PDF RECEIPT STYLES ── */
+    .receipt {
+      direction: rtl;
+      font-family: 'Montserrat', sans-serif;
+      padding: 32px;
+      max-width: 400px;
+      margin: 0 auto;
+      background: #fff;
+      color: #1C1917;
+    }
+    .receipt-header {
+      text-align: center;
+      border-bottom: 2px dashed #D6D3D1;
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+    .receipt-header h2 {
+      font-family: 'Cormorant', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1C1917;
+    }
+    .receipt-header h2 span { color: #A16207; }
+    .receipt-header p {
+      font-size: 11px;
+      color: #78716C;
+      margin-top: 4px;
+    }
+    .receipt-id {
+      font-size: 12px;
+      color: #A16207;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px solid #F5F5F4;
+    }
+    .receipt-row .label { color: #78716C; }
+    .receipt-row .value { font-weight: 500; color: #1C1917; }
+    .receipt-items {
+      margin: 16px 0;
+      border: 1px solid #E7E5E4;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .receipt-items .item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid #F5F5F4;
+    }
+    .receipt-items .item:last-child { border-bottom: none; }
+    .receipt-items .item .name { font-weight: 600; }
+    .receipt-total {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      font-size: 16px;
+      font-weight: 700;
+      border-top: 2px solid #1C1917;
+      margin-top: 8px;
+    }
+    .receipt-footer {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 2px dashed #D6D3D1;
+      font-size: 11px;
+      color: #78716C;
+    }
+
+    /* ── DAILY REPORT PDF STYLES ── */
+    .daily-report {
+      direction: rtl;
+      font-family: 'Montserrat', sans-serif;
+      padding: 20px 24px;
+      background: #fff;
+      color: #1C1917;
+    }
+    .daily-report .report-header {
+      text-align: center;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #1C1917;
+      margin-bottom: 16px;
+    }
+    .daily-report .report-header h1 {
+      font-family: 'Cormorant', serif;
+      font-size: 26px;
+      color: #1C1917;
+    }
+    .daily-report .report-header h1 span { color: #A16207; }
+    .daily-report .report-header p {
+      font-size: 12px;
+      color: #78716C;
+      margin-top: 4px;
+    }
+    .daily-report .report-summary {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #78716C;
+    }
+    .daily-report .report-summary strong { color: #1C1917; }
+    .daily-report table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .daily-report table th {
+      background: #1C1917;
+      color: #FAFAF9;
+      padding: 8px 6px;
+      font-weight: 600;
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 0.02em;
+    }
+    .daily-report table td {
+      padding: 7px 6px;
+      text-align: center;
+      border-bottom: 1px solid #E7E5E4;
+      color: #1C1917;
+    }
+    .daily-report table tr:nth-child(even) td {
+      background: #FAFAF9;
+    }
+    .daily-report table tr:hover td {
+      background: #F5F5F4;
+    }
+    .daily-report .report-footer {
+      text-align: center;
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 1px solid #D6D3D1;
+      font-size: 10px;
+      color: #A8A29E;
+    }
+    .daily-report .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 9px;
+      font-weight: 600;
+    }
+    .daily-report .status-badge.new { background: #FEF3C7; color: #92400E; }
+    .daily-report .status-badge.completed { background: #DCFCE7; color: #166534; }
+    .daily-report .status-badge.cancelled { background: #FEE2E2; color: #991B1B; }
+
+    /* ── MODAL ── */
+    .modal {
+      position: fixed; inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal.active { display: flex; }
+    .modal-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+    }
+    .modal-content {
+      position: relative;
+      background: #FAFAF9;
+      border-radius: 14px;
+      max-width: 440px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 64px -12px rgba(0,0,0,0.6);
+      animation: modalIn 0.3s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-close {
+      position: absolute;
+      top: 12px; left: 12px;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.05);
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #78716C;
+      transition: background 0.2s ease;
+    }
+    .modal-close:hover { background: rgba(0,0,0,0.1); }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      padding: 16px 24px;
+      border-top: 1px solid #E7E5E4;
+    }
+    .modal-actions button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'Montserrat', sans-serif;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .modal-actions .btn-download {
+      background: #1C1917;
+      color: #FAFAF9;
+    }
+    .modal-actions .btn-download:hover { background: #0C0A09; }
+    .modal-actions .btn-print {
+      border: 1px solid #D6D3D1;
+      background: transparent;
+      color: #1C1917;
+    }
+    .modal-actions .btn-print:hover { background: #F5F5F4; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .header { padding: 16px 20px; flex-direction: column; gap: 12px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); padding: 16px 20px; }
+      .controls { padding: 0 20px 16px; }
+      .orders-list { padding: 0 20px 32px; }
+      .order-card { flex-direction: column; align-items: stretch; gap: 12px; }
+      .order-actions { margin-right: 0; justify-content: flex-end; }
+    }
+    @media (max-width: 480px) {
+      .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stat-card { padding: 16px; }
+      .stat-card .num { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH GATE -->
+  <div id="auth-gate" style="position:fixed;inset:0;z-index:99999;background:#0D0D0D;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-family:'Cairo',sans-serif">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:6px;color:#F5F5F0">AZ<span style="color:#F5C842">MA</span></div>
+    <div style="width:170px;height:3px;border-radius:2px;background:#2a2a2a;overflow:hidden"><i style="display:block;height:100%;width:40%;background:#F5C842;animation:azgate 1.1s ease-in-out infinite"></i></div>
+    <div id="auth-gate-txt" style="font-size:12px;color:#888884">جارٍ التحقق من الجلسة…</div>
+  </div>
+  <style>@keyframes azgate{0%{transform:translateX(-130%)}100%{transform:translateX(330%)}}</style>
+  <script>
+    (function () {
+      var gate = document.getElementById('auth-gate');
+      function deny() { window.location.replace('index.html'); }
+      function allow() { if (gate) gate.remove(); }
+      fetch('/api/auth/check', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d && d.authenticated) allow(); else deny();
+        })
+        .catch(deny);
+    })();
+  </script>
+
+  <!-- HEADER -->
+  <header class="header" data-aos="fade-down">
+    <div class="header-left">
+      <span class="header-logo">AZMA</span>
+      <span class="header-badge">الطلبات</span>
+    </div>
+    <div class="header-actions">
+      <a href="store.html">المتجر</a>
+      <a href="admin.html">لوحة التحكم</a>
+    </div>
+  </header>
+
+  <!-- STATS -->
+  <section class="stats-row" id="stats-row">
+    <div class="stat-card" data-aos="fade-up" data-aos-delay="0">
+      <div class="num" id="stat-total">0</div>
+      <div class="lbl">إجمالي الطلبات</div>
+    </div>
+    <div class="stat-card" data-aos="fade-up" data-aos-delay="100">
+      <div class="num" id="stat-pending">0</div>
+      <div class="lbl">قيد الانتظار</div>
+    </div>
+    <div class="stat-card" data-aos="fade-up" data-aos-delay="200">
+      <div class="num" id="stat-completed">0</div>
+      <div class="lbl">مكتملة</div>
+    </div>
+    <div class="stat-card" data-aos="fade-up" data-aos-delay="300">
+      <div class="num" id="stat-revenue">0 ر.س</div>
+      <div class="lbl">الإيرادات</div>
+    </div>
+  </section>
+
+  <!-- CONTROLS -->
+  <section class="controls">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="search-input" placeholder="بحث بالاسم أو رقم الطلب..." oninput="filterOrders()">
+    </div>
+    <select id="status-filter" class="filter-select" onchange="filterOrders()">
+      <option value="all">جميع الحالات</option>
+      <option value="new">جديد</option>
+      <option value="completed">مكتمل</option>
+      <option value="cancelled">ملغي</option>
+    </select>
+    <button class="btn-report" onclick="downloadDailyReport()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      تقرير يومي PDF
+    </button>
+  </section>
+
+  <!-- ORDERS LIST -->
+  <section class="orders-list" id="orders-list"></section>
+
+  <!-- PDF MODAL -->
+  <div class="modal" id="receipt-modal">
+    <div class="modal-overlay" onclick="closeReceipt()"></div>
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeReceipt()">✕</button>
+      <div id="receipt-content"></div>
+      <div class="modal-actions">
+        <button class="btn-download" onclick="downloadPDF()">📥 تحميل PDF</button>
+        <button class="btn-print" onclick="printReceipt()">🖨️ طباعة</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script src="js/db-local.js"></script>
+  <script>
+    if (typeof AOS !== 'undefined') AOS.init({ duration: 600, easing: 'ease-out-cubic', once: true, offset: 20 });
+
+    let allOrders = [];
+    let currentReceiptOrder = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function loadOrders() {
+      allOrders = DB.getOrders().reverse();
+      renderStats();
+      renderOrders(allOrders);
+    }
+
+    function renderStats() {
+      const total = allOrders.length;
+      const pending = allOrders.filter(o => o.status === 'new').length;
+      const completed = allOrders.filter(o => o.status === 'completed').length;
+      const revenue = allOrders
+        .filter(o => o.status !== 'cancelled')
+        .reduce((sum, o) => sum + (parseFloat(o.productPrice) || 0), 0);
+
+      $('stat-total').textContent = total;
+      $('stat-pending').textContent = pending;
+      $('stat-completed').textContent = completed;
+
+      const settings = DB.getSettings();
+      const sym = settings.currencySymbol || 'ر.س';
+      $('stat-revenue').textContent = revenue.toFixed(2) + ' ' + sym;
+    }
+
+    function renderOrders(orders) {
+      const container = $('orders-list');
+      if (!orders.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <p>لا توجد طلبات</p>
+          </div>`;
+        return;
+      }
+
+      const statusLabels = { new: 'قيد الانتظار', completed: 'مكتمل', cancelled: 'ملغي' };
+      const statusNext = { new: 'completed', completed: 'new', cancelled: 'new' };
+
+      container.innerHTML = orders.map((o, i) => {
+        const badgeCls = o.status === 'completed' ? 'status-completed' : o.status === 'cancelled' ? 'status-cancelled' : 'status-new';
+        const nextStatus = statusNext[o.status] || 'completed';
+        const nextLabel = o.status === 'completed' ? 'إعادة' : o.status === 'cancelled' ? 'إعادة' : 'تسليم';
+        return `<div class="order-card" style="animation-delay:${i * 0.04}s">
+          <div class="order-info">
+            <span class="order-id">#${o.id.slice(-5)}</span>
+            <div class="order-details">
+              <h3>${escapeHtml(o.productName)} — ${escapeHtml(o.customerName)}</h3>
+              <div class="meta">
+                <span>📞 ${escapeHtml(o.phone)}</span>
+                <span>📐 ${escapeHtml(o.size)}</span>
+                <span>💰 ${(parseFloat(o.productPrice) || 0).toFixed(2)} ${(DB.getSettings().currencySymbol || 'ر.س')}</span>
+                <span>📅 ${new Date(o.createdAt).toLocaleDateString('ar-SA')}</span>
+              </div>
+            </div>
+          </div>
+          <span class="order-status ${badgeCls}">${statusLabels[o.status]}</span>
+          <div class="order-actions">
+            <button class="btn-pdf" onclick="showReceipt('${o.id}')">📄 PDF</button>
+            <button class="btn-complete" onclick="updateStatus('${o.id}','${nextStatus}')">✅ ${nextLabel}</button>
+            <button class="btn-cancel" onclick="updateStatus('${o.id}','cancelled')">❌</button>
+            <button class="btn-delete" onclick="deleteOrder('${o.id}')">🗑️</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function filterOrders() {
+      const q = ($('search-input')?.value || '').toLowerCase();
+      const filter = ($('status-filter')?.value || 'all');
+      let filtered = allOrders;
+      if (filter !== 'all') filtered = filtered.filter(o => o.status === filter);
+      if (q) filtered = filtered.filter(o =>
+        (o.customerName || '').toLowerCase().includes(q) ||
+        (o.productName || '').toLowerCase().includes(q) ||
+        o.id.toLowerCase().includes(q) ||
+        (o.phone || '').includes(q)
+      );
+      renderOrders(filtered);
+    }
+
+    function updateStatus(id, status) {
+      try {
+        DB.updateOrderStatus(id, status);
+        loadOrders();
+      } catch (e) { alert('فشل تحديث الحالة'); }
+    }
+
+    function deleteOrder(id) {
+      if (!confirm('حذف هذا الطلب؟')) return;
+      try {
+        DB.deleteOrder(id);
+        loadOrders();
+      } catch (e) { alert('فشل الحذف'); }
+    }
+
+    /* ── PDF RECEIPT ── */
+    function showReceipt(id) {
+      const order = allOrders.find(o => o.id === id);
+      if (!order) return;
+      currentReceiptOrder = order;
+      const settings = DB.getSettings();
+      const sym = settings.currencySymbol || 'ر.س';
+
+      const html = `
+        <div class="receipt">
+          <div class="receipt-header">
+            <h2>AZMA</h2>
+            <p>كشف طلب — فاتورة</p>
+          </div>
+          <div style="text-align:center;">
+            <div class="receipt-id">رقم الطلب: #${order.id.slice(-8)}</div>
+          </div>
+          <div class="receipt-row"><span class="label">التاريخ</span><span class="value">${new Date(order.createdAt).toLocaleDateString('ar-SA')}</span></div>
+          <div class="receipt-row"><span class="label">الحالة</span><span class="value">${order.status === 'completed' ? 'مكتمل' : order.status === 'cancelled' ? 'ملغي' : 'قيد الانتظار'}</span></div>
+
+          <div style="margin-top:16px;font-weight:600;font-size:12px;color:#78716C;">بيانات العميل</div>
+          <div class="receipt-row"><span class="label">الاسم</span><span class="value">${escapeHtml(order.customerName)}</span></div>
+          <div class="receipt-row"><span class="label">رقم الهاتف</span><span class="value" dir="ltr" style="text-align:left;">${escapeHtml(order.phone)}</span></div>
+          ${order.address ? `<div class="receipt-row"><span class="label">العنوان</span><span class="value">${escapeHtml(order.address)}</span></div>` : ''}
+
+          <div style="margin-top:16px;font-weight:600;font-size:12px;color:#78716C;">المنتج</div>
+          <div class="receipt-items">
+            <div class="item"><span class="name">${escapeHtml(order.productName)}</span><span>${(parseFloat(order.productPrice) || 0).toFixed(2)} ${sym}</span></div>
+            <div class="item"><span style="color:#78716C;">المقاس</span><span>${escapeHtml(order.size)}</span></div>
+            ${order.type ? `<div class="item"><span style="color:#78716C;">النوع</span><span>${escapeHtml(order.type)}</span></div>` : ''}
+            ${order.notes ? `<div class="item" style="flex-direction:column;gap:4px;"><span style="color:#78716C;">ملاحظات</span><span>${escapeHtml(order.notes)}</span></div>` : ''}
+          </div>
+
+          <div class="receipt-total">
+            <span>الإجمالي</span>
+            <span>${(parseFloat(order.productPrice) || 0).toFixed(2)} ${sym}</span>
+          </div>
+
+          <div class="receipt-footer">
+            <p>شكراً لتسوقك من AZMA</p>
+            <p style="margin-top:4px;">Streetwear for the culture</p>
+          </div>
+        </div>`;
+
+      $('receipt-content').innerHTML = html;
+      $('receipt-modal').classList.add('active');
+    }
+
+    function closeReceipt() {
+      $('receipt-modal').classList.remove('active');
+      currentReceiptOrder = null;
+    }
+
+    function downloadPDF() {
+      const el = $('receipt-content')?.querySelector('.receipt');
+      if (!el) return;
+
+      const printWin = window.open('', '_blank');
+      printWin.document.write(`
+        <html><head>
+          <meta charset="UTF-8">
+          <title>فاتورة AZMA</title>
+          <style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body { font-family: 'Montserrat', sans-serif; }
+            .receipt { direction:rtl; padding:32px; max-width:400px; margin:0 auto; background:#fff; color:#1C1917; }
+            .receipt-header { text-align:center; border-bottom:2px dashed #D6D3D1; padding-bottom:20px; margin-bottom:20px; }
+            .receipt-header h2 { font-family: 'Cormorant', serif; font-size:28px; font-weight:700; color:#1C1917; }
+            .receipt-header h2 span { color:#A16207; }
+            .receipt-header p { font-size:11px; color:#78716C; margin-top:4px; }
+            .receipt-id { font-size:12px; color:#A16207; font-weight:600; margin-bottom:16px; text-align:center; }
+            .receipt-row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; border-bottom:1px solid #F5F5F4; }
+            .receipt-row .label { color:#78716C; }
+            .receipt-row .value { font-weight:500; color:#1C1917; }
+            .receipt-items { margin:16px 0; border:1px solid #E7E5E4; border-radius:8px; overflow:hidden; }
+            .receipt-items .item { display:flex; justify-content:space-between; padding:10px 14px; font-size:13px; border-bottom:1px solid #F5F5F4; }
+            .receipt-items .item:last-child { border-bottom:none; }
+            .receipt-items .item .name { font-weight:600; }
+            .receipt-total { display:flex; justify-content:space-between; padding:12px 0; font-size:16px; font-weight:700; border-top:2px solid #1C1917; margin-top:8px; }
+            .receipt-footer { text-align:center; margin-top:20px; padding-top:16px; border-top:2px dashed #D6D3D1; font-size:11px; color:#78716C; }
+            @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+          </style>
+        </head><body>${el.outerHTML}</body></html>
+      `);
+      printWin.document.close();
+      setTimeout(() => { printWin.focus(); printWin.print(); }, 300);
+    }
+
+    function printReceipt() {
+      downloadPDF();
+    }
+
+    /* ── DAILY REPORT PDF ── */
+    function downloadDailyReport() {
+      const orders = allOrders;
+      if (!orders.length) { alert('لا توجد طلبات لإنشاء التقرير'); return; }
+
+      const settings = DB.getSettings();
+      const sym = settings.currencySymbol || 'ر.س';
+      const today = new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const total = orders.length;
+      const pending = orders.filter(o => o.status === 'new').length;
+      const completed = orders.filter(o => o.status === 'completed').length;
+      const cancelled = orders.filter(o => o.status === 'cancelled').length;
+      const revenue = orders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + (parseFloat(o.productPrice)||0), 0);
+
+      const statusMap = { new: 'قيد الانتظار', completed: 'مكتمل', cancelled: 'ملغي' };
+
+      let rows = orders.map((o, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td style="font-weight:600;">${escapeHtml(o.customerName)}</td>
+          <td dir="ltr">${escapeHtml(o.phone)}</td>
+          <td>${escapeHtml(o.address || '—')}</td>
+          <td>${escapeHtml(o.region || o.city || '—')}</td>
+          <td>${escapeHtml(o.productName)}</td>
+          <td>${escapeHtml(o.size)}</td>
+          <td>${(parseFloat(o.productPrice)||0).toFixed(2)} ${sym}</td>
+          <td><span class="status-badge ${o.status}">${statusMap[o.status]}</span></td>
+        </tr>`).join('');
+
+      const html = `
+        <div class="daily-report">
+          <div class="report-header">
+            <h1>AZMA</h1>
+            <p>تقرير يومي — ${today}</p>
+          </div>
+          <div class="report-summary">
+            <span>إجمالي الطلبات: <strong>${total}</strong></span>
+            <span>قيد الانتظار: <strong>${pending}</strong></span>
+            <span>مكتملة: <strong>${completed}</strong></span>
+            <span>ملغية: <strong>${cancelled}</strong></span>
+            <span>الإيرادات: <strong>${revenue.toFixed(2)} ${sym}</strong></span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الاسم</th>
+                <th>رقم الهاتف</th>
+                <th>العنوان</th>
+                <th>المنطقة</th>
+                <th>المنتج</th>
+                <th>المقاس</th>
+                <th>السعر</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="report-footer">
+            <p>تم الإنشاء: ${new Date().toLocaleString('ar-SA')} — AZMA | Streetwear for the culture</p>
+          </div>
+        </div>`;
+
+      const printWin = window.open('', '_blank');
+      printWin.document.write(`
+        <html><head>
+          <meta charset="UTF-8">
+          <title>تقرير يومي - AZMA</title>
+          <style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body { font-family: 'Montserrat', sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+            .daily-report { direction:rtl; font-family: 'Montserrat', sans-serif; padding:20px 24px; background:#fff; color:#1C1917; }
+            .daily-report .report-header { text-align:center; padding-bottom:16px; border-bottom:2px solid #1C1917; margin-bottom:16px; }
+            .daily-report .report-header h1 { font-family: 'Cormorant', serif; font-size:26px; color:#1C1917; }
+            .daily-report .report-header h1 span { color:#A16207; }
+            .daily-report .report-header p { font-size:12px; color:#78716C; margin-top:4px; }
+            .daily-report .report-summary { display:flex; gap:24px; justify-content:center; margin-bottom:16px; font-size:13px; color:#78716C; }
+            .daily-report .report-summary strong { color:#1C1917; }
+            .daily-report table { width:100%; border-collapse:collapse; font-size:11px; }
+            .daily-report table th { background:#1C1917; color:#FAFAF9; padding:8px 6px; font-weight:600; text-align:center; font-size:10px; }
+            .daily-report table td { padding:7px 6px; text-align:center; border-bottom:1px solid #E7E5E4; color:#1C1917; }
+            .daily-report table tr:nth-child(even) td { background:#FAFAF9; }
+            .daily-report .status-badge { display:inline-block; padding:2px 8px; border-radius:100px; font-size:9px; font-weight:600; }
+            .daily-report .status-badge.new { background:#FEF3C7; color:#92400E; }
+            .daily-report .status-badge.completed { background:#DCFCE7; color:#166534; }
+            .daily-report .status-badge.cancelled { background:#FEE2E2; color:#991B1B; }
+            .daily-report .report-footer { text-align:center; margin-top:20px; padding-top:12px; border-top:1px solid #D6D3D1; font-size:10px; color:#A8A29E; }
+            @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+          </style>
+        </head><body>${html}</body></html>
+      `);
+      printWin.document.close();
+      setTimeout(() => { printWin.focus(); printWin.print(); }, 300);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    document.addEventListener('DOMContentLoaded', loadOrders);
+  </script>
+</body>
+</html>

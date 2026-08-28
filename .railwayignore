@@ -1,0 +1,17 @@
+node_modules/
+.opencode/
+.agents/
+.claude/
+.mcp/
+.playwright-mcp/
+.superpowers/
+.windsurf/
+.github/
+.husky/
+downloads/
+desktop/
+stress-report/
+tests/load/
+*.log
+/*.png
+/*.err

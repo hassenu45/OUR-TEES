@@ -1,0 +1,158 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "omniroute/claude-sonnet-4-6",
+  "small_model": "omniroute/claude-haiku-4-5",
+  "provider": {
+    "omniroute": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OmniRoute",
+      "options": {
+        "baseURL": "http://localhost:20128/v1",
+        "apiKey": "CHANGEME"
+      },
+      "models": {
+        "claude-sonnet-4-6": { "name": "Claude Sonnet 4.6" },
+        "claude-opus-4-6": { "name": "Claude Opus 4.6" },
+        "claude-opus-4-8": { "name": "Claude Opus 4.8" },
+        "claude-haiku-4-5": { "name": "Claude Haiku 4.5" }
+      }
+    }
+  },
+  "skills": {
+    "paths": [
+      ".opencode/skills",
+      ".agents/skills",
+      "~/.opencode/skills",
+      "~/.claude/skills"
+    ]
+  },
+  "mcp": {
+    "21st": {
+      "type": "remote",
+      "url": "https://21st.dev/api/mcp",
+      "headers": { "x-api-key": "21st_sk_bda1ad13e779417afa7d0ea2f1f241abf45119d3a07604d267a84fa75970f72a" },
+      "enabled": true
+    },
+    "originkit": {
+      "type": "remote",
+      "url": "https://mcp.originkit.dev/mcp",
+      "headers": { "Authorization": "Bearer cmp_live_zBB9rRutmKTEC-uK-aOAqeVQcUS6nGDm" },
+      "enabled": true
+    },
+    "github": {
+      "type": "remote",
+      "url": "https://api.github.com/mcp",
+      "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp"],
+      "enabled": true
+    },
+    "aider": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/aider.cjs"],
+      "enabled": true
+    },
+    "open-interpreter": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/open-interpreter.cjs"],
+      "enabled": true
+    },
+    "e2b": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/e2b.js"],
+      "enabled": true
+    },
+    "vanna": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/vanna.cjs"],
+      "enabled": true
+    },
+    "gpt-pilot": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/gpt-pilot.cjs"],
+      "enabled": true
+    },
+    "sweep": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/sweep.cjs"],
+      "enabled": true
+    },
+    "screenshot-to-code": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/screenshot-to-code.cjs"],
+      "enabled": true
+    },
+    "unsloth": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/unsloth.cjs"],
+      "enabled": true
+    },
+    "web-design-tools": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/web-design-tools.cjs"],
+      "enabled": true
+    },
+    "prisma-cli": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-cli.cjs"],
+      "enabled": true
+    },
+    "prisma-client-api": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-client-api.cjs"],
+      "enabled": true
+    },
+    "prisma-database-setup": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-database-setup.cjs"],
+      "enabled": true
+    },
+    "prisma-postgres": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-postgres.cjs"],
+      "enabled": true
+    },
+    "prisma-postgres-setup": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-postgres-setup.cjs"],
+      "enabled": true
+    },
+    "prisma-upgrade-v7": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-upgrade-v7.js"],
+      "enabled": true
+    },
+    "prisma-compute": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-compute.cjs"],
+      "enabled": true
+    },
+    "prisma-mongodb-upgrade": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-mongodb-upgrade.cjs"],
+      "enabled": true
+    },
+    "prisma-driver-adapter": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/prisma-driver-adapter.cjs"],
+      "enabled": true
+    },
+    "metagpt": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/metagpt.cjs"],
+      "enabled": true
+    },
+    "alphacodium": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/alphacodium.cjs"],
+      "enabled": true
+    },
+    "openhands": {
+      "type": "local",
+      "command": ["node", "C:/Users/hak/Desktop/Our Tees/.mcp/openhands.cjs"],
+      "enabled": true
+    }
+  }
+}

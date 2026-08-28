@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AZMA — 21 | Custom Designer</title>
+<link rel="icon" type="image/png" href="assets/images/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cairo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+        --tees-black:#0D0D0D;
+        --tees-surface:#161616;
+        --tees-card:#1E1E1E;
+        --tees-yellow:#F5C842;
+        --tees-yellow-dim:#c9a42e;
+        --tees-white:#F5F5F0;
+        --tees-muted:#888884;
+        --tees-border:#2a2a2a;
+        --tees-font:'Cairo',sans-serif;
+        --tees-display:'Bebas Neue',sans-serif;
+        --tees-radius:8px;
+        --tees-transition:0.25s cubic-bezier(0.16,1,0.3,1);
+    }
+    html,body{height:100%;overflow:hidden}
+    body{background:var(--tees-black);font-family:var(--tees-font);color:var(--tees-white);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    img{display:block;max-width:100%;height:auto}
+    a{color:inherit;text-decoration:none}
+    ::selection{background:var(--tees-yellow);color:var(--tees-black)}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:var(--tees-surface)}
+    ::-webkit-scrollbar-thumb{background:var(--tees-border);border-radius:3px}
+    ::-webkit-scrollbar-thumb:hover{background:var(--tees-muted)}
+    #canvas{display:block;width:100vw;height:100vh}
+
+    /* LOADER — same as main site */
+    .page-loader{position:fixed;inset:0;z-index:9999;background:var(--tees-black);display:flex;align-items:center;justify-content:center;transition:opacity .6s,visibility .6s}
+    .page-loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+    .loader-inner{display:flex;flex-direction:column;align-items:center;gap:16px}
+    .loader-brand{font-family:var(--tees-display);font-size:34px;letter-spacing:6px;color:var(--tees-white)}
+    .loader-brand span{color:var(--tees-yellow)}
+    .loader-sub{font-size:11px;letter-spacing:4px;color:var(--tees-muted);font-weight:600}
+    .spinner{position:relative;width:60px;height:60px;display:flex;justify-content:center;align-items:center;border-radius:50%;margin-left:-75px}
+    .spinner span{position:absolute;top:50%;left:var(--left);width:35px;height:7px;background:#ffff;animation:dominos 1s ease infinite;box-shadow:2px 2px 3px 0px black}
+    .spinner span:nth-child(1){--left:80px;animation-delay:0.125s}
+    .spinner span:nth-child(2){--left:70px;animation-delay:0.3s}
+    .spinner span:nth-child(3){left:60px;animation-delay:0.425s}
+    .spinner span:nth-child(4){animation-delay:0.54s;left:50px}
+    .spinner span:nth-child(5){animation-delay:0.665s;left:40px}
+    .spinner span:nth-child(6){animation-delay:0.79s;left:30px}
+    .spinner span:nth-child(7){animation-delay:0.915s;left:20px}
+    .spinner span:nth-child(8){left:10px}
+    @keyframes dominos{50%{opacity:0.7}75%{-webkit-transform:rotate(90deg);transform:rotate(90deg)}80%{opacity:1}}
+    .loader-bar{width:220px;height:4px;border-radius:2px;background:var(--tees-card);overflow:hidden;margin-top:6px}
+    .loader-bar i{display:block;height:100%;width:0%;background:var(--tees-yellow);border-radius:2px;transition:width .3s}
+
+    /* NAV — same as main site */
+    .ot-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:1px solid var(--tees-border);position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,13,13,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+    .ot-logo{font-family:var(--tees-display);font-size:26px;letter-spacing:3px;color:var(--tees-white);display:flex;align-items:center;gap:10px;transition:opacity .2s}
+    .ot-logo img{width:34px;height:34px;object-fit:contain;border-radius:6px}
+    .ot-logo span{color:var(--tees-yellow)}
+    .ot-nav-links{display:flex;gap:24px;list-style:none}
+    .ot-nav-links a{color:var(--tees-muted);font-size:12px;letter-spacing:1.5px;transition:color .2s;font-weight:600;position:relative;padding:4px 0}
+    .ot-nav-links a::after{content:'';position:absolute;bottom:0;left:0;width:0;height:1px;background:var(--tees-yellow);transition:width .25s}
+    .ot-nav-links a:hover{color:var(--tees-yellow)}
+    .ot-nav-links a:hover::after{width:100%}
+    .ot-nav-links a.active{color:var(--tees-yellow)}
+    .ot-nav-links a.active::after{width:100%}
+    .ot-cart-btn{background:var(--tees-yellow);color:var(--tees-black);border:none;padding:8px 18px;font-family:var(--tees-font);font-weight:700;font-size:12px;cursor:pointer;letter-spacing:.5px;transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:6px;border-radius:var(--tees-radius)}
+    .ot-cart-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,200,66,.25)}
+
+    /* HUD */
+    .hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+    .hero-title{position:absolute;top:110px;left:32px}
+    .hero-title .display{font-family:var(--tees-display);font-size:92px;line-height:.9;letter-spacing:2px;color:var(--tees-white)}
+    .hero-title .display span{color:var(--tees-yellow)}
+    .hero-title .title-bar{width:64px;height:4px;background:var(--tees-yellow);margin:14px 0 10px;border-radius:2px}
+    .hero-title .sub{font-size:12px;letter-spacing:5px;color:var(--tees-muted);font-weight:600;text-transform:uppercase}
+    .color-chip{position:absolute;top:110px;right:32px;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--tees-card);border:1px solid var(--tees-border);border-radius:var(--tees-radius);font-size:11px;letter-spacing:2px;color:var(--tees-muted);font-weight:600;text-transform:uppercase;cursor:pointer;transition:var(--tees-transition);pointer-events:auto}
+    .color-chip:hover{border-color:var(--tees-yellow)}
+    .color-dot{width:14px;height:14px;border-radius:50%;background:var(--tees-white);border:1px solid var(--tees-border);box-shadow:0 0 12px rgba(245,245,240,.35)}
+
+    .toolbar{position:absolute;bottom:26px;right:32px;display:flex;gap:8px;pointer-events:auto}
+    .toolbar button{background:var(--tees-card);border:1px solid var(--tees-border);border-radius:var(--tees-radius);color:var(--tees-white);width:42px;height:42px;font-size:16px;cursor:pointer;transition:var(--tees-transition);display:grid;place-items:center}
+    .toolbar button:hover{background:var(--tees-surface);border-color:var(--tees-yellow);color:var(--tees-yellow);transform:translateY(-2px)}
+    .toolbar button.active{background:var(--tees-yellow);border-color:var(--tees-yellow);color:var(--tees-black)}
+    .toolbar .btn-save{width:auto;padding:0 16px;display:flex;align-items:center;gap:8px;font-family:var(--tees-font);font-weight:700;font-size:12px;letter-spacing:1px;color:var(--tees-black);background:var(--tees-yellow);border-color:var(--tees-yellow)}
+    .toolbar .btn-save:hover{color:var(--tees-black);box-shadow:0 4px 16px rgba(245,200,66,.3)}
+
+    /* TOY CAMERA UPLOAD */
+    .toy-camera-container{
+        --cam-main:#00d2d3;
+        --cam-dark:#01a3a4;
+        --cam-accent:#ff9f43;
+        --cam-shutter:#ff4757;
+        --photo-bg:#ffffff;
+        --toy-size:5.5em;
+        --elastic:cubic-bezier(0.68,-0.6,0.32,1.6);
+        font-size:10px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:0.35em 0.45em;
+        background:var(--tees-card);
+        border:1px solid var(--tees-border);
+        border-radius:var(--tees-radius);
+        user-select:none;
+        cursor:pointer;
+        transition:var(--tees-transition);
+    }
+    .toy-camera-container:hover{background:var(--tees-surface);border-color:var(--tees-yellow);transform:translateY(-2px)}
+    .toy-camera-container.active{border-color:var(--tees-yellow);box-shadow:0 0 14px rgba(245,200,66,.35)}
+    .toy-camera-wrapper{position:relative;width:var(--toy-size);height:calc(var(--toy-size)*0.9);perspective:1200px;cursor:pointer}
+    .toy-camera-input{position:absolute;opacity:0;width:0;height:0}
+    .toy-camera-body{
+        position:absolute;inset:0;background:var(--cam-main);border-radius:1.2em;
+        transform-style:preserve-3d;transform:translateZ(20px);transition:all 0.5s var(--elastic);
+        box-shadow:0 0.6em 0 var(--cam-dark),0 1em 2em rgba(0,0,0,0.15),inset 0 0.2em 0.3em rgba(255,255,255,0.4);
+        z-index:10;
+    }
+    .toy-camera-body::before{
+        content:'';position:absolute;top:20%;left:0;width:100%;height:15%;
+        background:var(--cam-accent);box-shadow:inset 0 0.1em 0.2em rgba(0,0,0,0.1);
+    }
+    .toy-camera-button{
+        position:absolute;top:-0.6em;right:15%;width:1.2em;height:0.8em;
+        background:var(--cam-shutter);border-radius:0.3em 0.3em 0 0;
+        box-shadow:0 0.2em 0 #cc3643,inset 0 0.1em 0.1em rgba(255,255,255,0.3);
+        transition:all 0.2s ease;
+    }
+    .toy-camera-lens{
+        position:absolute;top:50%;left:50%;width:60%;height:65%;background:#2d3436;
+        border-radius:50%;transform:translate(-50%,-40%) translateZ(15px);
+        border:0.3em solid var(--cam-dark);
+        box-shadow:0 0.4em 0.8em rgba(0,0,0,0.3),inset 0 0.2em 0.5em rgba(0,0,0,0.5);
+        display:flex;align-items:center;justify-content:center;overflow:hidden;
+    }
+    .toy-camera-lens::after{
+        content:'';position:absolute;top:15%;left:20%;width:30%;height:20%;
+        background:rgba(255,255,255,0.2);border-radius:50%;transform:rotate(-25deg);
+    }
+    .toy-camera-photo{
+        position:absolute;bottom:10%;left:50%;width:75%;height:80%;
+        background:var(--photo-bg);border-radius:0.4em;
+        transform:translateX(-50%) translateZ(-10px) translateY(0);
+        transition:all 0.7s var(--elastic);
+        box-shadow:0 0.2em 0.5em rgba(0,0,0,0.1),inset 0 0 0 0.2em #f1f2f6;
+        display:flex;flex-direction:column;padding:0.4em;opacity:0;z-index:1;
+    }
+    .photo-image{width:100%;height:70%;background:#74b9ff;border-radius:0.2em;position:relative;overflow:hidden}
+    .photo-image::after{
+        content:'';position:absolute;top:15%;right:15%;width:0.5em;height:0.5em;
+        background:#ffeaa7;border-radius:50%;
+    }
+    .photo-text{width:60%;height:0.2em;background:#dfe6e9;margin-top:0.4em;border-radius:0.1em}
+    .toy-camera-wrapper:hover .toy-camera-body{transform:translateZ(40px) rotateX(10deg)}
+    .toy-camera-input:active + .toy-camera-body{transform:translateZ(10px) scale(0.95)}
+    .toy-camera-input:active + .toy-camera-body .toy-camera-button{transform:translateY(0.3em);box-shadow:0 0.1em 0 #cc3643}
+    .toy-camera-input:checked + .toy-camera-body{transform:translateZ(30px) translateY(-10%)}
+    .toy-camera-input:checked + .toy-camera-body .toy-camera-photo{
+        opacity:1;transform:translateX(-50%) translateZ(-30px) translateY(120%) rotate(5deg);
+        animation:photo-bounce 0.8s var(--elastic);
+    }
+    .toy-camera-input:checked + .toy-camera-body .toy-camera-lens::before{
+        content:'';position:absolute;inset:0;background:#fff;opacity:0;animation:lens-flash 0.4s ease-out;
+    }
+    @keyframes photo-bounce{
+        0%{transform:translateX(-50%) translateZ(-30px) translateY(0)}
+        100%{transform:translateX(-50%) translateZ(-30px) translateY(120%) rotate(5deg)}
+    }
+    @keyframes lens-flash{
+        0%{opacity:1;transform:scale(0.1)}
+        50%{opacity:0.8;transform:scale(1.5)}
+        100%{opacity:0;transform:scale(2)}
+    }
+    .toy-camera-shadow{
+        position:absolute;bottom:-1em;left:50%;width:90%;height:1.5em;
+        background:radial-gradient(circle,rgba(0,0,0,0.15) 0%,transparent 70%);
+        transform:translateX(-50%);transition:all 0.5s ease;pointer-events:none;
+    }
+    .toy-camera-input:checked ~ .toy-camera-shadow{width:120%;opacity:0.1}
+
+    .hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);display:flex;gap:22px;font-size:12px;color:var(--tees-muted);letter-spacing:.4px;padding:10px 18px;border-radius:100px;background:rgba(30,30,30,.7);border:1px solid var(--tees-border);backdrop-filter:blur(8px);white-space:nowrap}
+    .hint span{display:inline-flex;align-items:center;gap:7px}
+    .hint kbd{background:rgba(255,255,255,.08);border:1px solid var(--tees-border);border-radius:5px;padding:1px 6px;font-size:11px;font-family:inherit;color:var(--tees-white)}
+
+    /* ROTATION STRIP */
+    .rot-strip{position:absolute;bottom:84px;left:50%;transform:translateX(-50%);width:min(480px,80vw);pointer-events:auto;z-index:15}
+    .rs-head{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:2px;color:var(--tees-muted);font-weight:700;margin-bottom:8px}
+    .rs-head b{color:var(--tees-yellow);font-size:12px;letter-spacing:0}
+    .rs-track{position:relative;height:6px;border-radius:3px;background:var(--tees-card);border:1px solid var(--tees-border);cursor:pointer;touch-action:none}
+    .rs-fill{position:absolute;top:0;left:0;bottom:0;width:0%;border-radius:3px;background:var(--tees-yellow);pointer-events:none}
+    .rs-thumb{position:absolute;top:50%;left:0%;width:18px;height:18px;border-radius:50%;background:var(--tees-yellow);transform:translate(-50%,-50%);box-shadow:0 0 12px rgba(245,200,66,.45);pointer-events:none;border:2px solid var(--tees-black)}
+    .rs-ticks{display:flex;justify-content:space-between;font-size:9px;color:var(--tees-muted);letter-spacing:1px;margin-top:6px}
+
+    .stats{position:absolute;bottom:90px;left:32px;font-size:11px;color:var(--tees-muted);line-height:1.9;font-variant-numeric:tabular-nums;letter-spacing:1.5px}
+
+    /* PRINT PANEL */
+    .print-panel{position:absolute;top:80px;right:24px;background:rgba(30,30,30,.92);border:1px solid var(--tees-border);border-radius:12px;padding:14px 16px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto;display:flex;flex-direction:column;gap:10px;width:260px;opacity:0;visibility:hidden;transition:var(--tees-transition);z-index:15}
+    .print-panel.show{opacity:1;visibility:visible}
+    .pp-header{display:flex;align-items:center;gap:8px}
+    .pp-title{font-family:var(--tees-display);letter-spacing:2px;font-size:14px;color:var(--tees-white);flex:1}
+    .pp-upload{background:var(--tees-yellow);color:var(--tees-black);border:none;border-radius:6px;padding:6px 12px;font-family:var(--tees-font);font-weight:700;font-size:11px;cursor:pointer;transition:var(--tees-transition)}
+    .pp-upload:hover{box-shadow:0 4px 16px rgba(245,200,66,.25)}
+    .pp-del{background:transparent;border:1px solid var(--tees-border);color:var(--tees-muted);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:13px;transition:var(--tees-transition)}
+    .pp-del:hover{color:#ff5e5b;border-color:#ff5e5b}
+    .pp-modes{display:flex;gap:8px}
+    .pp-mode{flex:1;background:var(--tees-surface);border:1px solid var(--tees-border);color:var(--tees-muted);border-radius:6px;padding:6px 0;font-family:var(--tees-font);font-weight:700;font-size:11px;letter-spacing:.5px;cursor:pointer;transition:var(--tees-transition)}
+    .pp-mode.active{background:var(--tees-yellow);color:var(--tees-black);border-color:var(--tees-yellow)}
+    .pp-sides{display:flex;gap:8px}
+    .pp-side{flex:1;background:var(--tees-surface);border:1px solid var(--tees-border);color:var(--tees-muted);border-radius:6px;padding:6px 0;font-family:var(--tees-font);font-weight:700;font-size:11px;letter-spacing:.5px;cursor:pointer;transition:var(--tees-transition)}
+    .pp-side.active{background:var(--tees-yellow);color:var(--tees-black);border-color:var(--tees-yellow)}
+    .pp-row{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--tees-muted)}
+    .pp-row label{width:48px;font-weight:700;letter-spacing:1px;font-size:10px}
+    .pp-row input[type=range]{flex:1;accent-color:var(--tees-yellow);height:3px;cursor:pointer;background:transparent}
+    .pp-row span{width:40px;text-align:right;color:var(--tees-white);font-weight:700;font-size:11px}
+
+    /* COLOR SWATCHES */
+    .pp-colors{display:flex;align-items:center;gap:8px}
+    .pp-colors label{width:40px;font-weight:700;letter-spacing:1px;font-size:10px}
+    .pp-swatches{display:flex;gap:6px;flex:1;flex-wrap:wrap}
+    .pp-swatch{width:24px;height:24px;border-radius:50%;border:2px solid var(--tees-border);cursor:pointer;transition:var(--tees-transition);padding:0}
+    .pp-swatch:hover{transform:scale(1.15)}
+    .pp-swatch.active{border-color:var(--tees-yellow);box-shadow:0 0 0 2px rgba(245,200,66,.3);transform:scale(1.15)}
+
+    #error{position:fixed;inset:0;display:none;place-items:center;background:var(--tees-black);z-index:2000;text-align:center;padding:24px}
+    #error.show{display:grid}
+    #error .code{font-size:42px;margin-bottom:12px}
+    #error h2{font-family:var(--tees-display);font-size:28px;letter-spacing:2px;margin-bottom:8px}
+    #error p{color:var(--tees-muted);font-size:13px;max-width:460px;line-height:1.7}
+    #error p code{color:var(--tees-yellow)}
+
+    @media (max-width:768px){
+        .ot-nav{padding:12px 16px}
+        .hero-title{top:96px;left:16px}
+        .hero-title .display{font-size:64px}
+        .color-chip{top:96px;right:16px}
+        .hint{display:none}
+        .stats{bottom:84px;left:16px}
+        .toolbar{bottom:20px;right:16px}
+        .ot-nav-links{display:none}
+        .print-panel{width:220px;right:12px;top:70px}
+        .rot-strip{width:86vw}
+    }
+</style>
+</head>
+<body>
+
+<div class="page-loader" id="loader">
+    <div class="loader-inner">
+        <div class="loader-brand">AZMA<span>21</span></div>
+        <div class="spinner">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="loader-sub">LOADING 3D MODEL</div>
+        <div class="loader-bar"><i id="loaderBar"></i></div>
+    </div>
+</div>
+
+<nav class="ot-nav">
+    <a class="ot-logo" href="store.html">
+        <img src="assets/images/logo.png" alt="AZMA" />
+        AZ<span>MA</span>
+    </a>
+    <ul class="ot-nav-links">
+        <li><a href="store.html">STORE</a></li>
+        <li><a href="21.html">21</a></li>
+        <li><a href="designer.html" class="active">DESIGNER</a></li>
+    </ul>
+    <a href="store.html" class="ot-cart-btn">OPEN STORE →</a>
+</nav>
+
+<canvas id="canvas"></canvas>
+
+<div class="hud">
+    <div class="hero-title">
+        <h1 class="display" id="title">DESIGN <span>YOURS</span></h1>
+        <div class="title-bar"></div>
+        <p class="sub">CUSTOM PRINT — PREMIUM COTTON</p>
+    </div>
+    <div class="color-chip" id="colorChip" title="Change t-shirt color"><span class="color-dot" id="colorDot"></span><span id="colorName">COLOR: WHITE</span></div>
+    <div class="toolbar">
+        <div class="toy-camera-container" id="btnPrint" title="Upload image to t-shirt">
+            <label class="toy-camera-wrapper">
+                <input type="checkbox" class="toy-camera-input" id="camInput" />
+                <div class="toy-camera-body">
+                    <div class="toy-camera-button"></div>
+                    <div class="toy-camera-lens"></div>
+                    <div class="toy-camera-photo">
+                        <div class="photo-image"></div>
+                        <div class="photo-text"></div>
+                        <div class="photo-text" style="width: 40%"></div>
+                    </div>
+                </div>
+                <div class="toy-camera-shadow"></div>
+            </label>
+        </div>
+        <button id="btnSave" class="btn-save" title="Save design as image">⬇ SAVE</button>
+        <button id="btnReset" title="Reset view">⟲</button>
+        <button id="btnFull" title="Fullscreen">⛶</button>
+    </div>
+    <div class="rot-strip" id="rotStrip">
+        <div class="rs-head">
+            <span>ROTATE 360°</span>
+            <b id="rsDeg">0°</b>
+        </div>
+        <div class="rs-track" id="rsTrack">
+            <div class="rs-fill" id="rsFill"></div>
+            <div class="rs-thumb" id="rsThumb"></div>
+        </div>
+        <div class="rs-ticks"><span>0°</span><span>90°</span><span>180°</span><span>270°</span><span>360°</span></div>
+    </div>
+    <div class="hint">
+        <span><kbd>Scroll</kbd> zoom</span>
+        <span>Drag strip below to rotate</span>
+        <span>Drag on shirt to move print</span>
+    </div>
+    <div class="stats" id="stats"></div>
+</div>
+
+<div class="print-panel" id="printPanel">
+    <div class="pp-header">
+        <span class="pp-title">CUSTOM PRINT</span>
+        <button class="pp-upload" id="btnUpload">⬆ Upload Image</button>
+        <button class="pp-del" id="btnDel" title="Delete print">✕</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" hidden />
+    <div class="pp-sides">
+        <button class="pp-side active" data-side="front">⬆ FRONT</button>
+        <button class="pp-side" data-side="back">⬇ BACK</button>
+    </div>
+    <div class="pp-modes">
+        <button class="pp-mode active" data-mode="move">✋ Move</button>
+        <button class="pp-mode" data-mode="rotate">↻ Tilt</button>
+    </div>
+    <div class="pp-row">
+        <label>POS X</label>
+        <input type="range" id="xSlider" min="-0.9" max="0.9" step="0.01" value="0" />
+        <span id="xVal">0.00</span>
+    </div>
+    <div class="pp-row">
+        <label>POS Y</label>
+        <input type="range" id="ySlider" min="-0.9" max="0.9" step="0.01" value="0" />
+        <span id="yVal">0.00</span>
+    </div>
+    <div class="pp-row">
+        <label>ANGLE</label>
+        <input type="range" id="rotSlider" min="-180" max="180" value="0" />
+        <span id="rotVal">0°</span>
+    </div>
+    <div class="pp-row">
+        <label>SIZE</label>
+        <input type="range" id="sizeSlider" min="0.05" max="1.1" step="0.01" value="0.45" />
+        <span id="sizeVal">0.45</span>
+    </div>
+    <div class="pp-colors">
+        <label>COLOR</label>
+        <div class="pp-swatches" id="swatches"></div>
+    </div>
+</div>
+
+<div id="error">
+    <div>
+        <div class="code">⚠️</div>
+        <h2>MODEL NOT FOUND</h2>
+        <p>Make sure the server is running and the <code>21/</code> folder contains <code>model.obj</code>, <code>model.mtl</code> and <code>Binary_0.jpeg</code>.</p>
+    </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "/node_modules/three/build/three.module.js",
+    "three/addons/": "/node_modules/three/examples/jsm/",
+    "gsap": "/node_modules/gsap/index.js"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+  import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
+  import { gsap } from 'gsap';
+
+  const canvas = document.getElementById('canvas');
+  const loaderEl = document.getElementById('loader');
+  const loaderBar = document.getElementById('loaderBar');
+  const errorEl = document.getElementById('error');
+  const btnReset = document.getElementById('btnReset');
+  const btnFull = document.getElementById('btnFull');
+  const btnSave = document.getElementById('btnSave');
+  const statsEl = document.getElementById('stats');
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0D0D0D);
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x161616, 1.0);
+  scene.add(hemi);
+
+  const key = new THREE.DirectionalLight(0xfff4e0, 2.4);
+  key.position.set(2.5, 4, 3);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -3;
+  key.shadow.camera.right = 3;
+  key.shadow.camera.top = 3;
+  key.shadow.camera.bottom = -3;
+  scene.add(key);
+
+  const fill = new THREE.DirectionalLight(0xffffff, 0.55);
+  fill.position.set(-3, 1, -2);
+  scene.add(fill);
+
+  const rim = new THREE.DirectionalLight(0xF5C842, 0.7);
+  rim.position.set(-2, 2.5, -3);
+  scene.add(rim);
+
+  const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.01, 1000);
+  camera.position.set(0, 0.1, 3);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.enableRotate = false;
+  controls.enablePan = false;
+  controls.minDistance = 0.4;
+  controls.maxDistance = 12;
+  controls.target.set(0, 0, 0);
+
+  let turntableAngle = 0;
+  let stripDragging = false;
+
+  const group = new THREE.Group();
+  scene.add(group);
+
+  // ── Rotation strip (drag to turn the shirt 360°) ──
+  const rsTrack = document.getElementById('rsTrack');
+  const rsFill = document.getElementById('rsFill');
+  const rsThumb = document.getElementById('rsThumb');
+  const rsDeg = document.getElementById('rsDeg');
+
+  function updateStripUI(angleRad) {
+    const pct = ((angleRad % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / (Math.PI * 2);
+    rsFill.style.width = (pct * 100) + '%';
+    rsThumb.style.left = (pct * 100) + '%';
+    rsDeg.textContent = Math.round(pct * 360) + '°';
+  }
+
+  function stripAngleFromEvent(e) {
+    const rect = rsTrack.getBoundingClientRect();
+    const pct = THREE.MathUtils.clamp((e.clientX - rect.left) / rect.width, 0, 1);
+    return pct * Math.PI * 2;
+  }
+
+  rsTrack.addEventListener('pointerdown', (e) => {
+    stripDragging = true;
+    rsTrack.setPointerCapture(e.pointerId);
+    turntableAngle = stripAngleFromEvent(e);
+    group.rotation.y = turntableAngle;
+    updateStripUI(turntableAngle);
+  });
+
+  rsTrack.addEventListener('pointermove', (e) => {
+    if (!stripDragging) return;
+    turntableAngle = stripAngleFromEvent(e);
+    group.rotation.y = turntableAngle;
+    updateStripUI(turntableAngle);
+  });
+
+  addEventListener('pointerup', () => {
+    stripDragging = false;
+  });
+
+  // ── Shirt body: solid colour via canvas texture ──
+  const TEX_SIZE = 2048;
+  const texCanvas = document.createElement('canvas');
+  texCanvas.width = TEX_SIZE;
+  texCanvas.height = TEX_SIZE;
+  const tctx = texCanvas.getContext('2d');
+
+  const SHIRT_COLORS = [
+    { name: 'WHITE',  hex: '#F5F5F0' },
+    { name: 'BLACK',  hex: '#171717' },
+    { name: 'CREAM',  hex: '#EDE0C8' },
+    { name: 'YELLOW', hex: '#F5C842' },
+    { name: 'GREEN',  hex: '#2E5A3C' },
+    { name: 'NAVY',   hex: '#1F2A44' },
+    { name: 'RED',    hex: '#A63426' },
+    { name: 'CHARCOAL', hex: '#3A3A3A' },
+  ];
+
+  const colorChip = document.getElementById('colorChip');
+  const colorDot = document.getElementById('colorDot');
+  const colorName = document.getElementById('colorName');
+  const swatchesEl = document.getElementById('swatches');
+
+  SHIRT_COLORS.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'pp-swatch' + (i === 0 ? ' active' : '');
+    b.style.background = c.hex;
+    b.title = c.name;
+    b.addEventListener('click', () => {
+      setShirtColor(c);
+      document.querySelectorAll('.pp-swatch').forEach((s) => s.classList.remove('active'));
+      b.classList.add('active');
+    });
+    swatchesEl.appendChild(b);
+  });
+
+  let shirtColor = SHIRT_COLORS[0].hex;
+  let shirtMaterial = null;
+  let shirtTex = null;
+
+  // UV bounds of the whole shirt (used for the stats readout only)
+  let uvW = 1;
+  let uvH = 1;
+
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+
+  function setShirtColor(c) {
+    shirtColor = c.hex;
+    colorDot.style.background = c.hex;
+    colorDot.style.boxShadow = '0 0 12px rgba(255,255,255,.25)';
+    colorName.textContent = 'COLOR: ' + c.name;
+    redrawTexture();
+  }
+
+  function redrawTexture() {
+    tctx.clearRect(0, 0, TEX_SIZE, TEX_SIZE);
+    tctx.fillStyle = shirtColor;
+    tctx.fillRect(0, 0, TEX_SIZE, TEX_SIZE);
+    if (shirtTex) shirtTex.needsUpdate = true;
+  }
+
+  // ── Custom print: projected onto the shirt surface so it follows the curves ──
+  const printPanel = document.getElementById('printPanel');
+  const fileInput = document.getElementById('fileInput');
+  const btnUpload = document.getElementById('btnUpload');
+  const btnPrint = document.getElementById('btnPrint');
+  const btnDel = document.getElementById('btnDel');
+  const rotSlider = document.getElementById('rotSlider');
+  const sizeSlider = document.getElementById('sizeSlider');
+  const xSlider = document.getElementById('xSlider');
+  const ySlider = document.getElementById('ySlider');
+  const rotVal = document.getElementById('rotVal');
+  const sizeVal = document.getElementById('sizeVal');
+  const xVal = document.getElementById('xVal');
+  const yVal = document.getElementById('yVal');
+
+  let printTex = null;
+  let printMesh = null;
+  let printAspect = 1;
+  let printSize = 0.45;
+  let spinAngle = 0;
+  let posOffsetX = 0;
+  let posOffsetY = 0;
+  let printSide = 'front';
+  let printMode = 'move';
+  let dragging = false;
+  let lastDragX = 0;
+  // anchor of the print, in shirt-local space (always on the front surface)
+  let frontLocal = new THREE.Vector3(0, 0.15, 0.4);
+
+  function makePrintMaterial() {
+    return new THREE.MeshBasicMaterial({
+      map: printTex,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      alphaTest: 0.05,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    });
+  }
+
+  function createPrint() {
+    printMesh = new THREE.Mesh(new THREE.BufferGeometry(), makePrintMaterial());
+    printMesh.raycast = () => {};
+    printMesh.frustumCulled = false;
+    group.add(printMesh);
+  }
+
+  function removePrint() {
+    if (!printMesh) return;
+    group.remove(printMesh);
+    printMesh.geometry.dispose();
+    printMesh.material.map?.dispose();
+    printMesh.material.dispose();
+    printMesh = null;
+  }
+
+  function mirrorPoint(v, out) {
+    out.set(-v.x, v.y, -v.z);
+    return out;
+  }
+
+  function hitToLocal(hit, out) {
+    out.copy(hit.point);
+    group.worldToLocal(out);
+  }
+
+  const DECAL_DEPTH = 0.05; // تقليل العمق لمنع التداخل مع الأسطح الخلفية
+  const PRINT_NUDGE = 0.004; // رفع الطباعة قليلاً عن سطح القماش
+
+  // Raycast through a shirt-local point to find the exact surface + normal (front/back).
+  function findSurface(localPoint, sign) {
+    const start = localPoint.clone();
+    start.z = sign * 4.2;
+    group.localToWorld(start);
+    const dir = new THREE.Vector3(0, 0, -sign);
+    dir.applyQuaternion(group.quaternion);
+    raycaster.set(start, dir);
+    raycaster.far = 9;
+    const hits = raycaster.intersectObjects(shirtMeshes, false);
+    if (!hits[0]) return null;
+    const local = new THREE.Vector3();
+    hitToLocal(hits[0], local);
+    const worldNormal = new THREE.Vector3()
+      .copy(hits[0].face.normal)
+      .transformDirection(hits[0].object.matrixWorld);
+    const localNormal = worldNormal.clone().applyQuaternion(group.quaternion.clone().invert());
+    if (local.dot(localNormal) < 0) localNormal.negate();
+    return {
+      local,
+      localNormal,
+      mesh: hits[0].object,
+      worldPoint: hits[0].point,
+      worldNormal,
+    };
+  }
+
+  // Re-bake the decal so the image wraps onto the shirt curvature.
+  function bakeDecal(surf, isBack) {
+    if (!printMesh) return;
+    group.updateMatrixWorld(true);
+    const Z = new THREE.Vector3(0, 0, 1);
+    const spinSign = isBack ? -1 : 1;
+
+    // حساب الاتجاه بناءً على Normal السطح
+    const q = new THREE.Quaternion().setFromUnitVectors(Z, surf.worldNormal);
+    q.multiply(new THREE.Quaternion().setFromAxisAngle(surf.worldNormal, THREE.MathUtils.degToRad(spinSign * spinAngle)));
+
+    const euler = new THREE.Euler().setFromQuaternion(q);
+    const size = new THREE.Vector3(printSize, printSize / printAspect, DECAL_DEPTH);
+
+    // إنشاء الهندسة مباشرة من Three.js Standalone DecalGeometry
+    const geo = new DecalGeometry(surf.mesh, surf.worldPoint, euler, size);
+    if (geo.attributes.position.count === 0) {
+      geo.dispose();
+      return;
+    }
+
+    // تحويل النقاط إلى المحور المحلي للمجسم
+    geo.applyMatrix4(group.matrixWorld.clone().invert());
+
+    // رفع المطبوع قليلاً عن سطح القماش (Nudge)
+    const localNormal = surf.worldNormal.clone().applyQuaternion(group.quaternion.clone().invert()).normalize();
+    geo.translate(localNormal.x * PRINT_NUDGE, localNormal.y * PRINT_NUDGE, localNormal.z * PRINT_NUDGE);
+
+    printMesh.geometry.dispose();
+    printMesh.geometry = geo;
+    printMesh.position.set(0, 0, 0);
+    printMesh.quaternion.identity();
+  }
+
+  // ── Surface-aware UV remap ──
+  // Every decal vertex is projected along its own surface normal onto the
+  // decal's tangent plane. On a curved surface this maps arc distance along
+  // the fabric (instead of a straight planar projection), so the image visibly
+  // wraps the chest curve and folds/wrinkles of the shirt. The result is
+  // rescaled to keep the print edges exactly on the decal boundary.
+  function remapDecalUVs(geo, worldPoint, worldNormal, quat, sizeX, sizeY) {
+    const pos = geo.attributes.position;
+    const nrm = geo.attributes.normal;
+    const uv = geo.attributes.uv;
+    if (!nrm) return;
+    const Nc = worldNormal.clone().normalize();
+    const T1 = new THREE.Vector3(1, 0, 0).applyQuaternion(quat);
+    const T2 = new THREE.Vector3(0, 1, 0).applyQuaternion(quat);
+    const P = new THREE.Vector3();
+    const N = new THREE.Vector3();
+    const D = new THREE.Vector3();
+    let uMax = 0;
+    let vMax = 0;
+    for (let i = 0; i < pos.count; i++) {
+      P.fromBufferAttribute(pos, i);
+      N.fromBufferAttribute(nrm, i);
+      const dn = N.dot(Nc);
+      if (dn > 0.1) {
+        const lam =
+          ((worldPoint.x - P.x) * Nc.x +
+            (worldPoint.y - P.y) * Nc.y +
+            (worldPoint.z - P.z) * Nc.z) /
+          dn;
+        D.copy(N).multiplyScalar(lam).add(P);
+      } else {
+        D.copy(P);
+      }
+      D.sub(worldPoint);
+      const u = D.dot(T1) / sizeX;
+      const v = D.dot(T2) / sizeY;
+      const au = Math.abs(u);
+      const av = Math.abs(v);
+      if (au > uMax) uMax = au;
+      if (av > vMax) vMax = av;
+      uv.setXY(i, 0.5 + u, 0.5 + v);
+    }
+    const s = 0.5 / Math.max(uMax, vMax, 1e-6);
+    if (Math.abs(s - 1) > 1e-4) {
+      for (let i = 0; i < uv.count; i++) {
+        uv.setXY(i, 0.5 + (uv.getX(i) - 0.5) * s, 0.5 + (uv.getY(i) - 0.5) * s);
+      }
+    }
+    uv.needsUpdate = true;
+  }
+
+  function syncPrint() {
+    if (!printMesh) return;
+    const isBack = printSide === 'back';
+    const target = isBack ? mirrorPoint(frontLocal, new THREE.Vector3()) : frontLocal.clone();
+    target.x += (isBack ? -1 : 1) * posOffsetX;
+    target.y += posOffsetY;
+    const surf = findSurface(target, isBack ? -1 : 1);
+    if (!surf) return;
+    bakeDecal(surf, isBack);
+  }
+
+  function applyHit(hit) {
+    if (!shirtMeshes.length) return;
+    const local = new THREE.Vector3();
+    hitToLocal(hit, local);
+    if (printSide === 'back') frontLocal.set(-local.x, local.y, -local.z);
+    else frontLocal.copy(local);
+    syncPrint();
+  }
+
+  // Chest anchor for new prints (shirt-local space): middle of the chest panel.
+  const CHEST_LOCAL = new THREE.Vector3(0, 0.5, 0.35);
+
+  function snapPrintToChest() {
+    frontLocal.copy(CHEST_LOCAL);
+    syncPrint();
+  }
+
+  function updatePositionUI() {
+    xVal.textContent = posOffsetX.toFixed(2);
+    yVal.textContent = posOffsetY.toFixed(2);
+  }
+
+  btnUpload.addEventListener('click', () => fileInput.click());
+  colorChip.addEventListener('click', () => printPanel.classList.toggle('show'));
+
+  const camInput = document.getElementById('camInput');
+  camInput.addEventListener('change', () => {
+    if (!camInput.checked) return;
+    fileInput.click();
+    setTimeout(() => { camInput.checked = false; }, 900);
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      printAspect = img.width / img.height;
+      printTex = new THREE.Texture(img);
+      printTex.colorSpace = THREE.SRGBColorSpace;
+      printTex.anisotropy = 8;
+      printTex.needsUpdate = true;
+      removePrint();
+      createPrint();
+      snapPrintToChest();
+      printPanel.classList.add('show');
+      btnPrint.classList.add('active');
+      gsap.fromTo(printPanel, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' });
+    };
+    img.src = url;
+    fileInput.value = '';
+  });
+
+  btnDel.addEventListener('click', () => {
+    removePrint();
+    printTex = null;
+    printPanel.classList.remove('show');
+    btnPrint.classList.remove('active');
+  });
+
+  document.querySelectorAll('.pp-mode').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pp-mode').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      printMode = btn.dataset.mode;
+    });
+  });
+
+  document.querySelectorAll('.pp-side').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pp-side').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      printSide = btn.dataset.side;
+      syncPrint();
+    });
+  });
+
+  rotSlider.addEventListener('input', () => {
+    spinAngle = parseFloat(rotSlider.value);
+    rotVal.textContent = Math.round(spinAngle) + '°';
+    syncPrint();
+  });
+
+  sizeSlider.addEventListener('input', () => {
+    printSize = parseFloat(sizeSlider.value);
+    sizeVal.textContent = printSize.toFixed(2);
+    syncPrint();
+  });
+
+  xSlider.addEventListener('input', () => {
+    posOffsetX = parseFloat(xSlider.value);
+    xVal.textContent = posOffsetX.toFixed(2);
+    syncPrint();
+  });
+
+  ySlider.addEventListener('input', () => {
+    posOffsetY = parseFloat(ySlider.value);
+    yVal.textContent = posOffsetY.toFixed(2);
+    syncPrint();
+  });
+
+  function raycastShirt(e) {
+    ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    raycaster.far = Infinity;
+    const hits = raycaster.intersectObjects(shirtMeshes, false);
+    return hits[0] || null;
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!printMesh || e.button !== 0) return;
+    const hit = raycastShirt(e);
+    if (!hit) return;
+    dragging = true;
+    lastDragX = e.clientX;
+    controls.enabled = false;
+    canvas.style.cursor = 'grabbing';
+    if (printMode === 'move') applyHit(hit);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging || !printMesh) return;
+    if (printMode === 'move') {
+      const hit = raycastShirt(e);
+      if (hit) applyHit(hit);
+    } else {
+      spinAngle = THREE.MathUtils.clamp(spinAngle + (e.clientX - lastDragX) * 0.6, -180, 180);
+      lastDragX = e.clientX;
+      rotSlider.value = spinAngle;
+      rotVal.textContent = Math.round(spinAngle) + '°';
+      syncPrint();
+    }
+  });
+
+  addEventListener('pointerup', () => {
+    if (dragging) {
+      dragging = false;
+      controls.enabled = true;
+      canvas.style.cursor = '';
+    }
+  });
+
+  // ── Save design (rendered view → PNG) ──
+  btnSave.addEventListener('click', () => {
+    const dataUrl = renderer.domElement.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'azma-tee-21-design.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    gsap.fromTo(btnSave, { scale: 0.9 }, { scale: 1, duration: 0.3, ease: 'back.out(2)' });
+  });
+
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(6, 6),
+    new THREE.ShadowMaterial({ opacity: 0.32 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const fakeLoad = (n) => {
+    loaderBar.style.width = Math.round(n * 100) + '%';
+  };
+
+  let shirtMeshes = [];
+
+  const objLoader = new OBJLoader();
+  objLoader.load(
+    '21/model.obj',
+    (obj) => {
+      fakeLoad(1);
+
+      shirtTex = new THREE.CanvasTexture(texCanvas);
+      shirtTex.colorSpace = THREE.SRGBColorSpace;
+      shirtTex.anisotropy = 8;
+
+      shirtMaterial = new THREE.MeshStandardMaterial({
+        map: shirtTex,
+        roughness: 0.72,
+        metalness: 0.02,
+        transparent: true,
+        opacity: 0,
+      });
+
+      obj.traverse((child) => {
+        if (child.isMesh) {
+          child.material = shirtMaterial;
+          child.castShadow = true;
+          child.receiveShadow = true;
+          shirtMeshes.push(child);
+        }
+      });
+
+      group.add(obj);
+
+      // UV bounds of the shirt for sizing the print
+      let minU = Infinity, minV = Infinity, maxU = -Infinity, maxV = -Infinity;
+      obj.traverse((child) => {
+        if (child.isMesh && child.geometry) {
+          const uv = child.geometry.attributes.uv;
+          if (uv) {
+            for (let i = 0; i < uv.count; i++) {
+              const u = uv.getX(i), v = uv.getY(i);
+              if (u < minU) minU = u;
+              if (u > maxU) maxU = u;
+              if (v < minV) minV = v;
+              if (v > maxV) maxV = v;
+            }
+          }
+        }
+      });
+      if (minU !== Infinity) {
+        uvW = Math.max(maxU - minU, 0.0001);
+        uvH = Math.max(maxV - minV, 0.0001);
+      }
+
+      redrawTexture();
+
+      const box = new THREE.Box3().setFromObject(group);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+
+      group.position.sub(center);
+      ground.position.y = -size.y / 2 - 0.02;
+
+      camera.position.set(0, 0.1, 3);
+      controls.target.set(0, 0, 0);
+      controls.update();
+
+      let triCount = 0;
+      let vertCount = 0;
+      obj.traverse((child) => {
+        if (child.isMesh && child.geometry) {
+          const pos = child.geometry.attributes.position;
+          if (pos) vertCount += pos.count;
+          triCount += child.geometry.index
+            ? child.geometry.index.count / 3
+            : pos.count / 3;
+        }
+      });
+      statsEl.innerHTML =
+        `TRIANGLES&nbsp;&nbsp;${Math.round(triCount).toLocaleString()}<br>` +
+        `VERTS&nbsp;&nbsp;${Math.round(vertCount).toLocaleString()}<br>` +
+        `UV&nbsp;&nbsp;${Math.round(uvW * 2048)}×${Math.round(uvH * 2048)}`;
+
+      group.scale.set(0.001, 0.001, 0.001);
+
+      // Safety net: never leave the shirt hidden even if gsap misbehaves
+      const forceReady = () => {
+        loaderEl.style.transition = 'opacity .4s';
+        loaderEl.style.opacity = '0';
+        setTimeout(() => { loaderEl.style.display = 'none'; }, 450);
+        group.scale.set(1, 1, 1);
+        shirtMaterial.opacity = 1;
+      };
+      setTimeout(forceReady, 3000);
+
+      try {
+        const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+        tl.to(loaderEl, { opacity: 0, duration: 0.55, delay: 0.15, onComplete: () => { loaderEl.style.display = 'none'; } })
+          .from('.ot-nav', { y: -40, opacity: 0, duration: 0.7 }, 0.1)
+          .from('.hero-title .display', { y: 60, opacity: 0, duration: 0.9, ease: 'back.out(1.6)' }, 0.15)
+          .from('.title-bar', { scaleX: 0, transformOrigin: 'left center', duration: 0.5 }, 0.3)
+          .from('.sub', { opacity: 0, y: 12, duration: 0.6 }, 0.35)
+          .from('.color-chip', { opacity: 0, x: 24, duration: 0.6 }, 0.4)
+          .from('.toolbar button, .toy-camera-container', { opacity: 0, y: -12, stagger: 0.07, duration: 0.5 }, 0.42)
+          .to(group.scale, { x: 1, y: 1, z: 1, duration: 1.3, ease: 'elastic.out(1, 0.65)' }, 0.3)
+          .to(shirtMaterial, { opacity: 1, duration: 1.1 }, 0.45)
+          .from('.hint', { opacity: 0, y: 20, duration: 0.6 }, 0.75)
+          .from('.rot-strip', { opacity: 0, y: 20, duration: 0.6 }, 0.78)
+          .from('.stats', { opacity: 0, duration: 0.6 }, 0.85);
+      } catch (e) {
+        forceReady();
+      }
+    },
+    (e) => {
+      if (e.lengthComputable) fakeLoad(e.loaded / e.total);
+    },
+    (err) => showError(err)
+  );
+
+  function showError(err) {
+    loaderEl.classList.add('hidden');
+    errorEl.classList.add('show');
+  }
+
+  btnReset.addEventListener('click', () => {
+    gsap.to(camera.position, {
+      x: 0, y: 0.1, z: 3, duration: 1.1, ease: 'power3.inOut',
+      onUpdate: () => controls.update(),
+    });
+    gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 1.1, ease: 'power3.inOut' });
+  });
+
+  btnFull.addEventListener('click', () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  });
+
+  addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  renderer.setAnimationLoop(() => {
+    controls.update();
+    renderer.render(scene, camera);
+  });
+</script>
+</body>
+</html>

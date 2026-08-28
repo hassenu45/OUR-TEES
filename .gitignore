@@ -11,3 +11,43 @@ desktop/dist/
 desktop/app-log.txt
 desktop/node_modules/
 desktop/web/
+
+# --- AI tooling dirs (not project source) ---
+.claude/
+.opencode/
+.agents/
+.superpowers/
+.skales-backup/
+.windsurf/
+.mcp/
+.playwright-mcp/
+
+# --- runtime / personal data (not source) ---
+login-out.json
+data/delivery-info.json
+data/orders.json
+data/products.json
+data/verified-phones.json
+UsershakDesktopOur Teesdatadelivery-info.json
+
+# --- deploy / load-test / screenshot artifacts ---
+/*.txt
+/*.png
+/*.err
+/*.log
+21.html
+21/
+3d-check.html
+designer_debug.html
+body-outerhtml.txt
+browser-my-orders-response.html
+deploy*.txt
+deploy_out.txt
+sb.txt
+stress-test.jmx
+stress-test-results.jtl
+stress-report/
+desktop/dist-new/
+desktop/launch.vbs
+desktop/config.json
+desktop/package-lock.json
