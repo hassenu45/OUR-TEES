@@ -2,10 +2,12 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+RUN apk add --no-cache python3 make g++
+
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm install
+RUN npm install --no-audit --no-fund
 
 RUN npx prisma generate
 
