@@ -33,8 +33,7 @@ logs
 *.sqlite
 *.sqlite3
 
-# Prisma
-prisma/migrations
+# Prisma (keep migrations in image so `prisma migrate deploy` can apply them)
 
 # Testing
 coverage

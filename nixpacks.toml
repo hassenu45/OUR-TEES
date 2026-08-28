@@ -1,5 +1,2 @@
 [variables]
 NIXPACKS_NODE_VERSION = "22"
-
-[start]
-cmd = "npx prisma db push --skip-generate --accept-data-loss; node scripts/migrate_jod.mjs; node seed.mjs; node server.js 2>&1"
