@@ -41,7 +41,7 @@ function deploy() {
     console.log('📤 جاري الرفع على Railway...');
     execSync('git add .');
     execSync(`git commit -m "Update app v${manifest.version}" --no-verify`);
-    execSync('git push');
+    execSync('git push origin HEAD');
     console.log('🎉 تم الرفع بنجاح!');
   } catch (err) {
     console.error('❌ خطأ بالرفع:', err.message);
