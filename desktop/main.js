@@ -54,7 +54,7 @@ function cookieHeader() {
 function proxy(req, res, targetPath) {
   const upstream = new URL(PROD_BASE + targetPath);
   const headers = { ...req.headers, host: upstream.host };
-  if (sessionCookies.size) headers.cookie = cookieHeader();
+  headers.cookie = cookieHeader(); // Always send cookie header (may be empty if not collected)
 
   const preq = https.request(
     {
