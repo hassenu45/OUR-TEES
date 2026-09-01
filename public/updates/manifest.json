@@ -1,4 +1,11 @@
 {
-  "version": "1.0.3",
-  "files": {}
+  "version": "1.0.4",
+  "files": {
+    "AZMA-Settings-Setup-1.0.6.exe": "7c735da6883332c89d725dc470ea9c3d23fc63ee31c218a1265678f3bca47976"
+  },
+  "installer": {
+    "filename": "AZMA-Settings-Setup-1.0.6.exe",
+    "url": "/updates/AZMA-Settings-Setup-1.0.6.exe",
+    "sha256": "7c735da6883332c89d725dc470ea9c3d23fc63ee31c218a1265678f3bca47976"
+  }
 }

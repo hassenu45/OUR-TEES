@@ -295,6 +295,30 @@ ipcMain.handle('updater:status', () => {
 
 ipcMain.handle('updater:check', async () => {
   try {
+    // Fetch remote manifest first to check for installer
+    const remoteManifest = await fetchRemoteManifest();
+    const local = readLocalManifest();
+    
+    // Check for external installer
+    if (remoteManifest.installer && remoteManifest.version > (local.version || '0.0.0')) {
+      // External update available
+      const installerUrl = `${PROD_BASE}${remoteManifest.installer.url}`;
+      try {
+        const { default: { shell } } = await import('electron');
+        shell.openPath(installerUrl);
+        sendProgress({ phase: 'external-installer', installerUrl });
+        return {
+          updateAvailable: true,
+          version: remoteManifest.version,
+          type: 'external',
+          installer: remoteManifest.installer
+        };
+      } catch (e) {
+        console.error('[external installer error]', e.message);
+      }
+    }
+    
+    // No external update, proceed with normal internal update
     const result = await applyUpdate();
     if (result.updateAvailable) {
       setTimeout(() => {
