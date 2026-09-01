@@ -301,12 +301,16 @@ ipcMain.handle('updater:check', async () => {
     
     // Check for external installer
     if (remoteManifest.installer && remoteManifest.version > (local.version || '0.0.0')) {
-      // External update available
-      const installerUrl = `${PROD_BASE}${remoteManifest.installer.url}`;
+      // External update available - download and open installer
+      const installerFilename = remoteManifest.installer.filename;
+      const installerDest = path.join(app.getPath('temp'), installerFilename);
       try {
-        const { default: { shell } } = await import('electron');
-        shell.openPath(installerUrl);
-        sendProgress({ phase: 'external-installer', installerUrl });
+        // Download the installer using the path from manifest
+        const buf = await downloadFile(remoteManifest.installer.url);
+        fs.writeFileSync(installerDest, buf);
+        const { shell } = require('electron');
+        shell.openPath(installerDest);
+        sendProgress({ phase: 'external-installer', installer: installerFilename });
         return {
           updateAvailable: true,
           version: remoteManifest.version,
