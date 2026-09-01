@@ -1041,9 +1041,15 @@ function exportOrdersPDF() {
     groups.get(key).push({ o, region });
   });
 
-  // رتب أسماء العملاء أبجدياً (أ→ي) داخل كل منطقة، والمناطق نفسها أبجدياً
-  groups.forEach((items) => items.sort((x, y) => window.ManifestUtils.sortByName(x.o.customerName, y.o.customerName)));
-  const sortedGroups = window.ManifestUtils.sortRegionGroups(Array.from(groups.entries()));
+  // ربط أسماء العملاء أبجدياً (أ→ي) داخل كل منطقة، والمناطق نفسها أبجدياً
+  if (window.ManifestUtils) {
+    groups.forEach((items) => items.sort((x, y) => window.ManifestUtils.sortByName(x.o.customerName, y.o.customerName)));
+    const sortedGroups = window.ManifestUtils.sortRegionGroups(Array.from(groups.entries()));
+  } else {
+    // Fallback sorting without ManifestUtils
+    groups.forEach((items) => items.sort((x, y) => (x.o.customerName || '').localeCompare(y.o.customerName || '')));
+    const sortedGroups = Array.from(groups.entries()).sort((x, y) => (x[0] || '').localeCompare(y[0] || ''));
+  }
 
   const manifestAddress = (o, region) => {
     const parts = (o.address || '').split('،').map((p) => p.trim());

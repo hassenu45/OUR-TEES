@@ -20,7 +20,8 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate && node scripts/fix-prisma-imports.mjs",
     "db:generate:local": "prisma generate --schema prisma/schema.sqlite.prisma && node scripts/fix-prisma-imports.mjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "update-app": "node deploy-update.js"
   },
   "lint-staged": {
     "*.js": [
