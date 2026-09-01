@@ -94,8 +94,8 @@ const campaignSchema = z.object({
 
 const settingsSchema = z.object({
   siteName: z.string().max(100).optional(),
-  currency: z.string().max(10).optional(),
-  currencySymbol: z.string().max(10).optional(),
+  currency: z.string().max(10).optional().default('JOD'),
+  currencySymbol: z.string().max(10).optional().default('د.أ'),
   adminPassword: z.string().max(100).optional(),
   googleClientId: z.string().max(500).optional(),
   sizes: z.array(z.string()).optional(),

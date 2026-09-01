@@ -15,8 +15,8 @@ datasource db {
 model SiteSettings {
   id              Int    @id @default(1)
   siteName        String @default("AZMA")
-  currency        String @default("SAR")
-  currencySymbol  String @default("ر.س")
+  currency        String @default("JOD")
+  currencySymbol  String @default("د.أ")
   adminPassword   String @default("admin123")
   googleClientId  String @default("")
   sizes           String @default("S,M,L,XL,XXL") // comma-separated
