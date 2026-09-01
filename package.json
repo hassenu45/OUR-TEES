@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "start store.html",
-    "deploy": "powershell -ExecutionPolicy Bypass -File deploy.ps1",
+    "deploy": "bash deploy.sh",
     "lint": "eslint server.js db.cjs js/",
     "format": "prettier --write \"**/*.{js,css,json}\" --ignore-unknown",
     "format:check": "prettier --check \"**/*.{js,css,json}\" --ignore-unknown",
