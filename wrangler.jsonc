@@ -1,5 +1,5 @@
 {
-  "name": "azma",
+  "name": "our-tees",
   "compatibility_date": "2026-09-07",
   "main": "server.js",
   "compatibility_flags": ["nodejs_compat"],
@@ -9,11 +9,5 @@
     "mime": "./shims/mime.js",
     "telegraf": "./shims/telegraf.js",
     "iconv-lite": "./shims/iconv-lite.js"
-  },
-  "routes": [
-    {
-      "pattern": "(.*)",
-      "zone_name": ""
-    }
-  ]
+  }
 }
