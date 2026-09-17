@@ -1,208 +1,205 @@
-// Database Access Layer — bridges CJS server.js with Prisma v7 (ESM)
-let prisma = null;
+// Database Access Layer — file-based storage (no Prisma, no SQLite)
+// All data stored in JSON files under ./data/
 
-async function getPrisma() {
-  if (prisma) return prisma;
-  const { PrismaClient } = await import('./generated/prisma/client.ts');
-  const url = process.env.DATABASE_URL || '';
-  if (url.startsWith('postgres')) {
-    const { PrismaPg } = await import('@prisma/adapter-pg');
-    const adapter = new PrismaPg({ connectionString: url });
-    prisma = new PrismaClient({ adapter });
-  } else {
-    const { PrismaLibSql } = await import('@prisma/adapter-libsql');
-    const adapter = new PrismaLibSql({ url: url || 'file:./dev.db' });
-    prisma = new PrismaClient({ adapter });
+const fs = require('fs');
+const path = require('path');
+
+// Use __dirname if available (Node.js), otherwise default to 'data' relative to project root
+var _BASE_DIR;
+try {
+    _BASE_DIR = typeof __dirname !== 'undefined' ? __dirname : globalThis.__dirname || '';
+} catch (e) {
+    _BASE_DIR = '';
+}
+const DATA_DIR = path.join(_BASE_DIR, 'data');
+const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const CUSTOMERS_FILE = path.join(DATA_DIR, 'customers.json');
+const ADDRESSES_FILE = path.join(DATA_DIR, 'addresses.json');
+const VERIFIED_PHONES_FILE = path.join(DATA_DIR, 'verified-phones.json');
+const CONVERSATIONS_FILE = path.join(DATA_DIR, 'conversations.json');
+const INTEGRATION_SETTINGS_FILE = path.join(DATA_DIR, 'integration-settings.json');
+
+// Note: Directory creation is handled by the runtime environment.
+// In Cloudflare Workers, assume the data directory exists.
+
+// Helper: read JSON file with fallback
+function readJSONFile(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '');
+      return data ? JSON.parse(data) : {};
+    }
+  } catch (e) {
+    /* corrupted file — start empty */
   }
-  return prisma;
+  return {};
 }
 
-// Parse JSON string fields back to arrays on read
-function parseProduct(p) {
-  if (!p) return p;
-  return {
-    ...p,
-    images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images,
-    types: typeof p.types === 'string' ? JSON.parse(p.types) : p.types,
-    sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : p.sizes,
-  };
-}
-
-function parseSettings(s) {
-  if (!s) return s;
-  return {
-    ...s,
-    sizes: typeof s.sizes === 'string' ? s.sizes.split(',').filter(Boolean) : s.sizes,
-    types: typeof s.types === 'string' ? s.types.split(',').filter(Boolean) : s.types,
-  };
+// Helper: write JSON file atomically
+function writeJSONFile(filePath, data) {
+  const tmp = filePath + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
+  fs.renameSync(tmp, filePath);
 }
 
 // ── Settings ──
-async function getSettings() {
-  const p = await getPrisma();
-  let row = await p.siteSettings.findFirst();
-  if (!row) {
-    row = await p.siteSettings.create({ data: {} });
+let settingsCache = null;
+
+function getSettings() {
+  if (settingsCache) return settingsCache;
+  const raw = readJSONFile(SETTINGS_FILE);
+  settingsCache = { id: 1, ...raw };
+  if (!settingsCache.id) {
+    settingsCache.id = 1;
+    writeJSONFile(SETTINGS_FILE, settingsCache);
   }
-  return parseSettings(row);
+  return settingsCache;
 }
 
-async function updateSettings(data) {
-  const p = await getPrisma();
-  const current = await p.siteSettings.findFirst();
-  const { sizes, types, ...rest } = data;
-  const updateData = { ...rest };
-  if (sizes) updateData.sizes = Array.isArray(sizes) ? sizes.join(',') : sizes;
-  if (types) updateData.types = Array.isArray(types) ? types.join(',') : types;
-  const updated = await p.siteSettings.update({
-    where: { id: current.id },
-    data: updateData,
-  });
-  return parseSettings(updated);
+function updateSettings(data) {
+  const current = getSettings();
+  const updated = { ...current, ...data, updatedAt: new Date().toISOString() };
+  writeJSONFile(SETTINGS_FILE, updated);
+  settingsCache = updated;
+  return updated;
 }
 
 // ── Products ──
-async function getProducts() {
-  const p = await getPrisma();
-  const products = await p.product.findMany({ orderBy: { createdAt: 'desc' } });
-  return products.map(parseProduct);
+function getProducts() {
+  return readJSONFile(PRODUCTS_FILE).products || [];
 }
 
-async function getProduct(id) {
-  const p = await getPrisma();
-  return parseProduct(await p.product.findUnique({ where: { id } }));
+function getProduct(id) {
+  const products = getProducts();
+  return products.find(p => p.id === id) || null;
 }
 
-async function createProduct(data) {
-  const p = await getPrisma();
-  const product = await p.product.create({
-    data: {
-      name: data.name || 'OUR TEE',
-      description: data.description || '',
-      price: parseFloat(data.price) || 0,
-      image: data.image || '',
-      images: JSON.stringify(data.images || []),
-      types: JSON.stringify(data.types || []),
-      sizes: JSON.stringify(data.sizes || []),
-      badge: data.badge || '',
-      soldOut: !!data.soldOut,
-    },
-  });
-  return parseProduct(product);
+function createProduct(data) {
+  const products = getProducts();
+  const newProduct = {
+    id: Date.now().toString() + Math.random().toString(36).slice(2),
+    ...data,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  products.push(newProduct);
+  writeJSONFile(PRODUCTS_FILE, { products });
+  return newProduct;
 }
 
-async function updateProduct(id, data) {
-  const p = await getPrisma();
-  const updateData = { ...data };
-  if (data.images) updateData.images = JSON.stringify(data.images);
-  if (data.types) updateData.types = JSON.stringify(data.types);
-  if (data.sizes) updateData.sizes = JSON.stringify(data.sizes);
-  if ('price' in data) updateData.price = parseFloat(data.price);
-  const product = await p.product.update({ where: { id }, data: updateData });
-  return parseProduct(product);
+function updateProduct(id, data) {
+  const products = getProducts();
+  const index = products.findIndex(p => p.id === id);
+  if (index === -1) throw new Error('Product not found');
+  products[index] = { ...products[index], ...data, updatedAt: new Date().toISOString() };
+  writeJSONFile(PRODUCTS_FILE, { products });
+  return products[index];
 }
 
-async function deleteProduct(id) {
-  const p = await getPrisma();
-  await p.product.delete({ where: { id } });
+function deleteProduct(id) {
+  const products = getProducts();
+  const newProducts = products.filter(p => p.id !== id);
+  writeJSONFile(PRODUCTS_FILE, { products: newProducts });
   return { success: true };
 }
 
 // ── Orders ──
-async function getOrders() {
-  const p = await getPrisma();
-  return p.order.findMany({ orderBy: { createdAt: 'desc' } });
+function getOrders() {
+  return readJSONFile(ORDERS_FILE).orders || [];
 }
 
-async function createOrder(data) {
-  const p = await getPrisma();
-  const clean = {};
-  for (const key of ['productId', 'productName', 'productPrice', 'type', 'size', 'customerName', 'phone', 'email', 'address', 'notes', 'status', 'paymentMethod']) {
-    if (data[key] !== undefined && data[key] !== null) clean[key] = data[key];
-  }
-  return p.order.create({ data: clean });
+function createOrder(data) {
+  const orders = getOrders();
+  const newOrder = {
+    id: Date.now().toString() + Math.random().toString(36).slice(2),
+    ...data,
+    status: data.status || 'new',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  orders.push(newOrder);
+  writeJSONFile(ORDERS_FILE, { orders });
+  return newOrder;
 }
 
-async function updateOrderStatus(id, status) {
-  const p = await getPrisma();
-  return p.order.update({ where: { id }, data: { status } });
+function updateOrderStatus(id, status) {
+  const orders = getOrders();
+  const index = orders.findIndex(o => o.id === id);
+  if (index === -1) throw new Error('Order not found');
+  orders[index].status = status;
+  orders[index].updatedAt = new Date().toISOString();
+  writeJSONFile(ORDERS_FILE, { orders });
+  return orders[index];
 }
 
-async function deleteOrder(id) {
-  const p = await getPrisma();
-  await p.order.delete({ where: { id } });
+function deleteOrder(id) {
+  const orders = getOrders();
+  const newOrders = orders.filter(o => o.id !== id);
+  writeJSONFile(ORDERS_FILE, { orders: newOrders });
   return { success: true };
 }
 
 // ── Customers ──
-async function upsertCustomer(data) {
-  const p = await getPrisma();
-  return p.customer.upsert({
-    where: { phone: data.phone },
-    update: {
-      name: data.name,
-      email: data.email || '',
-      city: data.city || '',
-      area: data.area || '',
-      street: data.street || '',
-      landmark: data.landmark || '',
-      notes: data.notes || '',
-      totalOrders: { increment: 1 },
-      lastOrderAt: new Date(),
-    },
-    create: {
-      phone: data.phone,
-      name: data.name,
-      email: data.email || '',
-      city: data.city || '',
-      area: data.area || '',
-      street: data.street || '',
-      landmark: data.landmark || '',
-      notes: data.notes || '',
-      totalOrders: 1,
-      lastOrderAt: new Date(),
-    },
-  });
+function getCustomers() {
+  return readJSONFile(CUSTOMERS_FILE).customers || [];
 }
 
-async function getCustomerByPhone(phone) {
-  const p = await getPrisma();
-  return p.customer.findUnique({ where: { phone } });
+function upsertCustomer(data) {
+  const customers = getCustomers();
+  const phone = data.phone;
+  const index = customers.findIndex(c => c.phone === phone);
+
+  const now = new Date().toISOString();
+  const customerData = {
+    phone: phone,
+    name: data.name,
+    email: data.email || '',
+    city: data.city || '',
+    area: data.area || '',
+    street: data.street || '',
+    landmark: data.landmark || '',
+    notes: data.notes || '',
+    totalOrders: (index >= 0 ? customers[index].totalOrders : 0) + 1,
+    lastOrderAt: now,
+    createdAt: index >= 0 ? customers[index].createdAt : now,
+    updatedAt: now
+  };
+
+  if (index >= 0) {
+    customers[index] = customerData;
+  } else {
+    customers.push(customerData);
+  }
+
+  writeJSONFile(CUSTOMERS_FILE, { customers });
+  return customerData;
 }
 
-async function getOrdersByPhone(phone) {
-  const p = await getPrisma();
-  return p.order.findMany({ where: { phone }, orderBy: { createdAt: 'desc' } });
+function getCustomerByPhone(phone) {
+  const customers = getCustomers();
+  return customers.find(c => c.phone === phone) || null;
 }
 
-async function getOrderById(id) {
-  const p = await getPrisma();
-  return p.order.findUnique({ where: { id } });
+function getOrdersByPhone(phone) {
+  const orders = getOrders();
+  return orders.filter(o => o.phone === phone);
+}
+
+function getOrderById(id) {
+  const orders = getOrders();
+  return orders.find(o => o.id === id) || null;
 }
 
 // ── Campaign recipients ──
-// Returns distinct, non-empty customer emails for the given target group.
-//   all_registered     → registered UserSession records with an email
-//   bought_last_month  → orders placed in the last 30 days with an email
-//   previous_customers → any order (regardless of date) with an email
-async function getCampaignEmails(targetGroup) {
-  const p = await getPrisma();
-  let rows = [];
-  if (targetGroup === 'all_registered') {
-    rows = await p.userSession.findMany({ where: { email: { not: '' } }, select: { email: true } });
-  } else if (targetGroup === 'bought_last_month') {
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    rows = await p.order.findMany({
-      where: { email: { not: '' }, createdAt: { gte: since } },
-      select: { email: true },
-    });
-  } else if (targetGroup === 'previous_customers') {
-    rows = await p.order.findMany({ where: { email: { not: '' } }, select: { email: true } });
-  }
+function getCampaignEmails(targetGroup) {
+  const customers = getCustomers();
   const seen = new Set();
   const emails = [];
-  for (const r of rows) {
-    const e = String(r.email || '').trim().toLowerCase();
+
+  for (const c of customers) {
+    const e = String(c.email || '').trim().toLowerCase();
     if (e && !seen.has(e)) {
       seen.add(e);
       emails.push(e);
@@ -212,83 +209,141 @@ async function getCampaignEmails(targetGroup) {
 }
 
 // ── Integration Settings (WhatsApp + Instagram) ──
-async function getIntegrationSettings() {
-  const p = await getPrisma();
-  let row = await p.integrationSettings.findFirst();
-  if (!row) {
-    row = await p.integrationSettings.create({
-      data: { waEnabled: true, igEnabled: true },
-    });
-  }
-  return row;
+function getIntegrationSettings() {
+  return readJSONFile(INTEGRATION_SETTINGS_FILE).integrationSettings || {
+    id: 1,
+    waEnabled: true,
+    waPhoneId: '',
+    waToken: '',
+    waTemplate: '',
+    waReplyEnabled: true,
+    igEnabled: true,
+    igUserId: '',
+    igToken: '',
+    igCommentReply: true,
+    igDmReply: true,
+    webhookSecret: ''
+  };
 }
 
-async function updateIntegrationSettings(data) {
-  const p = await getPrisma();
-  const current = await p.integrationSettings.findFirst();
-  return p.integrationSettings.update({
-    where: { id: current.id },
-    data,
-  });
+function updateIntegrationSettings(data) {
+  let settings = getIntegrationSettings();
+  const updated = { ...settings, ...data, updatedAt: new Date().toISOString() };
+  const fileData = readJSONFile(INTEGRATION_SETTINGS_FILE);
+  fileData.integrationSettings = updated;
+  writeJSONFile(INTEGRATION_SETTINGS_FILE, fileData);
+  return updated;
 }
 
-// ── Conversations ──
-function parseConversation(c) {
-  if (!c) return c;
-  return { ...c, history: typeof c.history === 'string' ? JSON.parse(c.history) : c.history };
+// ── Conversations (channel bot chat history) ──
+function getConversations(channel) {
+  const data = readJSONFile(CONVERSATIONS_FILE).conversations || {};
+  if (channel) return data[channel] || [];
+  return data;
 }
 
-async function getConversations(channel) {
-  const p = await getPrisma();
-  const rows = await p.conversation.findMany({
-    where: channel ? { channel } : {},
-    orderBy: { lastActivity: 'desc' },
-    take: 100,
-  });
-  return rows.map(parseConversation);
+function getConversation(channel, externalId) {
+  const conversations = getConversations(channel);
+  return conversations.find(c => c.externalId === externalId) || null;
 }
 
-async function getConversation(channel, externalId) {
-  const p = await getPrisma();
-  return parseConversation(
-    await p.conversation.findFirst({ where: { channel, externalId } })
-  );
-}
-
-async function appendConversationMessage(channel, externalId, sender, text, name = '') {
-  const p = await getPrisma();
-  let conv = await p.conversation.findFirst({ where: { channel, externalId } });
+function appendConversationMessage(channel, externalId, sender, text, name = '') {
+  let conversations = getConversations(channel);
+  let conv = conversations.find(c => c.externalId === externalId);
   let history = conv && conv.history ? JSON.parse(conv.history) : [];
+
   if (history.length > 40) history = history.slice(-40);
   history.push({ sender, text, at: new Date().toISOString() });
+
   if (conv) {
-    return p.conversation.update({
-      where: { id: conv.id },
-      data: { history: JSON.stringify(history), lastActivity: new Date(), ...(name ? { name } : {}) },
-    });
+    conv.history = JSON.stringify(history);
+    conv.lastActivity = new Date().toISOString();
+    if (name) conv.name = name;
+  } else {
+    conversations = [...conversations, {
+      channel,
+      externalId,
+      name,
+      history: JSON.stringify(history),
+      lastActivity: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    }];
   }
-  return p.conversation.create({
-    data: { channel, externalId, name, history: JSON.stringify(history), lastActivity: new Date() },
-  });
+
+  const fileData = readJSONFile(CONVERSATIONS_FILE);
+  fileData.conversations = conversations;
+  writeJSONFile(CONVERSATIONS_FILE, fileData);
+
+  return conv || { channel, externalId, name, history: [{}], lastActivity: new Date().toISOString() };
 }
 
-async function clearConversation(id) {
-  const p = await getPrisma();
-  return p.conversation.update({ where: { id }, data: { history: '[]' } });
+function clearConversation(id) {
+  const [channel, externalId] = id.split(':');
+  let conversations = getConversations(channel);
+  conversations = conversations.filter(c => c.externalId !== externalId);
+
+  const fileData = readJSONFile(CONVERSATIONS_FILE);
+  fileData.conversations = conversations;
+  writeJSONFile(CONVERSATIONS_FILE, fileData);
+  return { success: true };
 }
 
 // ── Statistics (for Telegram bot) ──
-async function getStats() {
-  const p = await getPrisma();
+function getStats() {
+  const products = getProducts();
+  const orders = getOrders();
+  const customers = getCustomers();
+
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const [
-    totalUsers,
-    totalOrders,
-    totalRevenue,
+  const todayOrders = orders.filter(o => new Date(o.createdAt) >= todayStart).length;
+  const todayRevenue = orders.filter(o => new Date(o.createdAt) >= todayStart)
+    .reduce((sum, o) => sum + (parseFloat(o.productPrice) || 0), 0);
+
+  const weekOrders = orders.filter(o => new Date(o.createdAt) >= weekAgo).length;
+  const weekRevenue = orders.filter(o => new Date(o.createdAt) >= weekAgo)
+    .reduce((sum, o) => sum + (parseFloat(o.productPrice) || 0), 0);
+
+  const monthOrders = orders.filter(o => new Date(o.createdAt) >= monthAgo).length;
+  const monthRevenue = orders.filter(o => new Date(o.createdAt) >= monthAgo)
+    .reduce((sum, o) => sum + (parseFloat(o.productPrice) || 0), 0);
+
+  // Top products
+  const productCounts = {};
+  products.forEach(p => {
+    productCounts[p.id] = (productCounts[p.id] || 0) + 1;
+  });
+  const topProducts = Object.entries(productCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([productId, count]) => ({
+      productId,
+      productName: productCounts[productId] ? products.find(p => p.id === productId)?.name : 'Unknown',
+      count,
+      revenue: 0
+    }));
+
+  const recentOrders = orders
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5)
+    .map(o => ({
+      id: o.id,
+      productName: o.productName,
+      size: o.size,
+      customerName: o.customerName,
+      phone: o.phone,
+      productPrice: o.productPrice,
+      status: o.status,
+      createdAt: o.createdAt
+    }));
+
+  return {
+    totalUsers: customers.length,
+    totalOrders: orders.length,
+    totalRevenue: orders.reduce((sum, o) => sum + (parseFloat(o.productPrice) || 0), 0),
     todayOrders,
     todayRevenue,
     weekOrders,
@@ -296,51 +351,35 @@ async function getStats() {
     monthOrders,
     monthRevenue,
     topProducts,
-    recentOrders,
-  ] = await Promise.all([
-    p.userSession.count(),
-    p.order.count(),
-    p.order.aggregate({ _sum: { productPrice: true } }),
-    p.order.count({ where: { createdAt: { gte: todayStart } } }),
-    p.order.aggregate({ where: { createdAt: { gte: todayStart } }, _sum: { productPrice: true } }),
-    p.order.count({ where: { createdAt: { gte: weekAgo } } }),
-    p.order.aggregate({ where: { createdAt: { gte: weekAgo } }, _sum: { productPrice: true } }),
-    p.order.count({ where: { createdAt: { gte: monthAgo } }, _sum: { productPrice: true } }),
-    p.order.aggregate({ where: { createdAt: { gte: monthAgo } }, _sum: { productPrice: true } }),
-    p.order.groupBy({
-      by: ['productId', 'productName'],
-      _count: { productId: true },
-      _sum: { productPrice: true },
-      orderBy: { _count: { productId: 'desc' } },
-      take: 5,
-    }),
-    p.order.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      select: { id: true, productName: true, size: true, customerName: true, phone: true, productPrice: true, status: true, createdAt: true },
-    }),
-  ]);
-
-  return {
-    totalUsers,
-    totalOrders,
-    totalRevenue: totalRevenue._sum.productPrice || 0,
-    todayOrders,
-    todayRevenue: todayRevenue._sum.productPrice || 0,
-    weekOrders,
-    weekRevenue: weekRevenue._sum.productPrice || 0,
-    monthOrders,
-    monthRevenue: monthRevenue._sum.productPrice || 0,
-    topProducts: topProducts.map(p => ({
-      productId: p.productId,
-      productName: p.productName,
-      count: p._count.productId,
-      revenue: p._sum.productPrice || 0,
-    })),
-    recentOrders,
+    recentOrders
   };
 }
 
+// ── Verified phones (persistent) ──
+function loadVerifiedPhones() {
+  try {
+    if (fs.existsSync(VERIFIED_PHONES_FILE)) {
+      return new Set(JSON.parse(fs.readFileSync(VERIFIED_PHONES_FILE, 'utf8')));
+    }
+  } catch (e) {
+    /* corrupted file — start empty */
+  }
+  return new Set();
+}
+
+function saveVerifiedPhones(set) {
+  try {
+    const dir = path.dirname(VERIFIED_PHONES_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(VERIFIED_PHONES_FILE, JSON.stringify([...set]), 'utf8');
+  } catch (e) {
+    /* best effort — verification still works for this process */
+  }
+}
+
+const verifiedPhones = loadVerifiedPhones();
+
+// ── Exports ──
 module.exports = {
   getSettings,
   updateSettings,
@@ -353,6 +392,7 @@ module.exports = {
   createOrder,
   updateOrderStatus,
   deleteOrder,
+  getCustomers,
   upsertCustomer,
   getCustomerByPhone,
   getOrdersByPhone,
@@ -365,4 +405,6 @@ module.exports = {
   appendConversationMessage,
   clearConversation,
   getStats,
+  verifiedPhones,
+  saveVerifiedPhones
 };

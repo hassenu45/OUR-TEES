@@ -1,0 +1,19 @@
+{
+  "name": "azma",
+  "compatibility_date": "2026-09-07",
+  "main": "server.js",
+  "compatibility_flags": ["nodejs_compat"],
+  "external": ["mkdirp", "mime", "telegraf"],
+  "alias": {
+    "mkdirp": "./shims/mkdirp.js",
+    "mime": "./shims/mime.js",
+    "telegraf": "./shims/telegraf.js",
+    "iconv-lite": "./shims/iconv-lite.js"
+  },
+  "routes": [
+    {
+      "pattern": "(.*)",
+      "zone_name": ""
+    }
+  ]
+}

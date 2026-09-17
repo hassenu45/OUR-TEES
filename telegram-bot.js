@@ -1,7 +1,7 @@
 const { Telegraf } = require('telegraf');
 const db = require('./db.cjs');
 
-const BOT_TOKEN = '8724412911:AAGQB7R_c3p5E-rjmeAp2FgvqTh5gDLfWXQ';
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 
 const bot = new Telegraf(BOT_TOKEN);

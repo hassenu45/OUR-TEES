@@ -1,5 +1,4 @@
 const express = require('express');
-require('dotenv').config();
 const session = require('express-session');
 const multer = require('multer');
 const path = require('path');
@@ -14,8 +13,32 @@ const { safeResolve } = require('./updates-manifest.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+// Determine base directory (use globalThis.__dirname if available, otherwise project root)
+var _BASE_DIR;
+try {
+    _BASE_DIR = typeof __dirname !== 'undefined' ? __dirname : (globalThis.__dirname || '');
+} catch (e) {
+    _BASE_DIR = '';
+}
+const UPLOADS_DIR = path.join(_BASE_DIR, 'uploads');
+const DATA_DIR = path.join(_BASE_DIR, 'data');
+if (!fs.existsSync(UPLOADS_DIR)) {
+    // In Workers, directory creation may not be permitted; skip or create manually
+    try {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    } catch (e) {
+        // Directory creation not permitted in this environment
+    }
+}
+if (!fs.existsSync(DATA_DIR)) {
+    // In Workers, directory creation may not be permitted; skip or create manually
+    try {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+    } catch (e) {
+        // Directory creation not permitted in this environment
+    }
+}
 
 // ── Schemas (Zod) ──
 const productSchema = z.object({
@@ -140,15 +163,8 @@ function rateLimit(maxRequests, windowMs) {
 }
 
 // ── Multer ──
-const storage = multer.diskStorage({
-  destination: UPLOADS_DIR,
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  },
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
@@ -240,6 +256,40 @@ app.get('/updates/file/*', (req, res) => {
   res.sendFile(file);
 });
 
+// ── API: Check for latest update ──
+app.get('/api/updates', async (_req, res) => {
+  try {
+    const version = readVersion();
+    const versionPath = path.join(__dirname, 'version.json');
+    let versionData = { version, downloadUrl: null };
+    if (fs.existsSync(versionPath)) {
+      try {
+        versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+      } catch (_e) {
+        // ignore, use defaults
+      }
+    }
+    res.json({
+      currentVersion: version,
+      ...versionData,
+      hasUpdate: versionData.version && versionData.version !== version,
+    });
+  } catch (e) {
+    console.error('[/api/updates error]', e);
+    res.status(500).json({ error: 'Failed to check updates' });
+  }
+});
+
+// ── Download latest app ──
+app.get('/downloads/app-latest.apk', (req, res) => {
+  const file = path.join(__dirname, 'public', 'updates', 'app-latest.apk');
+  if (fs.existsSync(file)) {
+    res.download(file, 'app-latest.apk');
+  } else {
+    res.status(404).json({ error: 'Update not available yet' });
+  }
+});
+
 function requireAuth(req, res, next) {
   if (req.session.authenticated) return next();
   res.status(401).json({ error: 'Unauthorized' });
@@ -299,7 +349,8 @@ app.post('/api/dev/login', (req, res) => {
 });
 
 // ── Per-account saved addresses (Google accounts only) ──
-const DELIVERY_FILE = path.join(__dirname, 'data', 'delivery-info.json');
+// Use _BASE_DIR determined earlier in the file
+const DELIVERY_FILE = path.join(_BASE_DIR, 'data', 'delivery-info.json');
 function readDeliveryFile() {
   try {
     return JSON.parse(fs.readFileSync(DELIVERY_FILE, 'utf8').replace(/^\uFEFF/, '')) || {};
@@ -935,10 +986,8 @@ app.post('/api/orders/:id/cancel', rateLimit(20, 60000), async (req, res) => {
 });
 
 // ── OTP Phone Verification ──
-const activeOtps = new Map();
-
 // Persistent verified phones store (survives server restarts)
-const VERIFIED_PHONES_FILE = path.join(__dirname, 'data', 'verified-phones.json');
+const VERIFIED_PHONES_FILE = path.join(_BASE_DIR, 'data', 'verified-phones.json');
 
 function loadVerifiedPhones() {
   try {
@@ -1002,8 +1051,14 @@ app.get('/api/check-phone-verified', (req, res) => {
 // or Telegram will reject the second polling session with a 409 conflict).
 require('./telegram-bot.js');
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`AZMA running at http://localhost:${PORT}`);
-  console.log(`Store:  http://localhost:${PORT}/store.html`);
-  console.log(`Admin:  http://localhost:${PORT}/login.html`);
-});
+export default {
+  async fetch(request, env, ctx) {
+    // The express app is started separately via "node server.js"
+    // This default export is required for Wrangler to properly
+    // detect the worker format with nodejs_compat
+    return new Response('AZMA Server is running. Use "node server.js" to start.', {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' }
+    });
+  }
+};

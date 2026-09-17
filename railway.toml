@@ -6,6 +6,11 @@ restartPolicyMaxRetries = 10
 
 # Runtime environment variables (set in Railway dashboard)
 # PORT - automatically set by Railway
-# DATABASE_URL - automatically set by Railway PostgreSQL
-# ADMIN_PASSWORD - set in Railway variables
+# RAILWAY_TOKEN - for Railway CLI/API access
+# TELEGRAM_BOT_TOKEN - Telegram bot token
+# DEEPSEEK_API_KEY - DeepSeek AI key
+# DEEPSEEK_BASE_URL - DeepSeek base URL
+# DEEPSEEK_MODEL - DeepSeek model name
+# SESSION_SECRET - session secret (default: azma-secure-secret-key-prod)
+# ADMIN_PASSWORD - admin password for login
 # NODE_ENV=production

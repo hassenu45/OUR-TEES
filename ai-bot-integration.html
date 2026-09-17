@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenCode AI Bot Integration</title>
+  <style>
+    :root {
+      --tees-black: #0D0D0D;
+      --tees-surface: #161616;
+      --tees-card: #1E1E1E;
+      --tees-yellow: #F5C842;
+      --tees-red: #ff4757;
+      --tees-blue: #70a1ff;
+      --tees-yellow-glow: rgba(245, 200, 66, 0.5);
+      --tees-white: #F5F5F0;
+      --tees-muted: #888884;
+      --tees-border: #2a2a2a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+    body { background-color: var(--tees-black); color: var(--tees-white); height: 100vh; overflow-x: hidden; touch-action: manipulation; }
+
+    /* الأيقونة ثابتة بالزاوية السفلية اليمين */
+    .azma-ai-trigger {
+      position: fixed !important;
+      bottom: 25px !important;
+      right: 25px !important;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #22222b, #050507);
+      border: 2px solid var(--tees-yellow);
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8), 0 0 15px var(--tees-yellow-glow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      transition: all 0.3s ease;
+    }
+
+    .azma-logo-text { font-size: 18px; font-weight: 900; color: var(--tees-yellow); letter-spacing: 1px; }
+    .azma-sub-text { font-size: 9px; font-weight: 900; background: var(--tees-yellow); color: var(--tees-black); padding: 2px 7px; border-radius: 12px; margin-top: 3px; }
+
+    /* الشريط الجانبي */
+    .chat-sidebar {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: 100%;
+      max-width: 380px;
+      height: 100vh;
+      background-color: var(--tees-surface);
+      border-left: 2px solid var(--tees-border);
+      box-shadow: -15px 0 35px rgba(0,0,0,0.9);
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .chat-sidebar.open { right: 0; }
+
+    .sidebar-header {
+      padding: 18px;
+      background-color: var(--tees-card);
+      border-bottom: 2px solid var(--tees-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-title { color: var(--tees-yellow); font-weight: 900; font-size: 18px; }
+    .close-btn { background: none; border: none; color: var(--tees-muted); font-size: 24px; cursor: pointer; }
+
+    .bot-display-area {
+      background: radial-gradient(circle at center, #1E1E24 0%, #0D0D0D 100%);
+      padding: 25px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-bottom: 1px solid var(--tees-border);
+    }
+
+    .robot-3d-container { width: 120px; height: 120px; position: relative; cursor: pointer; user-select: none; }
+
+    .robot-head-3d {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, #1f1f25, #121216);
+      border-radius: 28px;
+      border: 2px solid rgba(245, 200, 66, 0.4);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 0.4s ease, border-color 0.3s;
+    }
+
+    .robot-screen {
+      width: 82%;
+      height: 70%;
+      background: #050507;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .eyebrows-container { display: flex; gap: 18px; transition: all 0.2s ease; z-index: 2; }
+    .eyebrow {
+      width: 14px; height: 3px; background-color: var(--tees-yellow);
+      border-radius: 2px; box-shadow: 0 0 6px var(--tees-yellow);
+      transition: transform 0.2s ease, background-color 0.3s;
+    }
+
+    .eyes-container { display: flex; gap: 18px; transition: transform 0.1s ease-out; }
+    .eye-neon {
+      width: 14px; height: 14px; background-color: var(--tees-yellow);
+      border-radius: 50%; box-shadow: 0 0 10px var(--tees-yellow);
+      transition: all 0.2s ease;
+    }
+
+    .mouth-neon {
+      width: 20px; height: 4px; background-color: var(--tees-yellow);
+      border-radius: 10px; box-shadow: 0 0 8px var(--tees-yellow);
+      transition: all 0.2s ease;
+    }
+
+    .snooze-bubble {
+      position: absolute; width: 16px; height: 16px; background: rgba(255, 255, 255, 0.9);
+      border-radius: 50%; bottom: 25px; left: 50%; transform: translateX(-50%) scale(0);
+      opacity: 0; pointer-events: none; z-index: 10;
+    }
+
+    .zzz-container {
+      position: absolute; top: -15px; left: 15px; display: flex; gap: 3px;
+      pointer-events: none; opacity: 0; z-index: 10;
+    }
+
+    .z-char { color: var(--tees-blue); font-weight: 900; opacity: 0; }
+    .z-char:nth-child(1) { font-size: 12px; }
+    .z-char:nth-child(2) { font-size: 16px; }
+    .z-char:nth-child(3) { font-size: 20px; }
+
+    /* أنيميشن النوم */
+    .sleeping .robot-head-3d {
+      transform: rotate(-12deg) translateY(8px);
+      animation: sleepFloat 3s infinite ease-in-out;
+    }
+
+    @keyframes sleepFloat {
+      0%, 100% { transform: rotate(-10deg) translateY(6px); }
+      50% { transform: rotate(-14deg) translateY(12px); }
+    }
+
+    .sleeping .eye-neon { height: 2px; border-radius: 0; transform: scaleY(0.2); }
+    .sleeping .eyebrow { opacity: 0.5; transform: translateY(4px); }
+    .sleeping .eye-neon.left { animation: peekEye 6s infinite 2s ease-in-out; }
+
+    @keyframes peekEye {
+      0%, 88%, 100% { height: 2px; border-radius: 0; transform: scaleY(0.2); }
+      92%, 96% { height: 12px; border-radius: 50%; transform: scaleY(1); }
+    }
+
+    .sleeping .snooze-bubble { opacity: 1; animation: bubbleBlow 3s infinite ease-in-out; }
+    @keyframes bubbleBlow {
+      0%, 100% { transform: translateX(-50%) scale(0.2); opacity: 0.1; }
+      50% { transform: translateX(-50%) scale(1.5); opacity: 0.95; }
+    }
+
+    .sleeping .zzz-container { opacity: 1; }
+    .sleeping .z-char:nth-child(1) { animation: zFly 2.5s infinite 0s ease-in-out; }
+    .sleeping .z-char:nth-child(2) { animation: zFly 2.5s infinite 0.4s ease-in-out; }
+    .sleeping .z-char:nth-child(3) { animation: zFly 2.5s infinite 0.8s ease-in-out; }
+
+    @keyframes zFly {
+      0% { opacity: 0; transform: translate(0, 10px) scale(0.6); }
+      50% { opacity: 1; transform: translate(-6px, -12px) scale(1.1); }
+      100% { opacity: 0; transform: translate(-14px, -28px) scale(1.3); }
+    }
+
+    .wakeup-blink .eye-neon { animation: fastBlink 0.6s ease-in-out 2; }
+    @keyframes fastBlink {
+      0%, 100% { height: 14px; border-radius: 50%; }
+      50% { height: 2px; border-radius: 0; }
+    }
+
+    .typing-mode .eyebrow.left { transform: translateY(-3px) rotate(-15deg); }
+    .typing-mode .eyebrow.right { transform: translateY(-5px) rotate(15deg); }
+    .typing-mode .eye-neon { height: 15px; width: 12px; }
+
+    .slapped .robot-head-3d {
+      animation: slapImpact 0.4s ease-out forwards;
+      border-color: var(--tees-red);
+      box-shadow: 0 0 30px rgba(255,71,87,0.8);
+    }
+    .slapped .eyebrow { background-color: var(--tees-red); opacity: 1; }
+    .slapped .eyebrow.left { transform: translateY(6px) rotate(35deg); }
+    .slapped .eyebrow.right { transform: translateY(6px) rotate(-35deg); }
+    .slapped .eye-neon { background-color: var(--tees-red); height: 6px; }
+
+    @keyframes slapImpact {
+      0% { transform: rotate(0deg); }
+      20% { transform: rotate(-25deg) translateX(-15px); }
+      40% { transform: rotate(15deg) translateX(10px); }
+      100% { transform: rotate(0deg); }
+    }
+
+    .breathe .robot-head-3d { animation: deepBreath 1.8s ease-in-out; }
+    @keyframes deepBreath {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1) translateY(-4px); }
+    }
+
+    .chat-messages {
+      flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .chat-messages::-webkit-scrollbar { display: none; }
+
+    .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+    .msg.bot { background-color: var(--tees-card); color: var(--tees-white); border: 1px solid var(--tees-border); align-self: flex-start; }
+    .msg.user { background-color: var(--tees-yellow); color: var(--tees-black); font-weight: 700; align-self: flex-end; }
+
+    .chat-input-container {
+      padding: 15px;
+      background-color: var(--tees-card);
+      border-top: 2px solid var(--tees-border);
+      display: flex; gap: 10px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background-color: var(--tees-surface);
+      border: 1px solid var(--tees-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--tees-white);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .chat-input:focus { border-color: var(--tees-yellow); }
+
+    .send-btn {
+      background-color: var(--tees-yellow);
+      color: var(--tees-black);
+      border: none;
+      border-radius: 8px;
+      padding: 0 16px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="azma-ai-trigger" onclick="toggleSidebar()">
+    <span class="azma-logo-text">OPEN</span>
+    <span class="azma-sub-text">CODE</span>
+  </button>
+
+  <div class="chat-sidebar" id="chatSidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">OpenCode AI</span>
+      <button class="close-btn" onclick="toggleSidebar()">&times;</button>
+    </div>
+
+    <div class="bot-display-area">
+      <div class="robot-3d-container" id="robotBtn">
+        <div class="robot-head-3d" id="robotHead">
+          <div class="robot-screen">
+            <div class="eyebrows-container" id="eyebrows">
+              <div class="eyebrow left"></div>
+              <div class="eyebrow right"></div>
+            </div>
+            <div class="eyes-container" id="eyes">
+              <div class="eye-neon left"></div>
+              <div class="eye-neon right"></div>
+            </div>
+            <div class="mouth-neon" id="mouth"></div>
+          </div>
+
+          <div class="snooze-bubble"></div>
+          <div class="zzz-container">
+            <span class="z-char">z</span>
+            <span class="z-char">Z</span>
+            <span class="z-char">Z</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg bot">هلا حسين! أنا جاهز ومربوط بالذكاء الاصطناعي، اطلب منّي أي إشي!</div>
+    </div>
+
+    <div class="chat-input-container">
+      <input type="text" class="chat-input" id="userInput" placeholder="اكتب رسالتك..." oninput="handleTyping()" onkeypress="handleKeyPress(event)">
+      <button class="send-btn" onclick="sendMessage()">إرسال</button>
+    </div>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('chatSidebar');
+    const robotBtn = document.getElementById('robotBtn');
+    const eyes = document.getElementById('eyes');
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
+    
+    let isAngry = false;
+    let isSleeping = false;
+    let sleepTimer = null;
+
+    // رابط الـ API للذكاء الاصطناعي (حط رابط الـ Endpoint الخاص بك هنا)
+    const AI_API_URL = "YOUR_BOT_API_ENDPOINT_HERE";
+    const AI_API_KEY = "YOUR_API_KEY_HERE"; // Key for OpenAI/Gemini/etc
+
+    function toggleSidebar() { 
+      sidebar.classList.toggle('open');
+      resetSleepTimer();
+    }
+
+    function resetSleepTimer() {
+      clearTimeout(sleepTimer);
+      if (isSleeping) wakeUp();
+
+      sleepTimer = setTimeout(() => {
+        if (!isAngry) {
+          isSleeping = true;
+          robotBtn.classList.add('sleeping');
+          robotBtn.classList.remove('typing-mode');
+        }
+      }, 4000);
+    }
+
+    function wakeUp() {
+      isSleeping = false;
+      robotBtn.classList.remove('sleeping');
+      robotBtn.classList.add('wakeup-blink');
+      setTimeout(() => robotBtn.classList.remove('wakeup-blink'), 800);
+    }
+
+    function handleTyping() {
+      resetSleepTimer();
+      if (!isAngry) {
+        robotBtn.classList.add('typing-mode');
+        const randomX = (Math.random() - 0.5) * 6;
+        eyes.style.transform = `translate(${randomX}px, 2px)`;
+      }
+    }
+
+    sidebar.addEventListener('mousemove', (e) => {
+      resetSleepTimer();
+      if (isAngry || isSleeping) return;
+
+      const rect = robotBtn.getBoundingClientRect();
+      const botCenterX = rect.left + rect.width / 2;
+      const botCenterY = rect.top + rect.height / 2;
+
+      const distX = e.clientX - botCenterX;
+      const distY = e.clientY - botCenterY;
+
+      const moveX = Math.max(-8, Math.min(8, distX / 15));
+      const moveY = Math.max(-6, Math.min(6, distY / 15));
+      eyes.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    });
+
+    robotBtn.addEventListener('click', () => {
+      isAngry = true;
+      robotBtn.className = "robot-3d-container slapped";
+
+      setTimeout(() => {
+        robotBtn.className = "robot-3d-container breathe";
+        setTimeout(() => {
+          robotBtn.className = "robot-3d-container";
+          isAngry = false;
+          resetSleepTimer();
+        }, 1800);
+      }, 1200);
+    });
+
+    // دالة الإرسال والربط مع الـ API - handelSendToAPI
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      // إضافة رسالة المستخدم
+      appendMessage(text, 'user');
+      userInput.value = '';
+      robotBtn.classList.remove('typing-mode');
+      resetSleepTimer();
+
+      // استدعاء الـ API والربط
+      await handleSendToAPI(text);
+    }
+
+    // دالة الاتصال بالـ API - مدعومة لـ OpenAI, Gemini, أو أي API آخر
+    async function handleSendToAPI(userPrompt) {
+      // إعداد الطلب بناءً على نوع الـ API
+      const requestData = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(AI_API_KEY ? { "Authorization": `Bearer ${AI_API_KEY}` } : {})
+        },
+        body: JSON.stringify({ prompt: userPrompt })
+      };
+
+      try {
+        const response = await fetch(AI_API_URL, requestData);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        appendMessage(data.reply || data.message || "لا يوجد رد من الـ API", 'bot');
+      } catch (error) {
+        console.error("Error calling AI API:", error);
+        appendMessage("حدث خطأ في الاتصال بالـ API. يرجى التحقق من الرابط والمفتاح.", 'bot');
+      }
+    }
+
+    function appendMessage(text, sender) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `msg ${sender}`;
+      msgDiv.textContent = text;
+      chatMessages.appendChild(msgDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') sendMessage();
+    }
+
+    resetSleepTimer();
+  </script>
+
+</body>
+</html>

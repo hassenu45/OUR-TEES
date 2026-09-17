@@ -51,3 +51,6 @@ desktop/dist-new/
 desktop/launch.vbs
 desktop/config.json
 desktop/package-lock.json
+
+# --- secrets / deployment notes ---
+FINAL_SUMMARY.md
