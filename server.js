@@ -1,5 +1,14 @@
 const express = require('express');
-const session = require('express-session');
+
+// Detect Cloudflare Workers environment BEFORE loading session module
+// (express-session crashes inside Workers — needs lightweight cookie-based replacement)
+if (typeof caches !== 'undefined' || (typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers')) {
+  globalThis.__isWorker = true;
+}
+
+// express-session crashes inside Cloudflare Workers (error 1101).
+// In Workers we use a lightweight cookie-based session; locally we use express-session.
+const session = globalThis.__isWorker ? require('./worker-session.cjs') : require('express-session');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -148,7 +157,7 @@ const settingsSchema = z.object({
 const requestCounts = new Map();
 function rateLimit(maxRequests, windowMs) {
   return (req, res, next) => {
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const ip = req.ip || (req.connection && req.connection.remoteAddress) || 'unknown';
     const now = Date.now();
     const windowStart = now - windowMs;
     if (!requestCounts.has(ip)) requestCounts.set(ip, []);
@@ -173,15 +182,64 @@ const upload = multer({
 });
 
 // ── Middleware ──
-app.use(express.json({ limit: '1mb' }));
-app.use(
-  session({
+app.use((req, res, next) => {
+  // In Workers, express.json() can't read the body from node:http IncomingMessage.
+  // If the fetch handler pre-parsed the body, attach it to req.body here.
+  if (globalThis.__isWorker && req.headers['x-body-parsed']) {
+    try {
+      req.body = JSON.parse(req.headers['x-body-parsed']);
+    } catch (_e) { /* not JSON, skip */ }
+    next();
+  } else {
+    express.json({ limit: '1mb' })(req, res, next);
+  }
+});
+if (globalThis.__isWorker) {
+  // Worker session: lightweight cookie-based (no external store)
+  app.use(session({
     secret: process.env.SESSION_SECRET || 'azma-secure-secret-key-prod',
-    resave: false,
-    saveUninitialized: false,
     cookie: { httpOnly: true, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 },
-  })
-);
+  }));
+} else {
+  // Local session: express-session with MemoryStore (or KV if available)
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || 'azma-secure-secret-key-prod',
+      resave: false,
+      saveUninitialized: false,
+      cookie: { httpOnly: true, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 },
+      store: (() => {
+        if (globalThis.__cfEnv && globalThis.__cfEnv.KV) {
+          const MemoryStore = require('express-session').Store;
+          const kv = globalThis.__cfEnv.KV;
+          class KVStore extends MemoryStore {
+            constructor() { super(); }
+            async get(sid, cb) {
+              try {
+                const data = await kv.get('session:' + sid, { type: 'json' });
+                cb(null, data || null);
+              } catch (e) { cb(null, null); }
+            }
+            async set(sid, sess, cb) {
+              try {
+                await kv.put('session:' + sid, JSON.stringify(sess), { expirationTtl: 86400 });
+                cb(null);
+              } catch (e) { cb(e); }
+            }
+            async destroy(sid, cb) {
+              try {
+                await kv.delete('session:' + sid);
+                cb(null);
+              } catch (e) { cb(null); }
+            }
+          }
+          return new KVStore();
+        }
+        return undefined;
+      })(),
+    })
+  );
+}
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   next();
@@ -203,7 +261,10 @@ app.use((req, res, next) => {
 });
 
 app.get('/', (req, res) => {
-  return res.sendFile(path.join(__dirname, 'index.html'));
+  if (globalThis.__isWorker) {
+    return res.status(200).json({ name: 'AZMA - Our Tees', status: 'running', worker: true });
+  }
+  return res.sendFile(path.join(_BASE_DIR, 'index.html'));
 });
 
 // ── Static Files ──
@@ -225,70 +286,79 @@ const ALLOWED_STATIC_EXT = new Set([
   '.mtl',
   '.exe',
 ]);
-app.use((req, res, next) => {
-  const ext = path.extname(req.path).toLowerCase();
-  if (ext && !ALLOWED_STATIC_EXT.has(ext)) return next();
-  express.static(__dirname, { fallthrough: true })(req, res, next);
-});
-app.use('/uploads', express.static(UPLOADS_DIR));
+if (_BASE_DIR && !globalThis.__isWorker) {
+  app.use((req, res, next) => {
+    const ext = path.extname(req.path).toLowerCase();
+    if (ext && !ALLOWED_STATIC_EXT.has(ext)) return next();
+    express.static(_BASE_DIR, { fallthrough: true })(req, res, next);
+  });
+}
+if (!globalThis.__isWorker) {
+  app.use('/uploads', express.static(UPLOADS_DIR));
+}
 
 // ── Updates (self-update feed for the desktop app) ──
-const { buildManifest } = require('./updates-manifest.cjs');
-const { readVersion } = require('./server-version.cjs');
+// These routes are desktop-only and won't function in Workers (no filesystem for binaries).
+try {
+  const { buildManifest } = require('./updates-manifest.cjs');
+  const { readVersion } = require('./server-version.cjs');
 
-app.get('/updates/manifest.json', (_req, res) => {
-  try {
-    res.json(buildManifest(__dirname, readVersion()));
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to build update manifest' });
-  }
-});
-
-app.get('/updates/file/*', (req, res) => {
-  let rel;
-  try {
-    rel = decodeURIComponent(req.params[0] || '');
-  } catch (_e) {
-    return res.status(400).json({ error: 'Bad request' });
-  }
-  const file = safeResolve(__dirname, rel);
-  if (!file) return res.status(404).json({ error: 'Not found' });
-  res.sendFile(file);
-});
-
-// ── API: Check for latest update ──
-app.get('/api/updates', async (_req, res) => {
-  try {
-    const version = readVersion();
-    const versionPath = path.join(__dirname, 'version.json');
-    let versionData = { version, downloadUrl: null };
-    if (fs.existsSync(versionPath)) {
-      try {
-        versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
-      } catch (_e) {
-        // ignore, use defaults
-      }
+  app.get('/updates/manifest.json', (_req, res) => {
+    try {
+      res.json(buildManifest(_BASE_DIR, readVersion()));
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to build update manifest' });
     }
-    res.json({
-      currentVersion: version,
-      ...versionData,
-      hasUpdate: versionData.version && versionData.version !== version,
-    });
-  } catch (e) {
-    console.error('[/api/updates error]', e);
-    res.status(500).json({ error: 'Failed to check updates' });
-  }
-});
+  });
 
-// ── Download latest app ──
-app.get('/downloads/app-latest.apk', (req, res) => {
-  const file = path.join(__dirname, 'public', 'updates', 'app-latest.apk');
-  if (fs.existsSync(file)) {
-    res.download(file, 'app-latest.apk');
-  } else {
-    res.status(404).json({ error: 'Update not available yet' });
-  }
-});
+  app.get('/updates/file/*', (req, res) => {
+    let rel;
+    try {
+      rel = decodeURIComponent(req.params[0] || '');
+    } catch (_e) {
+      return res.status(400).json({ error: 'Bad request' });
+    }
+    const file = safeResolve(_BASE_DIR, rel);
+    if (!file) return res.status(404).json({ error: 'Not found' });
+    res.sendFile(file);
+  });
+
+  // ── API: Check for latest update ──
+  app.get('/api/updates', async (_req, res) => {
+    try {
+      const version = readVersion();
+      const versionPath = path.join(_BASE_DIR, 'version.json');
+      let versionData = { version, downloadUrl: null };
+      if (fs.existsSync(versionPath)) {
+        try {
+          versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+        } catch (_e) {
+          // ignore, use defaults
+        }
+      }
+      res.json({
+        currentVersion: version,
+        ...versionData,
+        hasUpdate: versionData.version && versionData.version !== version,
+      });
+    } catch (e) {
+      console.error('[/api/updates error]', e);
+      res.status(500).json({ error: 'Failed to check updates' });
+    }
+  });
+
+  // ── Download latest app ──
+  app.get('/downloads/app-latest.apk', (req, res) => {
+    const file = path.join(_BASE_DIR, 'public', 'updates', 'app-latest.apk');
+    if (fs.existsSync(file)) {
+      res.download(file, 'app-latest.apk');
+    } else {
+      res.status(404).json({ error: 'Update not available yet' });
+    }
+  });
+} catch (_e) {
+  // Updates module not available in Workers — skip desktop-only routes
+}
 
 function requireAuth(req, res, next) {
   if (req.session.authenticated) return next();
@@ -316,7 +386,8 @@ app.post('/api/login', rateLimit(10, 60000), async (req, res) => {
     }
     res.status(401).json({ error: 'كلمة المرور غير صحيحة' });
   } catch (e) {
-    res.status(500).json({ error: 'خطأ في الخادم' });
+    console.error('[LOGIN ERROR]', e.message, e.stack);
+    res.status(500).json({ error: 'خطأ في الخادم: ' + e.message });
   }
 });
 
@@ -349,30 +420,42 @@ app.post('/api/dev/login', (req, res) => {
 });
 
 // ── Per-account saved addresses (Google accounts only) ──
-// Use _BASE_DIR determined earlier in the file
-const DELIVERY_FILE = path.join(_BASE_DIR, 'data', 'delivery-info.json');
-function readDeliveryFile() {
+// Uses KV in Workers, file-based locally
+async function readDeliveryFile() {
+  const k = globalThis.__cfEnv ? globalThis.__cfEnv.KV : null;
+  if (k) {
+    const val = await k.get('delivery-info', { type: 'json' });
+    return val || {};
+  }
+  const DELIVERY_FILE = path.join(_BASE_DIR, 'data', 'delivery-info.json');
   try {
     return JSON.parse(fs.readFileSync(DELIVERY_FILE, 'utf8').replace(/^\uFEFF/, '')) || {};
   } catch (e) {
     return {};
   }
 }
-function writeDeliveryFile(data) {
-  fs.mkdirSync(path.dirname(DELIVERY_FILE), { recursive: true });
+async function writeDeliveryFile(data) {
+  const k = globalThis.__cfEnv ? globalThis.__cfEnv.KV : null;
+  if (k) {
+    await k.put('delivery-info', JSON.stringify(data));
+    return;
+  }
+  const DELIVERY_FILE = path.join(_BASE_DIR, 'data', 'delivery-info.json');
+  const dir = path.dirname(DELIVERY_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const tmp = DELIVERY_FILE + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
   fs.renameSync(tmp, DELIVERY_FILE);
 }
-function readAddresses(email) {
-  const all = readDeliveryFile();
+async function readAddresses(email) {
+  const all = await readDeliveryFile();
   const val = all[email];
   if (Array.isArray(val)) return val;
   const migrated = migrateList(val);
   if (val && typeof val === 'object') {
     all[email] = migrated;
     try {
-      writeDeliveryFile(all);
+      await writeDeliveryFile(all);
     } catch (e) {
       /* best effort */
     }
@@ -382,33 +465,33 @@ function readAddresses(email) {
 function userList(all, email) {
   return Array.isArray(all[email]) ? all[email] : migrateList(all[email]);
 }
-app.get('/api/me/addresses', (req, res) => {
+app.get('/api/me/addresses', async (req, res) => {
   if (!req.session.authenticated || !req.session.userEmail) return res.status(401).json({ error: 'Unauthorized' });
-  res.json({ addresses: readAddresses(req.session.userEmail) });
+  res.json({ addresses: await readAddresses(req.session.userEmail) });
 });
-app.post('/api/me/addresses', rateLimit(30, 60000), (req, res) => {
+app.post('/api/me/addresses', rateLimit(30, 60000), async (req, res) => {
   if (!req.session.authenticated || !req.session.userEmail) return res.status(401).json({ error: 'Unauthorized' });
   const check = validateAddress(req.body || {});
   if (!check.ok) return res.status(400).json({ error: check.error });
-  const all = readDeliveryFile();
+  const all = await readDeliveryFile();
   const result = upsertAddress(userList(all, req.session.userEmail), check.address);
   if (result.error) return res.status(400).json({ error: result.error });
   all[req.session.userEmail] = result.list;
   try {
-    writeDeliveryFile(all);
+    await writeDeliveryFile(all);
   } catch (e) {
     return res.status(500).json({ error: 'تعذر الحفظ' });
   }
   res.json({ success: true, added: result.added, updated: result.updated, addresses: result.list });
 });
-app.delete('/api/me/addresses/:id', rateLimit(30, 60000), (req, res) => {
+app.delete('/api/me/addresses/:id', rateLimit(30, 60000), async (req, res) => {
   if (!req.session.authenticated || !req.session.userEmail) return res.status(401).json({ error: 'Unauthorized' });
-  const all = readDeliveryFile();
+  const all = await readDeliveryFile();
   const result = removeAddress(userList(all, req.session.userEmail), String(req.params.id || ''));
   if (!result.removed) return res.status(404).json({ error: 'العنوان غير موجود' });
   all[req.session.userEmail] = result.list;
   try {
-    writeDeliveryFile(all);
+    await writeDeliveryFile(all);
   } catch (e) {
     return res.status(500).json({ error: 'تعذر الحفظ' });
   }
@@ -553,7 +636,7 @@ app.delete('/api/products/:id', requireAuth, async (req, res) => {
       const resolvedUploadsDir = path.resolve(UPLOADS_DIR);
       allImgs.forEach((imgPath) => {
         if (imgPath && typeof imgPath === 'string' && imgPath.startsWith('/uploads/')) {
-          const fullPath = path.resolve(path.join(__dirname, imgPath));
+          const fullPath = path.resolve(path.join(_BASE_DIR, imgPath));
           if (fullPath.startsWith(resolvedUploadsDir) && fs.existsSync(fullPath)) {
             try {
               fs.unlinkSync(fullPath);
@@ -588,7 +671,7 @@ const uploadImagesAndCreateProduct = async (req) => {
     : req.body.types
       ? req.body.types.split(',').map((s) => s.trim())
       : settings.types;
-  return db.createProduct({
+  return await db.createProduct({
     name,
     description: description || 'تيشيرت عالي الجودة بتصميم استثنائي',
     price: parseFloat(req.body.price) || 150,
@@ -663,7 +746,7 @@ app.post('/api/products/:id/image', requireAuth, upload.single('image'), async (
     if (!product) return res.status(404).json({ error: 'Not found' });
 
     if (product.image && product.image.startsWith('/uploads/')) {
-      const oldPath = path.join(__dirname, product.image);
+      const oldPath = path.join(_BASE_DIR, product.image);
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }
 
@@ -986,31 +1069,8 @@ app.post('/api/orders/:id/cancel', rateLimit(20, 60000), async (req, res) => {
 });
 
 // ── OTP Phone Verification ──
-// Persistent verified phones store (survives server restarts)
-const VERIFIED_PHONES_FILE = path.join(_BASE_DIR, 'data', 'verified-phones.json');
-
-function loadVerifiedPhones() {
-  try {
-    if (fs.existsSync(VERIFIED_PHONES_FILE)) {
-      return new Set(JSON.parse(fs.readFileSync(VERIFIED_PHONES_FILE, 'utf8')));
-    }
-  } catch (e) {
-    /* corrupted file — start empty */
-  }
-  return new Set();
-}
-
-function saveVerifiedPhones(set) {
-  try {
-    const dir = path.dirname(VERIFIED_PHONES_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(VERIFIED_PHONES_FILE, JSON.stringify([...set]), 'utf8');
-  } catch (e) {
-    /* best effort — verification still works for this process */
-  }
-}
-
-const verifiedPhones = loadVerifiedPhones();
+// Uses db.verifiedPhones (loaded from KV or file on startup)
+const activeOtps = new Map();
 
 app.post('/api/send-otp', rateLimit(10, 60000), (req, res) => {
   const phone = String((req.body && req.body.phone) || '').trim();
@@ -1020,7 +1080,7 @@ app.post('/api/send-otp', rateLimit(10, 60000), (req, res) => {
   res.json({ ok: true, message: 'تم إرسال رمز التحقق بنجاح' });
 });
 
-app.post('/api/verify-otp', rateLimit(20, 60000), (req, res) => {
+app.post('/api/verify-otp', rateLimit(20, 60000), async (req, res) => {
   const phone = String((req.body && req.body.phone) || '').trim();
   const code = String((req.body && req.body.code) || '').trim();
   if (!code) return res.status(400).json({ error: 'يرجى إدخال رمز التحقق' });
@@ -1028,9 +1088,8 @@ app.post('/api/verify-otp', rateLimit(20, 60000), (req, res) => {
   const key = normalizePhone(phone);
   const stored = activeOtps.get(key);
   if (code === '1234' || (stored && stored.code === code && Date.now() < stored.expiresAt)) {
-    // Mark this phone as permanently verified
-    verifiedPhones.add(key);
-    saveVerifiedPhones(verifiedPhones);
+    db.verifiedPhones.add(key);
+    await db.saveVerifiedPhones(db.verifiedPhones);
     activeOtps.delete(key);
     return res.json({ ok: true, verified: true });
   }
@@ -1042,23 +1101,100 @@ app.get('/api/check-phone-verified', (req, res) => {
   const phone = String((req.query && req.query.phone) || '').trim();
   if (!phone) return res.status(400).json({ error: 'يرجى إدخال رقم الهاتف' });
   const key = normalizePhone(phone);
-  res.json({ verified: verifiedPhones.has(key) });
+  res.json({ verified: db.verifiedPhones.has(key) });
 });
 
 // ── Telegram Bot ──
 // Single instance — the bot lives in telegram-bot.js and is started exactly
 // once here (never run telegram-bot.js separately while the server is up,
 // or Telegram will reject the second polling session with a 409 conflict).
-require('./telegram-bot.js');
+// NOTE: Telegram long-polling does not work in Cloudflare Workers (stateless).
+// The bot is skipped when running as a Worker.
+try {
+  if (!globalThis.__isWorker) {
+    require('./telegram-bot.js');
+  }
+} catch (e) {
+  console.log('[TELEGRAM] Bot skipped:', e.message);
+}
 
+// ── Express error handler (last middleware) ──
+app.use((err, _req, res, _next) => {
+  console.error('[Express error]', err.message, err.stack);
+  res.status(500).json({ error: 'خطأ في الخادم: ' + err.message });
+});
+
+// ── Start HTTP server ──
+// In Workers, app.listen() is shimmed by nodejs_compat.
+// httpServerHandler routes requests to the registered server by port number.
+let _httpServer;
+try {
+  _httpServer = app.listen(PORT, () => {
+    console.log(`AZMA server running on http://localhost:${PORT}`);
+  });
+  if (_httpServer && _httpServer.on) {
+    _httpServer.on('error', () => {});
+  }
+} catch (e) {
+  console.error('[server] listen failed:', e.message);
+}
+
+// ── Workers: export fetch handler using handleAsNodeRequest ──
+let _httpNodeServer;
+const _workerSession = globalThis.__isWorker ? require('./worker-session.cjs') : null;
 export default {
   async fetch(request, env, ctx) {
-    // The express app is started separately via "node server.js"
-    // This default export is required for Wrangler to properly
-    // detect the worker format with nodejs_compat
-    return new Response('AZMA Server is running. Use "node server.js" to start.', {
-      status: 200,
-      headers: { 'Content-Type': 'text/plain' }
-    });
-  }
+    if (env && !globalThis.__cfEnv) {
+      globalThis.__cfEnv = env;
+    }
+    if (new URL(request.url).pathname === '/healthz') {
+      return new Response('OK', { status: 200 });
+    }
+    try {
+      if (!_httpNodeServer) {
+        const cfNode = await import('cloudflare:node');
+        _httpNodeServer = { handleAsNodeRequest: cfNode.handleAsNodeRequest };
+      }
+      // Pre-parse request body for POST/PUT/PATCH requests
+      // Workers' node:http IncomingMessage can't read the body after fetch consumes it
+      let modifiedRequest = request;
+      const method = request.method.toUpperCase();
+      if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+        const contentType = request.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          try {
+            const bodyText = await request.text();
+            const headers = new Headers(request.headers);
+            headers.set('x-body-parsed', bodyText);
+            modifiedRequest = new Request(request.url, {
+              method: request.method,
+              headers: headers,
+              body: bodyText,
+            });
+          } catch (_e) { /* body already consumed */ }
+        }
+      }
+      let response = await _httpNodeServer.handleAsNodeRequest(PORT, modifiedRequest);
+      // In Workers, inject session cookie into response
+      if (_workerSession && _workerSession.serialize) {
+        const sessionId = globalThis.__lastSessionId;
+        if (sessionId) {
+          globalThis.__lastSessionId = null;
+          const cookieStr = _workerSession.serialize(sessionId);
+          if (cookieStr) {
+            const headers = new Headers(response.headers);
+            headers.append('set-cookie', cookieStr);
+            response = new Response(response.body, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: headers
+            });
+          }
+        }
+      }
+      return response;
+    } catch (e) {
+      return new Response('Worker error: ' + e.message + '\n' + e.stack, { status: 500 });
+    }
+  },
 };

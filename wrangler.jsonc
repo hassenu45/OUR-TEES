@@ -1,13 +1,15 @@
 {
   "name": "our-tees",
-  "compatibility_date": "2026-09-07",
+  "compatibility_date": "2026-09-16",
   "main": "server.js",
   "compatibility_flags": ["nodejs_compat"],
-  "external": ["mkdirp", "mime", "telegraf"],
   "alias": {
     "mkdirp": "./shims/mkdirp.js",
     "mime": "./shims/mime.js",
     "telegraf": "./shims/telegraf.js",
     "iconv-lite": "./shims/iconv-lite.js"
-  }
+  },
+  "kv_namespaces": [
+    { "binding": "KV", "id": "6e5607b4763244d0b4ef4c4e59a1a7ce" }
+  ]
 }

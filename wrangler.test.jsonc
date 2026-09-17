@@ -1,0 +1,10 @@
+{
+  "name": "worker-test",
+  "compatibility_date": "2026-09-16",
+  "main": "worker-test.js",
+  "compatibility_flags": ["nodejs_compat"],
+  "alias": {
+    "mime": "./shims/mime.js",
+    "iconv-lite": "./shims/iconv-lite.js"
+  }
+}

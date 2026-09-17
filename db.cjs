@@ -1,10 +1,10 @@
-// Database Access Layer — file-based storage (no Prisma, no SQLite)
-// All data stored in JSON files under ./data/
+// Database Access Layer — Cloudflare KV (Workers) or file-based (local dev)
+// In Workers: all data stored in KV via globalThis.__cfEnv.KV
+// Locally: all data stored in JSON files under ./data/
 
 const fs = require('fs');
 const path = require('path');
 
-// Use __dirname if available (Node.js), otherwise default to 'data' relative to project root
 var _BASE_DIR;
 try {
     _BASE_DIR = typeof __dirname !== 'undefined' ? __dirname : globalThis.__dirname || '';
@@ -12,72 +12,83 @@ try {
     _BASE_DIR = '';
 }
 const DATA_DIR = path.join(_BASE_DIR, 'data');
-const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
-const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
-const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
-const CUSTOMERS_FILE = path.join(DATA_DIR, 'customers.json');
-const ADDRESSES_FILE = path.join(DATA_DIR, 'addresses.json');
-const VERIFIED_PHONES_FILE = path.join(DATA_DIR, 'verified-phones.json');
-const CONVERSATIONS_FILE = path.join(DATA_DIR, 'conversations.json');
-const INTEGRATION_SETTINGS_FILE = path.join(DATA_DIR, 'integration-settings.json');
 
-// Note: Directory creation is handled by the runtime environment.
-// In Cloudflare Workers, assume the data directory exists.
+function isWorkers() {
+  return !!(globalThis.__cfEnv && globalThis.__cfEnv.KV);
+}
 
-// Helper: read JSON file with fallback
-function readJSONFile(filePath) {
+function kv() {
+  return globalThis.__cfEnv ? globalThis.__cfEnv.KV : null;
+}
+
+// ── Async helpers ──
+
+async function readKVOrFile(key, fallback) {
+  const k = kv();
+  if (k) {
+    const val = await k.get(key, { type: 'json' });
+    return val !== null ? val : fallback;
+  }
+  // Local fallback
+  const filePath = path.join(DATA_DIR, key + '.json');
   try {
     if (fs.existsSync(filePath)) {
       const data = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '');
-      return data ? JSON.parse(data) : {};
+      return data ? JSON.parse(data) : fallback;
     }
-  } catch (e) {
-    /* corrupted file — start empty */
-  }
-  return {};
+  } catch (e) { /* corrupted */ }
+  return fallback;
 }
 
-// Helper: write JSON file atomically
-function writeJSONFile(filePath, data) {
+async function writeKVOrFile(key, value) {
+  const k = kv();
+  if (k) {
+    await k.put(key, JSON.stringify(value), { expirationTtl: undefined });
+    return;
+  }
+  // Local fallback
+  const filePath = path.join(DATA_DIR, key + '.json');
   const tmp = filePath + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
-  fs.renameSync(tmp, filePath);
+  try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(tmp, JSON.stringify(value, null, 2), 'utf8');
+    fs.renameSync(tmp, filePath);
+  } catch (e) { /* best effort */ }
 }
 
 // ── Settings ──
 let settingsCache = null;
 
-function getSettings() {
+async function getSettings() {
   if (settingsCache) return settingsCache;
-  const raw = readJSONFile(SETTINGS_FILE);
+  const raw = await readKVOrFile('settings', {});
   settingsCache = { id: 1, ...raw };
-  if (!settingsCache.id) {
-    settingsCache.id = 1;
-    writeJSONFile(SETTINGS_FILE, settingsCache);
-  }
+  if (!settingsCache.id) settingsCache.id = 1;
   return settingsCache;
 }
 
-function updateSettings(data) {
-  const current = getSettings();
+async function updateSettings(data) {
+  const current = await getSettings();
   const updated = { ...current, ...data, updatedAt: new Date().toISOString() };
-  writeJSONFile(SETTINGS_FILE, updated);
+  await writeKVOrFile('settings', updated);
   settingsCache = updated;
   return updated;
 }
 
 // ── Products ──
-function getProducts() {
-  return readJSONFile(PRODUCTS_FILE).products || [];
+async function getProducts() {
+  const data = await readKVOrFile('products', { products: [] });
+  return data.products || [];
 }
 
-function getProduct(id) {
-  const products = getProducts();
+async function getProduct(id) {
+  const products = await getProducts();
   return products.find(p => p.id === id) || null;
 }
 
-function createProduct(data) {
-  const products = getProducts();
+async function createProduct(data) {
+  const products = await getProducts();
   const newProduct = {
     id: Date.now().toString() + Math.random().toString(36).slice(2),
     ...data,
@@ -85,33 +96,34 @@ function createProduct(data) {
     updatedAt: new Date().toISOString()
   };
   products.push(newProduct);
-  writeJSONFile(PRODUCTS_FILE, { products });
+  await writeKVOrFile('products', { products });
   return newProduct;
 }
 
-function updateProduct(id, data) {
-  const products = getProducts();
+async function updateProduct(id, data) {
+  const products = await getProducts();
   const index = products.findIndex(p => p.id === id);
   if (index === -1) throw new Error('Product not found');
   products[index] = { ...products[index], ...data, updatedAt: new Date().toISOString() };
-  writeJSONFile(PRODUCTS_FILE, { products });
+  await writeKVOrFile('products', { products });
   return products[index];
 }
 
-function deleteProduct(id) {
-  const products = getProducts();
+async function deleteProduct(id) {
+  const products = await getProducts();
   const newProducts = products.filter(p => p.id !== id);
-  writeJSONFile(PRODUCTS_FILE, { products: newProducts });
+  await writeKVOrFile('products', { products: newProducts });
   return { success: true };
 }
 
 // ── Orders ──
-function getOrders() {
-  return readJSONFile(ORDERS_FILE).orders || [];
+async function getOrders() {
+  const data = await readKVOrFile('orders', { orders: [] });
+  return data.orders || [];
 }
 
-function createOrder(data) {
-  const orders = getOrders();
+async function createOrder(data) {
+  const orders = await getOrders();
   const newOrder = {
     id: Date.now().toString() + Math.random().toString(36).slice(2),
     ...data,
@@ -120,34 +132,35 @@ function createOrder(data) {
     updatedAt: new Date().toISOString()
   };
   orders.push(newOrder);
-  writeJSONFile(ORDERS_FILE, { orders });
+  await writeKVOrFile('orders', { orders });
   return newOrder;
 }
 
-function updateOrderStatus(id, status) {
-  const orders = getOrders();
+async function updateOrderStatus(id, status) {
+  const orders = await getOrders();
   const index = orders.findIndex(o => o.id === id);
   if (index === -1) throw new Error('Order not found');
   orders[index].status = status;
   orders[index].updatedAt = new Date().toISOString();
-  writeJSONFile(ORDERS_FILE, { orders });
+  await writeKVOrFile('orders', { orders });
   return orders[index];
 }
 
-function deleteOrder(id) {
-  const orders = getOrders();
+async function deleteOrder(id) {
+  const orders = await getOrders();
   const newOrders = orders.filter(o => o.id !== id);
-  writeJSONFile(ORDERS_FILE, { orders: newOrders });
+  await writeKVOrFile('orders', { orders: newOrders });
   return { success: true };
 }
 
 // ── Customers ──
-function getCustomers() {
-  return readJSONFile(CUSTOMERS_FILE).customers || [];
+async function getCustomers() {
+  const data = await readKVOrFile('customers', { customers: [] });
+  return data.customers || [];
 }
 
-function upsertCustomer(data) {
-  const customers = getCustomers();
+async function upsertCustomer(data) {
+  const customers = await getCustomers();
   const phone = data.phone;
   const index = customers.findIndex(c => c.phone === phone);
 
@@ -173,31 +186,30 @@ function upsertCustomer(data) {
     customers.push(customerData);
   }
 
-  writeJSONFile(CUSTOMERS_FILE, { customers });
+  await writeKVOrFile('customers', { customers });
   return customerData;
 }
 
-function getCustomerByPhone(phone) {
-  const customers = getCustomers();
+async function getCustomerByPhone(phone) {
+  const customers = await getCustomers();
   return customers.find(c => c.phone === phone) || null;
 }
 
-function getOrdersByPhone(phone) {
-  const orders = getOrders();
+async function getOrdersByPhone(phone) {
+  const orders = await getOrders();
   return orders.filter(o => o.phone === phone);
 }
 
-function getOrderById(id) {
-  const orders = getOrders();
+async function getOrderById(id) {
+  const orders = await getOrders();
   return orders.find(o => o.id === id) || null;
 }
 
 // ── Campaign recipients ──
-function getCampaignEmails(targetGroup) {
-  const customers = getCustomers();
+async function getCampaignEmails(targetGroup) {
+  const customers = await getCustomers();
   const seen = new Set();
   const emails = [];
-
   for (const c of customers) {
     const e = String(c.email || '').trim().toLowerCase();
     if (e && !seen.has(e)) {
@@ -209,8 +221,9 @@ function getCampaignEmails(targetGroup) {
 }
 
 // ── Integration Settings (WhatsApp + Instagram) ──
-function getIntegrationSettings() {
-  return readJSONFile(INTEGRATION_SETTINGS_FILE).integrationSettings || {
+async function getIntegrationSettings() {
+  const data = await readKVOrFile('integration-settings', {});
+  return data.integrationSettings || {
     id: 1,
     waEnabled: true,
     waPhoneId: '',
@@ -226,30 +239,29 @@ function getIntegrationSettings() {
   };
 }
 
-function updateIntegrationSettings(data) {
-  let settings = getIntegrationSettings();
+async function updateIntegrationSettings(data) {
+  let settings = await getIntegrationSettings();
   const updated = { ...settings, ...data, updatedAt: new Date().toISOString() };
-  const fileData = readJSONFile(INTEGRATION_SETTINGS_FILE);
-  fileData.integrationSettings = updated;
-  writeJSONFile(INTEGRATION_SETTINGS_FILE, fileData);
+  await writeKVOrFile('integration-settings', { integrationSettings: updated });
   return updated;
 }
 
 // ── Conversations (channel bot chat history) ──
-function getConversations(channel) {
-  const data = readJSONFile(CONVERSATIONS_FILE).conversations || {};
-  if (channel) return data[channel] || [];
-  return data;
+async function getConversations(channel) {
+  const data = await readKVOrFile('conversations', { conversations: {} });
+  if (channel) return data.conversations[channel] || [];
+  return data.conversations || {};
 }
 
-function getConversation(channel, externalId) {
-  const conversations = getConversations(channel);
+async function getConversation(channel, externalId) {
+  const conversations = await getConversations(channel);
   return conversations.find(c => c.externalId === externalId) || null;
 }
 
-function appendConversationMessage(channel, externalId, sender, text, name = '') {
-  let conversations = getConversations(channel);
-  let conv = conversations.find(c => c.externalId === externalId);
+async function appendConversationMessage(channel, externalId, sender, text, name = '') {
+  let conversations = await getConversations();
+  let channelConvs = conversations[channel] || [];
+  let conv = channelConvs.find(c => c.externalId === externalId);
   let history = conv && conv.history ? JSON.parse(conv.history) : [];
 
   if (history.length > 40) history = history.slice(-40);
@@ -260,39 +272,38 @@ function appendConversationMessage(channel, externalId, sender, text, name = '')
     conv.lastActivity = new Date().toISOString();
     if (name) conv.name = name;
   } else {
-    conversations = [...conversations, {
+    conv = {
       channel,
       externalId,
       name,
       history: JSON.stringify(history),
       lastActivity: new Date().toISOString(),
       createdAt: new Date().toISOString()
-    }];
+    };
+    channelConvs = [...channelConvs, conv];
   }
 
-  const fileData = readJSONFile(CONVERSATIONS_FILE);
-  fileData.conversations = conversations;
-  writeJSONFile(CONVERSATIONS_FILE, fileData);
+  conversations[channel] = channelConvs;
+  await writeKVOrFile('conversations', { conversations });
 
-  return conv || { channel, externalId, name, history: [{}], lastActivity: new Date().toISOString() };
+  return conv;
 }
 
-function clearConversation(id) {
+async function clearConversation(id) {
   const [channel, externalId] = id.split(':');
-  let conversations = getConversations(channel);
-  conversations = conversations.filter(c => c.externalId !== externalId);
-
-  const fileData = readJSONFile(CONVERSATIONS_FILE);
-  fileData.conversations = conversations;
-  writeJSONFile(CONVERSATIONS_FILE, fileData);
+  let conversations = await getConversations();
+  let channelConvs = conversations[channel] || [];
+  channelConvs = channelConvs.filter(c => c.externalId !== externalId);
+  conversations[channel] = channelConvs;
+  await writeKVOrFile('conversations', { conversations });
   return { success: true };
 }
 
 // ── Statistics (for Telegram bot) ──
-function getStats() {
-  const products = getProducts();
-  const orders = getOrders();
-  const customers = getCustomers();
+async function getStats() {
+  const products = await getProducts();
+  const orders = await getOrders();
+  const customers = await getCustomers();
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -311,7 +322,6 @@ function getStats() {
   const monthRevenue = orders.filter(o => new Date(o.createdAt) >= monthAgo)
     .reduce((sum, o) => sum + (parseFloat(o.productPrice) || 0), 0);
 
-  // Top products
   const productCounts = {};
   products.forEach(p => {
     productCounts[p.id] = (productCounts[p.id] || 0) + 1;
@@ -321,7 +331,7 @@ function getStats() {
     .slice(0, 5)
     .map(([productId, count]) => ({
       productId,
-      productName: productCounts[productId] ? products.find(p => p.id === productId)?.name : 'Unknown',
+      productName: products.find(p => p.id === productId)?.name || 'Unknown',
       count,
       revenue: 0
     }));
@@ -355,29 +365,45 @@ function getStats() {
   };
 }
 
-// ── Verified phones (persistent) ──
-function loadVerifiedPhones() {
-  try {
-    if (fs.existsSync(VERIFIED_PHONES_FILE)) {
-      return new Set(JSON.parse(fs.readFileSync(VERIFIED_PHONES_FILE, 'utf8')));
-    }
-  } catch (e) {
-    /* corrupted file — start empty */
+// ── Verified phones ──
+// In Workers: store as KV key. Locally: file-based.
+// The verifiedPhones Set is kept in memory for fast synchronous access
+// in the OTP verification routes. In Workers it's reloaded from KV
+// on each cold start (acceptable since phone verification is rare).
+
+let verifiedPhones = new Set();
+
+async function loadVerifiedPhones() {
+  if (isWorkers()) {
+    const k = kv();
+    const arr = await k.get('verified-phones', { type: 'json' });
+    verifiedPhones = new Set(arr || []);
+  } else {
+    const filePath = path.join(DATA_DIR, 'verified-phones.json');
+    try {
+      if (fs.existsSync(filePath)) {
+        verifiedPhones = new Set(JSON.parse(fs.readFileSync(filePath, 'utf8')));
+      }
+    } catch (e) { /* corrupted */ }
   }
-  return new Set();
 }
 
-function saveVerifiedPhones(set) {
-  try {
-    const dir = path.dirname(VERIFIED_PHONES_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(VERIFIED_PHONES_FILE, JSON.stringify([...set]), 'utf8');
-  } catch (e) {
-    /* best effort — verification still works for this process */
+async function saveVerifiedPhones(set) {
+  if (isWorkers()) {
+    const k = kv();
+    await k.put('verified-phones', JSON.stringify([...set]), { expirationTtl: undefined });
+  } else {
+    const filePath = path.join(DATA_DIR, 'verified-phones.json');
+    try {
+      const dir = path.dirname(filePath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(filePath, JSON.stringify([...set]), 'utf8');
+    } catch (e) { /* best effort */ }
   }
 }
 
-const verifiedPhones = loadVerifiedPhones();
+// Initialize on load (async but happens fast)
+loadVerifiedPhones().catch(() => {});
 
 // ── Exports ──
 module.exports = {
@@ -406,5 +432,6 @@ module.exports = {
   clearConversation,
   getStats,
   verifiedPhones,
-  saveVerifiedPhones
+  saveVerifiedPhones,
+  loadVerifiedPhones
 };

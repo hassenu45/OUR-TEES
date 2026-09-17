@@ -15,7 +15,7 @@ const deepSeekChat = async (system, messages, options) => {
   return 'فهمت طلبك، جاري المعالجة...';
 };
 
-const discoveryAgent = async (messages, options) => {
+const runDiscoveryAgent = async (messages, options) => {
   // Placeholder for discovery agent
   return { structured: '', reply: '' };
 };
@@ -27,6 +27,6 @@ module.exports = {
   deepSeekModel,
   deepSeekBase,
   deepSeekChat,
-  discoveryAgent,
+  runDiscoveryAgent,
   formatDiscoveryReply
 };
